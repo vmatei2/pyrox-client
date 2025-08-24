@@ -47,6 +47,16 @@ def _read_parquet_from_s3(s3_uri: str) -> pd.DataFrame:
         return pd.read_parquet(io.BytesIO(data), engine="fastparquet")
     except Exception as e:
         raise ParquetReadError(f"Failed to read parquet from {s3_uri}: {e}")
+# core.py
+def _to_s3_uri(bucket: str, key: str) -> str:
+    """Join bucket + key safely. If key is already a full s3:// URI, use it as-is."""
+    key = key.strip()
+    if key.startswith("s3://"):
+        return key
+    # allow bucket to be "s3://bucket" or just "bucket"
+    if not bucket.startswith("s3://"):
+        bucket = f"s3://{bucket}"
+    return f"{bucket.rstrip('/')}/{key.lstrip('/')}"
 
 
 def get_race(*, season: int, location: str) -> pd.DataFrame:
@@ -65,17 +75,12 @@ def get_race(*, season: int, location: str) -> pd.DataFrame:
     ]
 
     if row.empty:
-        # Optional: try a contains() fallback if you want looser matching
-        # cand = manifest[(manifest["season"] == int(season)) &
-        #                 (manifest["location"].str.contains(location, case=False, na=False))]
-        # if not cand.empty: row = cand.iloc[[0]]
-        # else:
         raise RaceNotFound(f"No race found for season={season}, location='{location}'. "
                            f"Try: pyrox.list_races({season})")
 
     s3_key = row.iloc[0]["path"]
     cfg = get_config()
-    s3_uri = f"{cfg.bucket}/{s3_key}"
+    s3_uri = _to_s3_uri(cfg.bucket, s3_key)
 
     # check local cache first
     local_path = _local_parquet_cache_path(s3_key)
