@@ -3,8 +3,7 @@ requires = ["hatchling>=1.20"]
 build-backend = "hatchling.build"
 
 [project]
-name = "pyrox-client"                       # pip name
-version = "0.0.1"
+name = "pyrox-client"
 description = "HYROX race data client – retrieve full race results via Python"
 authors = [{ name = "Vlad Matei" }]
 readme = "README.md"
@@ -34,3 +33,6 @@ include = [
   "README.md",
   "pyproject.toml"
 ]
+
+[tool.hatch.version]
+path = "src/pyrox/__init__.py"
