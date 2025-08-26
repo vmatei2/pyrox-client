@@ -7,14 +7,15 @@ from pathlib import Path
 import fsspec
 import pandas as pd
 
-from .config import get_config
-from .errors import ManifestUnavailable
-
+from pyrox.config import get_config
+from pyrox.errors import ManifestUnavailable
+import logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 def _s3_open(path: str, mode: str = "rb", anon: bool = True):
     """
     Unified opener for S3 (via fsspec/s3fs).
-
     Parameters
     ----------
     path : str
@@ -23,7 +24,6 @@ def _s3_open(path: str, mode: str = "rb", anon: bool = True):
         File mode, usually "rb" for binary reads.
     anon : bool
         True => anonymous/public read (no AWS creds required).
-
     Returns
     -------
     contextmanager
@@ -36,7 +36,6 @@ def _s3_open(path: str, mode: str = "rb", anon: bool = True):
 def _cache_paths(name: str) -> Tuple[Path, Path]:
     """
     Compute cache locations for the manifest CSV and its ETag sidecar.
-
     We cache:
       - the CSV bytes as ~/.cache/pyrox/manifest.latest.csv
       - the ETag string as ~/.cache/pyrox/manifest.latest.csv.etag
@@ -122,8 +121,10 @@ def load_manifest(refresh: bool = True) -> pd.DataFrame:
             # Some backends wrap ETag in quotes; we keep it as-is because
             # we compare exact strings on both sides.
             current_etag = info.get("ETag")
-        except Exception:
+        except Exception as e:
             # HEAD can fail (e.g., transient network); we'll fall back to cache or GET.
+
+            logger.info(f"Have not been able to retrieve head_s3 from the manifest uri: {s3_manifest_uri}. Encountered exception: {e}. Setting etag as none and looking for cache.")
             current_etag = None
 
     # 2) If we have a cached file and either:
@@ -135,7 +136,6 @@ def load_manifest(refresh: bool = True) -> pd.DataFrame:
         try:
             return pd.read_csv(cache_file)
         except Exception:
-            # Corrupted cache? Continue to re-download below.
             pass
 
     # 3) Re-download from S3 and update cache.
@@ -164,7 +164,6 @@ def load_manifest(refresh: bool = True) -> pd.DataFrame:
         return df
 
     except Exception as e:
-        # 4) If network failed, try to limp with the existing cache (even if ETag mismatch).
         if cache_file.exists():
             try:
                 return pd.read_csv(cache_file)
@@ -172,3 +171,6 @@ def load_manifest(refresh: bool = True) -> pd.DataFrame:
                 pass
         # No working cache → bail with a clear error
         raise ManifestUnavailable(f"Could not load manifest from {s3_manifest_uri}: {e}")
+
+
+load_manifest(refresh=True)

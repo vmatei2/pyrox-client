@@ -4,9 +4,9 @@ import io
 from pathlib import Path
 import pandas as pd
 
-from .manifest import load_manifest, _s3_open   # re-use your manifest loader + fsspec opener
-from .config import get_config
-from .errors import RaceNotFound, ParquetReadError
+from pyrox.manifest import load_manifest, _s3_open
+from pyrox.config import get_config
+from pyrox.errors import RaceNotFound, ParquetReadError
 
 
 def list_races(season: int | None = None) -> pd.DataFrame:
@@ -99,4 +99,3 @@ def get_race(*, season: int, location: str) -> pd.DataFrame:
         pass
     return df
 
-breakheere = 0
