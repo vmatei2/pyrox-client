@@ -21,7 +21,6 @@ _config = PyroxConfig()
 def set_bucket(uri:str) -> None:
     _config.bucket = uri.rsplit("/")
 
-
 def set_manifest_path(path: str) -> None:
     _config.manifest_path = path
 

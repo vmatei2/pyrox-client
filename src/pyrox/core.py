@@ -1,12 +1,15 @@
 from __future__ import annotations
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Iterable, Optional
+
 
 import io
 from pathlib import Path
-import pandas as pd
-
 from pyrox.manifest import load_manifest, _s3_open
+import pandas as pd
 from pyrox.config import get_config
 from pyrox.errors import RaceNotFound, ParquetReadError
+
 
 
 def list_races(season: int | None = None) -> pd.DataFrame:
@@ -98,4 +101,97 @@ def get_race(*, season: int, location: str) -> pd.DataFrame:
         # cache failures should not fail the API
         pass
     return df
+
+
+def get_season(
+    season: int,
+    locations: Optional[Iterable[str]] = None,
+    columns: Optional[list[str]] = None,
+    max_workers: int = 8,
+) -> pd.DataFrame:
+    """
+    Load and concatenate all race DataFrames for a given season.
+
+    Parameters
+    ----------
+    season : int
+        Season number (e.g., 7).
+    locations : Optional[Iterable[str]]
+        Optional subset of locations to include (case-insensitive).
+    columns : Optional[list[str]]
+        Optional column projection (subset of columns to return).
+        Note: with the current byte-read helper, this is a post-read projection.
+    max_workers : int
+        Thread pool size for parallel file loads.
+
+    Returns
+    -------
+    pd.DataFrame
+        Concatenated DataFrame with all rows for the season.
+        Adds `season` and `location` columns to each row.
+    """
+    manifest = load_manifest(refresh=True)
+    m = manifest[manifest["season"] == int(season)].copy()
+
+    if locations:
+        want = {loc.casefold() for loc in locations}
+        m = m[m["location"].str.casefold().isin(want)]
+
+    if m.empty:
+        raise RaceNotFound(f"No races found for season={season}. Try list_races({season}).")
+
+    cfg = get_config()
+
+    def _load_one(row: pd.Series) -> pd.DataFrame:
+        s3_key = row["path"]           # manifest column name
+        s3_uri = _to_s3_uri(cfg.bucket, s3_key)
+        local_path = _local_parquet_cache_path(s3_key)
+
+        # 1) try cache
+        df = None
+        if local_path.exists():
+            try:
+                df = pd.read_parquet(local_path, engine="fastparquet")
+            except Exception:
+                local_path.unlink(missing_ok=True)
+
+        # 2) fetch if needed
+        if df is None:
+            df = _read_parquet_from_s3(s3_uri)
+            try:
+                df.to_parquet(local_path, index=False, engine="fastparquet")
+            except Exception:
+                pass  # cache failures shouldn't break the call
+
+        # Optional projection (post-read)
+        if columns:
+            missing = [c for c in columns if c not in df.columns]
+            if missing:
+                raise ParquetReadError(f"Missing columns {missing} in {s3_key}")
+            df = df[columns]
+
+        # annotate for provenance
+        df = df.copy()
+        df["season"] = row["season"]
+        df["location"] = row["location"]
+        return df
+
+    frames: list[pd.DataFrame] = []
+    with ThreadPoolExecutor(max_workers=max_workers) as ex:
+        futures = [ex.submit(_load_one, r) for _, r in m.iterrows()]
+        for fut in as_completed(futures):
+            frames.append(fut.result())
+
+    if not frames:
+        return pd.DataFrame()
+
+    out = pd.concat(frames, ignore_index=True)
+    # nice-to-have sort if columns exist
+    sort_cols = [c for c in ["location", "bib", "total_time_s"] if c in out.columns]
+    if sort_cols:
+        out = out.sort_values(sort_cols).reset_index(drop=True)
+    return out
+
+
+df = get_season(season=6)
 

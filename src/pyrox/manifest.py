@@ -173,4 +173,3 @@ def load_manifest(refresh: bool = True) -> pd.DataFrame:
         raise ManifestUnavailable(f"Could not load manifest from {s3_manifest_uri}: {e}")
 
 
-load_manifest(refresh=True)
