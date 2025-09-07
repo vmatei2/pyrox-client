@@ -1,5 +1,5 @@
-Package to retrieve Hyrox race data programatically - dat available in a private S3 Bucket
-
+Package to retrieve Hyrox race data programmatically - data
+\available in aN S3 Bucket
 API folder contains the logic for the API
 
 This is now deployed via fly - from the command line, we can do the below useful commands
@@ -7,7 +7,7 @@ This is now deployed via fly - from the command line, we can do the below useful
  ```
  fly auth login (required to login and run from CL) 
  fly scale count 0 (0 machines allocated to the app)
- fly machines list   
+ fly machines list  (shows the state of the machine as well - so can now if running or stopped)
  fly volumes list -a pyrox-api-proud-surf-3131 (passing the application name)
 ```
 

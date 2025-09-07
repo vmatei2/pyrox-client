@@ -13,6 +13,8 @@ from pydantic_settings import BaseSettings
 
 from pyrox.config import get_config
 from pyrox.manifest import load_manifest
+from pyrox.config import _DEFAULT_MANIFEST
+from pyrox.config import _DEFAULT_BUCKET
 
 
 class Settings(BaseSettings):
@@ -49,6 +51,13 @@ def _load_manifest_df():
 
 
 def _s3_uri_for(season: int, location: str, bucket: str) -> str:
+    """
+    Return the s3 path from the manifest for a specific season / location - given the S3 Bucket we are looking in
+    :param season:
+    :param location:
+    :param bucket:
+    :return:
+    """
     m = _load_manifest_df()
     row = m[(m["season"] == season) & (m['location'].str.casefold() == location.casefold())]
 
@@ -87,6 +96,31 @@ def manifest(_: None = Depends(check_api_key)):
     """
     df = _load_manifest_df()
     return df[["season", "location", "path"]].to_dict(orient="records")
+
+@app.get("/v1/season/{season}/races")
+def list_season_races(season:int, settings:Settings = Depends(get_settings)):
+    """
+    api endpoint to list all available races in a given season
+    :param season:
+    :param settings:
+    :return:
+    """
+    manifest_uri = f"{_DEFAULT_BUCKET}/{_DEFAULT_MANIFEST}"
+    fs = s3fs.S3FileSystem(anon=True)
+    try:
+        ds = pyarrow_ds.dataset(manifest_uri, filesystem=fs, format="csv")
+        lf = pl.scan_pyarrow_dataset(ds)
+    except Exception as e:
+        raise HTTPException(502, detail=f"Manifest read failed: {type(e).__name__} : {e}")
+
+    df = lf.filter(pl.col("season") == season)\
+        .select(["season", "location"])\
+        .unique(subset=["season", "location"])\
+        .collect()
+
+    if df.height == 0:
+        raise HTTPException(404, detail=f"No races found for season: {season}")
+    return df.to_dicts()
 
 
 @app.get("/v1/race/{season}/{location}")

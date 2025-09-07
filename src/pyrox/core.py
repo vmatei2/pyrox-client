@@ -1,5 +1,3 @@
-# core_api.py  (replacement for your previous core.py that hit S3)
-
 from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Iterable, Optional
@@ -84,8 +82,3 @@ def get_season(season: int, locations: Optional[Iterable[str]] = None, columns: 
         out = out.sort_values(sort_cols).reset_index(drop=True)
     return out
 
-# quick smoke test:
-if __name__ == "__main__":
-    print(list_races(7).head())
-    df = get_race(season=7, location="barcelona")
-    breakhere = 0

@@ -3,6 +3,6 @@ WORKDIR /app
 COPY api/ /app/api/
 COPY src/ /app/src/
 ENV PYTHONPATH=/app/src
-RUN uv pip install --system --no-cache-dir fastapi uvicorn "polars>=1.5" s3fs boto3 pydantic-settings pandas platformdirs fastparquet pyarrow
+RUN uv pip install --system --no-cache-dir fastapi uvicorn "polars>=1.5" s3fs boto3 pydantic-settings pandas platformdirs fastparquet pyarrow httpx
 EXPOSE 8080
 CMD ["python","-m","uvicorn","api.app:app","--host","0.0.0.0","--port","8080"]
