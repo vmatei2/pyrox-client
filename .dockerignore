@@ -1,0 +1,14 @@
+# flyctl launch added from .gitignore
+**/*.pyc
+
+# flyctl launch added from .idea/.gitignore
+# Default ignored files
+.idea/shelf
+.idea/workspace.xml
+
+# flyctl launch added from dist/.gitignore
+dist/**/*
+
+# flyctl launch added from src/dist/.gitignore
+src/dist/**/*
+fly.toml

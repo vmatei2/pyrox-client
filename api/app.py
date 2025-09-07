@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 import os
-
-from pyrox.config import get_config
 from functools import lru_cache
 from typing import List, Optional, Dict, Any
 
 import polars as pl
+import pyarrow.dataset as pyarrow_ds
+import s3fs
 from fastapi import FastAPI, Depends, HTTPException, Header, Query
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings
+
+from pyrox.config import get_config
 from pyrox.manifest import load_manifest
 
 
@@ -92,25 +94,23 @@ def get_race(season: int, location: str, sex: Optional[str] = Query(default=None
              division: Optional[str] = Query(default=None, description="Open / Pro"),
              settings: Settings = Depends(get_settings)):
     """
-    Return filtered race
-    :param season:
-    :param location:
-    :param sex:
-    :param division:
     :return:
     """
     s3_uri = _s3_uri_for(season, location, settings.pyrox_bucket)
 
-    opts = {"anon": True}
+    fs = s3fs.S3FileSystem(anon=True)
 
     try:
-        lf = pl.scan_parquet(s3_uri)
+        ds = pyarrow_ds.dataset(s3_uri, filesystem=fs, format="parquet")
+        lf = pl.scan_pyarrow_dataset(ds)
     except Exception as e:
         raise HTTPException(502, detail=f"S3 read failed: {type(e).__name__} : {e}")
 
     if sex:
         lf = lf.filter(pl.col("sex") == sex)
     if division:
+        print("hit division")
+        print(division)
         lf = lf.filter(pl.col("division") == division)
 
     df = lf.collect()

@@ -1,1 +1,31 @@
 Package to retrieve Hyrox race data programatically - dat available in a private S3 Bucket
+
+API folder contains the logic for the API
+
+This is now deployed via fly - from the command line, we can do the below useful commands
+
+ ```
+ fly auth login (required to login and run from CL) 
+ fly scale count 0 (0 machines allocated to the app)
+ fly machines list   
+ fly volumes list -a pyrox-api-proud-surf-3131 (passing the application name)
+```
+
+
+Running the API via docker 
+Below mounts the app/api and app/src folders to the image
+So any changes are reflected without having to rebuild the container and run again!
+
+```
+docker run -it --rm -p 8000:8080 \
+  -v "$PWD/api:/app/api" -v "$PWD/src:/app/src" \
+  -e PYROX_BUCKET="s3://hyrox-results" -e AWS_REGION="eu-west-1" \
+  pyrox-api \
+  python -m uvicorn api.app:app --host 0.0.0.0 --port 8080 --reload
+```
+
+Command to build the Docker container (ran from repo root)
+```
+docker build -f api/Dockerfile -t pyrox-api .  
+```
+
