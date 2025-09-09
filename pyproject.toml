@@ -36,4 +36,4 @@ include = [
 ]
 
 [tool.hatch.version]
-path = "vcs"
+path = "src/pyrox/__init__.py"

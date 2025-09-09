@@ -5,9 +5,9 @@ import os
 import pandas as pd
 import httpx
 
-DEFAULT_API_URL = os.getenv("PYROX_API_URL", "https://pyrox-api-proud-surf-3131.fly.dev")
-DEFAULT_API_KEY = os.getenv("PYROX_API_KEY")  # optional
-
+DEFAULT_API_URL = "https://pyrox-api-proud-surf-3131.fly.dev"
+DEFAULT_API_KEY = os.getenv("PYROX_API_KEY")  #  optional for now as not used on api side
+#  DEFAULT_API_URL = "http://localhost:8000"  --> used for testing when running api in docker container
 class ApiError(RuntimeError): ...
 class RaceNotFound(RuntimeError): ...
 
@@ -28,10 +28,10 @@ def list_races(season: int | None = None, base_url: str | None = None, api_key: 
         df = df[df["season"] == int(season)]
     return df[["season", "location"]].drop_duplicates().sort_values(["season", "location"]).reset_index(drop=True)
 
-def get_race(*, season: int, location: str, sex: Optional[str] = None, division: Optional[str] = None,
+def get_race(*, season: int, location: str, gender: Optional[str] = None, division: Optional[str] = None,
              base_url: str | None = None, api_key: str | None = DEFAULT_API_KEY) -> pd.DataFrame:
     params = {}
-    if sex: params["sex"] = sex
+    if gender: params["gender"] = gender
     if division: params["division"] = division
     with _client(base_url, api_key) as c:
         r = c.get(f"/v1/race/{int(season)}/{location}", params=params)
@@ -41,16 +41,12 @@ def get_race(*, season: int, location: str, sex: Optional[str] = None, division:
             raise ApiError(f"race fetch failed: {r.status_code} {r.text}")
         rows = r.json()  # list[dict]
     df = pd.DataFrame(rows)
-    # add provenance if missing
-    if "season" not in df.columns:
-        df["season"] = int(season)
-    if "location" not in df.columns:
-        df["location"] = location
     return df
 
-def get_season(season: int, locations: Optional[Iterable[str]] = None, columns: Optional[list[str]] = None,
+
+def get_season(season: int, locations: Optional[Iterable[str]] = None,
                max_workers: int = 8, base_url: str | None = None, api_key: str | None = DEFAULT_API_KEY,
-               sex: Optional[str] = None, division: Optional[str] = None) -> pd.DataFrame:
+               gender: Optional[str] = None, division: Optional[str] = None) -> pd.DataFrame:
     # discover available races first (avoids 404 spam)
     m = list_races(season=season, base_url=base_url, api_key=api_key)
     if locations:
@@ -58,27 +54,21 @@ def get_season(season: int, locations: Optional[Iterable[str]] = None, columns: 
         m = m[m["location"].str.casefold().isin(want)]
     if m.empty:
         raise RaceNotFound(f"No races found for season={season}")
-
+    #  function to get one data frame for a specifc race
     def _one(loc: str) -> pd.DataFrame:
-        return get_race(season=season, location=loc, sex=sex, division=division, base_url=base_url, api_key=api_key)
+        return get_race(season=season, location=loc, gender=gender, division=division, base_url=base_url, api_key=api_key)
 
     frames: list[pd.DataFrame] = []
+    #  split the work to get the dataframe across multiple workers
     with ThreadPoolExecutor(max_workers=max_workers) as ex:
         futs = [ex.submit(_one, loc) for loc in m["location"].tolist()]
         for f in as_completed(futs):
             frames.append(f.result())
-
+    #  join and return the data!
     if not frames:
         return pd.DataFrame()
     out = pd.concat(frames, ignore_index=True)
 
-    if columns:
-        missing = [c for c in columns if c not in out.columns]
-        if missing:
-            raise ApiError(f"Missing columns in response: {missing}")
-        out = out[columns + [c for c in ["season", "location"] if c in out.columns]]
-    sort_cols = [c for c in ["location", "bib", "total_time_s"] if c in out.columns]
-    if sort_cols:
-        out = out.sort_values(sort_cols).reset_index(drop=True)
     return out
+
 

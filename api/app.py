@@ -35,7 +35,7 @@ def get_settings() -> Settings:
 def check_api_key(settings: Settings = Depends(get_settings),
                   authorization: Optional[str] = Header(default=None)) -> None:
     if not settings.api_key:
-        return  ## dev mode: no auth
+        return  ## dev mode: no auth --> setting.api_key simply comes from the environment - null for now
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Missing API Key")
 
