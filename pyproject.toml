@@ -1,9 +1,10 @@
 [build-system]
-requires = ["hatchling>=1.20"]
+requires = ["hatchling>=1.20", "hatch-vcs>=0.4"]
 build-backend = "hatchling.build"
 
 [project]
 name = "pyrox-client"
+dynamic = ["version"]
 description = "HYROX race data client – retrieve full race results via Python"
 authors = [{ name = "Vlad Matei" }]
 readme = "README.md"
@@ -16,10 +17,9 @@ dependencies = [
     "s3fs>=2024.2.0",
     "requests>=2.31",
     "platformdirs>=4.2.0",
+    "httpx>=0.28.1"
 ]
 
-[project.optional-dependencies]
-duckdb = ["duckdb>=1.0.0"]
 
 
 # You’re using a src/ layout. This tells Hatch which package to build.

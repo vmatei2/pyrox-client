@@ -1,1 +1,3 @@
 *.pyc
+
+/src/pyrox/__pycache__/
