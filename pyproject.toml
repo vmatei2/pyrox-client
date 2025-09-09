@@ -17,10 +17,9 @@ dependencies = [
     "s3fs>=2024.2.0",
     "requests>=2.31",
     "platformdirs>=4.2.0",
+    "httpx>=0.28.1"
 ]
 
-[project.optional-dependencies]
-duckdb = ["duckdb>=1.0.0"]
 
 
 # You’re using a src/ layout. This tells Hatch which package to build.
