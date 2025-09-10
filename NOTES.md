@@ -43,3 +43,11 @@ season6racesdf = get_season(season=6, locations=['london', 'hamburg'])
 london_season6 = get_race(season=6, location="london")
 hamburg_season6 = get_race(season=6, location="hamburg", division="open", gender="m")
 ```
+
+
+Running unit tests locally
+
+```commandline
+pytest -v               # increase verbosity, display individual test names
+pytest -vv              # more verbose, display more details from the test output
+```

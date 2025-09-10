@@ -68,7 +68,6 @@ def get_season(season: int, locations: Optional[Iterable[str]] = None,
     if not frames:
         return pd.DataFrame()
     out = pd.concat(frames, ignore_index=True)
-
     return out
 
 
