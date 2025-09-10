@@ -17,7 +17,8 @@ dependencies = [
     "s3fs>=2024.2.0",
     "requests>=2.31",
     "platformdirs>=4.2.0",
-    "httpx>=0.28.1"
+    "httpx>=0.28.1",
+    "respx>=0.22.0"
 ]
 
 

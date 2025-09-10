@@ -26,7 +26,7 @@ def test_list_races():
         {"season": 7, "location": "Manchester", "path": "some_s3_path"},
         {"season": 6, "location": "Cardiff", "path": "some_s3_path"}
     ]
-    route = respx.get(DEFAULT_API_URL).mock(return_value=httpx.Response(200, json=manifest_rows))
+    route = respx.get(f"{DEFAULT_API_URL}/v1/manifest").mock(return_value=httpx.Response(200, json=manifest_rows))
     df = _client.list_races()
     assert route.called
 
@@ -42,7 +42,7 @@ def test_list_races():
 
 @respx.mock
 def test_list_races_api_error():
-    respx.get(DEFAULT_API_URL).mock(return_value=httpx.Response(500,text="Some API error"))
+    respx.get(f"{DEFAULT_API_URL}/v1/manifest").mock(return_value=httpx.Response(500,text="Some API error"))
     #  below is a pyest context manager that assert:  "The code inside this block must raise mod.ApiError -- if it doesn't then fail the test"
     with pytest.raises(_client.ApiError):
         _client.list_races()
