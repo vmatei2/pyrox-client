@@ -21,7 +21,6 @@ dependencies = [
 ]
 
 
-
 # You’re using a src/ layout. This tells Hatch which package to build.
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyrox"]
