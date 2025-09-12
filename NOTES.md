@@ -51,3 +51,16 @@ Running unit tests locally
 pytest -v               # increase verbosity, display individual test names
 pytest -vv              # more verbose, display more details from the test output
 ```
+
+
+```commandline
+
+if __name__ == '__main__':
+    client = PyroxClient()
+    print(client.list_races(season=6))
+    london = client.get_race(season=6, location="London")
+    rott = (client.get_race(season=6, location='rotterdam'))
+    seb = rott[rott['name'].str.contains('lastname, surname', case=False)]
+    breakhere = 0
+
+```

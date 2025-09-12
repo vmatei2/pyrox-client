@@ -8,7 +8,6 @@ dynamic = ["version"]
 description = "HYROX race data client – retrieve full race results via Python"
 authors = [{ name = "Vlad Matei" }]
 readme = "README.md"
-license = { text = "MIT" }
 requires-python = ">=3.9"
 dependencies = [
     "pandas>=2.2",
@@ -18,7 +17,8 @@ dependencies = [
     "requests>=2.31",
     "platformdirs>=4.2.0",
     "httpx>=0.28.1",
-    "respx>=0.22.0"
+    "respx>=0.22.0",
+    "pyarrow>=14.0.0,<18.0.0",  #  stable versions with wheels, had issues with latest
 ]
 
 
