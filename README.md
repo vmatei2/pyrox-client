@@ -13,19 +13,23 @@ pip install pyrox-client
 ## Quickstart
 
 ```commandline
-from pyrox import list_races, get_season, get_race
+import pyrox
 
-# 1) Discover races
-all_races = list_races()          # all seasons
-s6_races = list_races(season=6)     # season 6 only
+# Create client
+client = pyrox.PyroxClient()
 
-# 2) Multiple races from a season (concurrent)
-subset_s6 = get_season(season=6, locations=["london", "hamburg"])
+# Discover available races
+all_races = client.list_races()          
+s6_races = client.list_races(season=6)   
 
-# 3) Single race (optional filters)
-london_race = get_race(season=6, location="london")
-hamburg_race = get_race(season=6, location="hamburg", division="open", gender="m")
+# Get multiple races from a season
+subset_s6 = client.get_season(season=6, locations=["london", "hamburg"])
+
+# Get single races
+london_race = client.get_race(season=6, location="london")
+rott_race = client.get_race(season=6, location="rotterdam")
 ```
 
 All functions return a pandas DataFrame. 
+
 
