@@ -8,6 +8,7 @@ import json
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from os.path import split
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Union
 import pyrox.constants as _ct
@@ -16,6 +17,7 @@ import httpx
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+import pyarrow.dataset as ds
 from pyarrow import fs
 
 
@@ -142,7 +144,7 @@ class PyroxClient:
         self.prefer_s3 = prefer_s3
 
         #  Setup S3 filesystem
-        self.s3_fs = fs.S3FileSystem(region="eu-west-1", anonymous=True)
+        self.s3_fs = fs.S3FileSystem(region="eu-west-2", anonymous=True)
 
     def _http_client(self) -> httpx.Client:
         """Create HTTP client for API requests"""
@@ -211,37 +213,29 @@ class PyroxClient:
         """Get race data directly from S3 (faster for bulk queries)"""
 
         ### To-do -- this can/should use the maniefest to get the exact s3 path for my race!
-        #  Currently hits exception and defaults to the API
-        s3_path = f"s3://{self.s3_bucket}/processed/parquet/season={season}"
-
+        #  To get the path - let's first get it from the manifest (this will be cached on a subsequent retry)
+        manifest_df = self._get_manifest()
+        s3_path = manifest_df.loc[(manifest_df["location"] == location) & (manifest_df["season"] == season), "path"].iloc[0]
+        s3_path = self._normalise_s3_path(s3_path)
         try:
             # List files in the partition
-            file_info = self.s3_fs.get_file_info(fs.FileSelector(s3_path, recursive=True))
-            parquet_files = [f.path for f in file_info if f.path.endswith('.parquet')]
+            filter = None
+            if gender is not None:
+                expr = (ds.field("gender") == gender)
+                filter = expr if filter is None else (filter & expr)
+            if division is not None:
+                expr = (ds.field("division") == division)
+                filter = expr if filter is None else (filter & expr)
 
-            if not parquet_files:
-                raise RaceNotFound(f"No race data found for season={season}, location='{location}'")
+            #  Create the dataset -- PyArrow discovers the partitions
 
-            # Read all parquet files and combine
-            tables = []
-            for file_path in parquet_files:
-                # Use filters for efficient reading
-                filters = []
-                if gender:
-                    filters.append(('gender', '=', gender))
-                if division:
-                    filters.append(('division', '=', division))
-
-                table = pq.read_table(file_path, filesystem=self.s3_fs, filters=filters)
-                if len(table) > 0:  # Only add non-empty tables
-                    tables.append(table)
-
-            if not tables:
-                raise RaceNotFound(f"No data found matching filters")
-
-            # Combine and convert to pandas
-            combined_table = pa.concat_tables(tables)
-            return combined_table.to_pandas()
+            dataset = ds.dataset(s3_path, filesystem=self.s3_fs, format="parquet")
+            table = dataset.to_table(filter=filter, use_threads=True)
+            if table.num_rows == 0:
+                raise RaceNotFound(f"No race data found at path: {s3_path}, for season {season}, location: {location}")
+            #  split blocks - splits groups of columns of same dtype into contiguous numpy blocks --> mpre efficient memory layout in Pandas
+            #  self_destruct = True - lets Arrow free the original buffers immediately after conversion, saving memory
+            return table.to_pandas(split_blocks=True, self_destruct=True)
 
         except Exception as e:
             # Fall back to API if S3 access fails
@@ -377,6 +371,12 @@ class PyroxClient:
 
         return result
 
+    def _normalise_s3_path(self, path:str) -> str:
+        """Small helper function to bascially remove s3 prefix and return URL that is epxected for pyarrow retrieval"""
+        if path.startswith("s3://"):
+            return path[5:]  #  strip 's3://'
+        return path
+
     def clear_cache(self, pattern: str = "*"):
         """Clear local cache"""
         self.cache.clear(pattern)
@@ -396,5 +396,7 @@ class PyroxClient:
 
 
 if __name__ == '__main__':
-    client = PyroxClient()
-    client.get_race(season=5, location="london")
+    client = PyroxClient(prefer_s3=True)
+    client._get_manifest()
+    client.get_race(season=5, location="london", use_cache=False)
+    client.get_race(season=6, location="london", use_cache=False)
