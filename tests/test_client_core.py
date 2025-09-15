@@ -30,7 +30,7 @@ def test_list_races():
         {"season": 6, "location": "Cardiff", "path": "some_s3_path"}
     ]
     route = respx.get(f"{DEFAULT_API_URL}/v1/manifest").mock(return_value=httpx.Response(200, json=manifest_rows))
-    df = _client.list_races()
+    df = _client.list_races(force_refresh=True)
     assert route.called
 
     expected = (
