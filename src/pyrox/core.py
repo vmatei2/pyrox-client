@@ -241,8 +241,6 @@ class PyroxClient:
             # Fall back to API if S3 access fails
             if "No race data found" in str(e) or isinstance(e, RaceNotFound):
                 raise
-            # For other errors (permissions, network), fall back to API
-            return self._get_race_from_api(season, location, gender, division)
 
     def _get_race_from_api(
             self,
@@ -398,5 +396,5 @@ class PyroxClient:
 if __name__ == '__main__':
     client = PyroxClient(prefer_s3=True)
     client._get_manifest()
-    client.get_race(season=5, location="london", use_cache=False)
-    client.get_race(season=6, location="london", use_cache=False)
+
+
