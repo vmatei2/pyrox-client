@@ -13,6 +13,7 @@ __all__ = [
     "PyroxError",
     "ConfigError",
     "ManifestUnavailable",
+    "ApiError",
     "RaceNotFound",
     "ParquetReadError",
 ]
@@ -38,8 +39,13 @@ class ManifestUnavailable(PyroxError):
     Typical reasons:
       - Network/S3 access problems
       - File missing or not public
-      - CSV missing required columns (season, location, s3_key)
+      - CSV missing required columns (season, location, path)
     """
+    pass
+
+
+class ApiError(PyroxError):
+    """Raised when an HTTP call to the Pyrox API fails."""
     pass
 
 

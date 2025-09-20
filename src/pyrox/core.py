@@ -11,7 +11,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from os.path import split
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Union
+
 import pyrox.constants as _ct
+from pyrox.errors import ApiError, RaceNotFound
 
 import httpx
 import pandas as pd
@@ -27,9 +29,6 @@ DEFAULT_API_KEY = os.getenv("PYROX_API_KEY")
 DEFAULT_CACHE_DIR = Path.home() / ".cache" / "pyrox"
 DEFAULT_S3_BUCKET = "hyrox-results"
 #  DEFAULT_API_URL = "http://localhost:8000"  --> used for testing when running api in docker container
-class PyroxError(Exception): ...
-class ApiError(PyroxError): ...
-class RaceNotFound(PyroxError): ...
 
 
 class CacheManager:
@@ -332,7 +331,6 @@ class PyroxClient:
         if manifest.empty:
             raise RaceNotFound(f"No races found for season={season}")
 
-        # Parallel fetch
         def fetch_one(location: str) -> pd.DataFrame:
             return self.get_race(
                 season=season,
@@ -396,5 +394,3 @@ class PyroxClient:
 if __name__ == '__main__':
     client = PyroxClient(prefer_s3=True)
     client._get_manifest()
-
-

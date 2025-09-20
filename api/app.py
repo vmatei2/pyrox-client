@@ -20,7 +20,7 @@ from pyrox.config import _DEFAULT_BUCKET
 class Settings(BaseSettings):
     pyrox_bucket: str = os.getenv("PYROX_BUCKET", "s3://hyrox-results")
     api_key: Optional[str] = os.getenv("PYROX_API_KEY")
-    aws_region: str = os.getenv("AWS_REGION", "eu-west-1")
+    aws_region: str = os.getenv("AWS_REGION", "eu-west-2")
 
 
 @lru_cache
@@ -68,16 +68,11 @@ def _s3_uri_for(season: int, location: str, bucket: str) -> str:
         return key
     return f"s3://{bucket.rstrip('/')}/{key.lstrip('/')}"
 
-
-#   Schemas
-
 class ManifestRow(BaseModel):
     season: int
     location: str
     path: str
 
-
-#   FastAPI app
 
 app = FastAPI(title="pyrox API", version="1.0.0")
 
