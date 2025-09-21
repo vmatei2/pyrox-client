@@ -15,7 +15,7 @@ from pyrox.config import get_config
 from pyrox.manifest import load_manifest
 from pyrox.config import _DEFAULT_MANIFEST
 from pyrox.config import _DEFAULT_BUCKET
-from pyrox.constants import WORK_STATION_RENAMES
+from pyrox.constants import WORK_STATION_RENAMES, ONE_HOUR_IN_SECONDS, ONE_HOUR_IN_MINUTES
 
 
 class Settings(BaseSettings):
@@ -146,3 +146,57 @@ def get_race(season: int, location: str, sex: Optional[str] = Query(default=None
     return df.to_dicts()
 
 
+@app.get("/v1/race/{season}/{location}/stats")
+def get_race_stats(season: int,
+                   location: str,
+                   gender: Optional[str] = Query(default=None),
+                   division: Optional[str] = Query(default=None, description="Open / Pro"),
+                   settings: Settings = Depends(get_settings),
+                   _: None = Depends(check_api_key)):
+    """Simple race stats - both overall and by gender / division """
+    s3_uri = _s3_uri_for(season, location, settings.pyrox_bucket)
+    fs = s3fs.S3FileSystem(anon=True)
+
+    try:
+        ds = pyarrow_ds.dataset(s3_uri, filesystem=fs, format="parquet")
+        lf = pl.scan_pyarrow_dataset(ds)
+    except Exception as e:
+        raise HTTPException(502, detail=f"S3 read failed: {type(e).__name__} : {e}")
+
+    if gender: lf = lf.filter(pl.col("gender") == gender)
+    if division: lf = lf.filter(pl.col("division") == division)
+
+    str_time_col = "total_time"
+    converted_time_col = "time_in_seconds"
+    parts = pl.col(str_time_col).str.split(":")
+    n = parts.list.len()
+    sec = parts.list.get(-1).cast(pl.Float64)
+    minu = pl.when(n >= 2).then(parts.list.get(-2).cast(pl.Int64)).otherwise(0)
+    hour = pl.when(n >= 3).then(parts.list.get(-3).cast(pl.Int64)).otherwise(0)
+    lf = lf.with_columns((hour * ONE_HOUR_IN_SECONDS + minu * 60 + sec).alias(converted_time_col))
+    hours = (pl.col(converted_time_col).cast(pl.Float64) / ONE_HOUR_IN_MINUTES)
+
+    overall = (
+        lf.select([
+            hours.min().alias("fastest"),
+            hours.mean().alias("average"),
+            pl.len().alias("number_of_athletes"),
+        ])
+        .collect()
+        .to_dicts()[0]
+    )
+
+    groups = (
+        lf.group_by(["gender", "division"])
+        .agg([
+            pl.len().alias("number_of_athletes"),
+            hours.min().alias("fastest"),
+            hours.mean().alias("average"),
+        ])
+        .sort(["gender", "division"])
+        .collect()
+        .to_dicts()
+    )
+
+    res = {"race": {"season": season, "location": location}, "summary":overall, "groups": groups}
+    return res

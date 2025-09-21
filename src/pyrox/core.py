@@ -12,6 +12,8 @@ from os.path import split
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Union
 
+from fastapi import params
+
 import pyrox.constants as _ct
 from pyrox.errors import ApiError, RaceNotFound
 
@@ -265,6 +267,38 @@ class PyroxClient:
             rows = response.json()
             return pd.DataFrame(rows)
 
+    def get_race_stats(
+            self,
+            season: int,
+            location: str,
+            gender: Optional[str] = None,
+            division: Optional[str] = None) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """Get race statistics from API endpoint - 2 dataframes, one for overall, one for grouped results"""
+        params = {}
+        if gender:
+            params["gender"] = gender
+        if division:
+            params["division"] = division
+        ###  TO-DO -- implement caching here as well!
+        with self._http_client() as client:
+            response = client.get(f"/v1/race/{int(season)}/{location}/stats", params=params)
+
+            if response.status_code == 404:
+                raise RaceNotFound(f"No race found for season={season}, location='{location}'")
+            if response.status_code != 200:
+                raise ApiError(f"Race stats fetch failed: {response.status_code} {response.text}")
+
+            rows = response.json()
+            summary = pd.json_normalize(rows['summary'])
+            summary.insert(0, "season", rows['race']['season'])
+            summary.insert(1, "location", rows['race']['location'])
+
+            groups = pd.DataFrame(rows.get('groups', []))
+            if not groups.empty:
+                groups.insert(0, "season", rows['race']['season'])
+                groups.insert(1, "location", rows['race']['location'])
+            return summary, groups
+
     def get_race(
             self,
             season: int,
@@ -395,4 +429,6 @@ if __name__ == '__main__':
     client = PyroxClient(prefer_s3=True)
     mf = client._get_manifest()
     s3_races = client.list_races(season=3)
+    race_stats = client.get_race_stats(season=6, location="singapore")
+    race_stats = client.get_race_stats(season=7, location="london")
     breakhere = 0
