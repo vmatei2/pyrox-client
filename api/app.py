@@ -15,6 +15,7 @@ from pyrox.config import get_config
 from pyrox.manifest import load_manifest
 from pyrox.config import _DEFAULT_MANIFEST
 from pyrox.config import _DEFAULT_BUCKET
+from pyrox.constants import WORK_STATION_RENAMES
 
 
 class Settings(BaseSettings):
@@ -126,9 +127,7 @@ def get_race(season: int, location: str, sex: Optional[str] = Query(default=None
     :return:
     """
     s3_uri = _s3_uri_for(season, location, settings.pyrox_bucket)
-
     fs = s3fs.S3FileSystem(anon=True)
-
     try:
         ds = pyarrow_ds.dataset(s3_uri, filesystem=fs, format="parquet")
         lf = pl.scan_pyarrow_dataset(ds)
@@ -141,6 +140,9 @@ def get_race(season: int, location: str, sex: Optional[str] = Query(default=None
         print("hit division")
         print(division)
         lf = lf.filter(pl.col("division") == division)
-
     df = lf.collect()
+    #  before returning to client - convert station columns to their actual exercise name
+    df = df.rename(WORK_STATION_RENAMES)
     return df.to_dicts()
+
+

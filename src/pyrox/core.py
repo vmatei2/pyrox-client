@@ -393,4 +393,6 @@ class PyroxClient:
 
 if __name__ == '__main__':
     client = PyroxClient(prefer_s3=True)
-    client._get_manifest()
+    mf = client._get_manifest()
+    s3_races = client.list_races(season=3)
+    breakhere = 0
