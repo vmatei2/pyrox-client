@@ -1,7 +1,10 @@
 from dataclasses import dataclass
-from platformdirs import user_cache_dir
 from pathlib import Path
 import os
+
+from platformdirs import user_cache_dir
+
+from pyrox.errors import ConfigError
 
 APP_NAME = "pyrox"
 APP_AUTHOR = "pyrox"
@@ -18,8 +21,13 @@ class PyroxConfig:
 _config = PyroxConfig()
 
 
-def set_bucket(uri:str) -> None:
-    _config.bucket = uri.rsplit("/")
+def set_bucket(uri: str) -> None:
+    """Configure the S3 bucket used for manifest/data lookups."""
+    if not uri or not uri.strip():
+        raise ConfigError("Bucket URI must be a non-empty string")
+
+    cleaned = uri.strip().rstrip("/")
+    _config.bucket = cleaned
 
 def set_manifest_path(path: str) -> None:
     _config.manifest_path = path

@@ -8,14 +8,20 @@ import json
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from os.path import split
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional, Union, Tuple
+
+from fastapi import params
+
 import pyrox.constants as _ct
+from pyrox.errors import ApiError, RaceNotFound
 
 import httpx
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
+import pyarrow.dataset as ds
 from pyarrow import fs
 
 
@@ -25,9 +31,6 @@ DEFAULT_API_KEY = os.getenv("PYROX_API_KEY")
 DEFAULT_CACHE_DIR = Path.home() / ".cache" / "pyrox"
 DEFAULT_S3_BUCKET = "hyrox-results"
 #  DEFAULT_API_URL = "http://localhost:8000"  --> used for testing when running api in docker container
-class PyroxError(Exception): ...
-class ApiError(PyroxError): ...
-class RaceNotFound(PyroxError): ...
 
 
 class CacheManager:
@@ -142,7 +145,7 @@ class PyroxClient:
         self.prefer_s3 = prefer_s3
 
         #  Setup S3 filesystem
-        self.s3_fs = fs.S3FileSystem(region="eu-west-1", anonymous=True)
+        self.s3_fs = fs.S3FileSystem(region="eu-west-2", anonymous=True)
 
     def _http_client(self) -> httpx.Client:
         """Create HTTP client for API requests"""
@@ -211,44 +214,34 @@ class PyroxClient:
         """Get race data directly from S3 (faster for bulk queries)"""
 
         ### To-do -- this can/should use the maniefest to get the exact s3 path for my race!
-        #  Currently hits exception and defaults to the API
-        s3_path = f"s3://{self.s3_bucket}/processed/parquet/season={season}"
-
+        #  To get the path - let's first get it from the manifest (this will be cached on a subsequent retry)
+        manifest_df = self._get_manifest()
+        s3_path = manifest_df.loc[(manifest_df["location"] == location) & (manifest_df["season"] == season), "path"].iloc[0]
+        s3_path = self._normalise_s3_path(s3_path)
         try:
             # List files in the partition
-            file_info = self.s3_fs.get_file_info(fs.FileSelector(s3_path, recursive=True))
-            parquet_files = [f.path for f in file_info if f.path.endswith('.parquet')]
+            filter = None
+            if gender is not None:
+                expr = (ds.field("gender") == gender)
+                filter = expr if filter is None else (filter & expr)
+            if division is not None:
+                expr = (ds.field("division") == division)
+                filter = expr if filter is None else (filter & expr)
 
-            if not parquet_files:
-                raise RaceNotFound(f"No race data found for season={season}, location='{location}'")
+            #  Create the dataset -- PyArrow discovers the partitions
 
-            # Read all parquet files and combine
-            tables = []
-            for file_path in parquet_files:
-                # Use filters for efficient reading
-                filters = []
-                if gender:
-                    filters.append(('gender', '=', gender))
-                if division:
-                    filters.append(('division', '=', division))
-
-                table = pq.read_table(file_path, filesystem=self.s3_fs, filters=filters)
-                if len(table) > 0:  # Only add non-empty tables
-                    tables.append(table)
-
-            if not tables:
-                raise RaceNotFound(f"No data found matching filters")
-
-            # Combine and convert to pandas
-            combined_table = pa.concat_tables(tables)
-            return combined_table.to_pandas()
+            dataset = ds.dataset(s3_path, filesystem=self.s3_fs, format="parquet")
+            table = dataset.to_table(filter=filter, use_threads=True)
+            if table.num_rows == 0:
+                raise RaceNotFound(f"No race data found at path: {s3_path}, for season {season}, location: {location}")
+            #  split blocks - splits groups of columns of same dtype into contiguous numpy blocks --> mpre efficient memory layout in Pandas
+            #  self_destruct = True - lets Arrow free the original buffers immediately after conversion, saving memory
+            return table.to_pandas(split_blocks=True, self_destruct=True)
 
         except Exception as e:
             # Fall back to API if S3 access fails
             if "No race data found" in str(e) or isinstance(e, RaceNotFound):
                 raise
-            # For other errors (permissions, network), fall back to API
-            return self._get_race_from_api(season, location, gender, division)
 
     def _get_race_from_api(
             self,
@@ -273,6 +266,56 @@ class PyroxClient:
 
             rows = response.json()
             return pd.DataFrame(rows)
+
+    def get_race_stats(
+            self,
+            season: int,
+            location: str,
+            gender: Optional[str] = None,
+            division: Optional[str] = None,
+            use_cache: bool = True,
+            ttl_seconds: int = 72000) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """Get race statistics from cache or API endpoint - 2 dataframes, one for overall, one for grouped results"""
+        if gender is None:
+            cache_gender_notation = "all"
+        if division is None:
+            cache_division_notation = "all"
+        cache_key = f"stats_v_{season}_{location}_{cache_gender_notation}_{cache_division_notation}"
+        if use_cache and self.cache.is_fresh(cache_key, ttl_seconds=ttl_seconds):
+            cache = self.cache.load(cache_key)
+            return cache.get("summary_df", pd.DataFrame()), cache.get("groups_df", pd.DataFrame())
+
+        #  if missing from Cache - query the API
+        summary_df, groups_df = self._get_race_from_s3(season, location, gender, division)
+        # save to cache
+        self.cache.store(cache_key, {"summary_df": summary_df, "groups_df": groups_df})
+        return summary_df, groups_df
+
+
+    def _get_race_stats_from_api(self, season: int, location: str, gender: Optional[str] = None, division: Optional[str] = None) -> Tuple[pd.DataFrame:, pd.DataFrame]:
+        """"Get race statistics from API endpoint"""
+        params = {}
+        if gender:
+            params["gender"] = gender
+        if division:
+            params["division"] = division
+
+        with self._http_client() as client:
+            resp = client.get(f"/v1/race/{int(season)}/{location}/stats", params=params)
+            if resp.status_code == 404:
+                raise RaceNotFound(f"No race found for season={season}, location={location}")
+            if resp.status_code != 200:
+                raise ApiError(f"Race stats fetch failed: {resp.status_code} {resp.text}")
+            rows = resp.json()
+        summary = pd.json_normalize(rows['summary'])
+        summary.insert(0, "season", rows['race']['season'])
+        summary.insert(1, "location", rows['race']['location'])
+
+        groups = pd.DataFrame(rows.get('groups', []))
+        if not groups.empty:
+            groups.insert(0, "season", rows['race']['season'])
+            groups.insert(1, "location", rows['race']['location'])
+        return summary, groups
 
     def get_race(
             self,
@@ -340,7 +383,6 @@ class PyroxClient:
         if manifest.empty:
             raise RaceNotFound(f"No races found for season={season}")
 
-        # Parallel fetch
         def fetch_one(location: str) -> pd.DataFrame:
             return self.get_race(
                 season=season,
@@ -377,6 +419,12 @@ class PyroxClient:
 
         return result
 
+    def _normalise_s3_path(self, path:str) -> str:
+        """Small helper function to bascially remove s3 prefix and return URL that is epxected for pyarrow retrieval"""
+        if path.startswith("s3://"):
+            return path[5:]  #  strip 's3://'
+        return path
+
     def clear_cache(self, pattern: str = "*"):
         """Clear local cache"""
         self.cache.clear(pattern)
@@ -396,5 +444,9 @@ class PyroxClient:
 
 
 if __name__ == '__main__':
-    client = PyroxClient()
-    client.get_race(season=5, location="london")
+    client = PyroxClient(prefer_s3=True)
+    mf = client._get_manifest()
+    s3_races = client.list_races(season=3)
+    race_stats = client.get_race_stats(season=6, location="singapore")
+    race_stats = client.get_race_stats(season=7, location="london")
+    print(race_stats)

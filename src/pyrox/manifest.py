@@ -84,7 +84,7 @@ def _head_s3(path: str) -> dict:
 def load_manifest(refresh: bool = True) -> pd.DataFrame:
     """
     Load the manifest CSV as a pandas DataFrame with required columns:
-      ['season', 'location', 's3_key']
+      ['season', 'location', 'path']
 
     Caching strategy
     ----------------
@@ -152,14 +152,21 @@ def load_manifest(refresh: bool = True) -> pd.DataFrame:
             meta_file.write_text(current_etag)
 
         # Basic schema checks
-        for col in ("season", "location", "s3_key"):
+        required_base = ("season", "location")
+        for col in required_base:
             if col not in df.columns:
                 raise ManifestUnavailable(f"Manifest missing required column: {col}")
+
+        if "path" not in df.columns:
+            if "s3_key" in df.columns:
+                df = df.rename(columns={"s3_key": "path"})
+            else:
+                raise ManifestUnavailable("Manifest missing required column: path")
 
         # Normalize dtypes; keeps downstream filters predictable
         df["season"] = df["season"].astype(int)
         df["location"] = df["location"].astype(str)
-        df["s3_key"] = df["s3_key"].astype(str)
+        df["path"] = df["path"].astype(str)
 
         return df
 
@@ -171,5 +178,4 @@ def load_manifest(refresh: bool = True) -> pd.DataFrame:
                 pass
         # No working cache → bail with a clear error
         raise ManifestUnavailable(f"Could not load manifest from {s3_manifest_uri}: {e}")
-
 
