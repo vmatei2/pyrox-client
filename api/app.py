@@ -15,7 +15,7 @@ from pyrox.config import get_config
 from pyrox.manifest import load_manifest
 from pyrox.config import _DEFAULT_MANIFEST
 from pyrox.config import _DEFAULT_BUCKET
-from pyrox.constants import WORK_STATION_RENAMES, ONE_HOUR_IN_SECONDS, ONE_HOUR_IN_MINUTES
+from pyrox.constants import ONE_HOUR_IN_SECONDS, ONE_HOUR_IN_MINUTES
 
 
 class Settings(BaseSettings):
@@ -137,12 +137,8 @@ def get_race(season: int, location: str, sex: Optional[str] = Query(default=None
     if sex:
         lf = lf.filter(pl.col("sex") == sex)
     if division:
-        print("hit division")
-        print(division)
         lf = lf.filter(pl.col("division") == division)
     df = lf.collect()
-    #  before returning to client - convert station columns to their actual exercise name
-    df = df.rename(WORK_STATION_RENAMES)
     return df.to_dicts()
 
 
