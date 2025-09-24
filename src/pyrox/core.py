@@ -10,7 +10,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from os.path import split
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional, Union, Tuple
 
 from fastapi import params
 
@@ -272,32 +272,50 @@ class PyroxClient:
             season: int,
             location: str,
             gender: Optional[str] = None,
-            division: Optional[str] = None) -> tuple[pd.DataFrame, pd.DataFrame]:
-        """Get race statistics from API endpoint - 2 dataframes, one for overall, one for grouped results"""
+            division: Optional[str] = None,
+            use_cache: bool = True,
+            ttl_seconds: int = 72000) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """Get race statistics from cache or API endpoint - 2 dataframes, one for overall, one for grouped results"""
+        if gender is None:
+            cache_gender_notation = "all"
+        if division is None:
+            cache_division_notation = "all"
+        cache_key = f"stats_v_{season}_{location}_{cache_gender_notation}_{cache_division_notation}"
+        if use_cache and self.cache.is_fresh(cache_key, ttl_seconds=ttl_seconds):
+            cache = self.cache.load(cache_key)
+            return cache.get("summary_df", pd.DataFrame()), cache.get("groups_df", pd.DataFrame())
+
+        #  if missing from Cache - query the API
+        summary_df, groups_df = self._get_race_from_s3(season, location, gender, division)
+        # save to cache
+        self.cache.store(cache_key, {"summary_df": summary_df, "groups_df": groups_df})
+        return summary_df, groups_df
+
+
+    def _get_race_stats_from_api(self, season: int, location: str, gender: Optional[str] = None, division: Optional[str] = None) -> Tuple[pd.DataFrame:, pd.DataFrame]:
+        """"Get race statistics from API endpoint"""
         params = {}
         if gender:
             params["gender"] = gender
         if division:
             params["division"] = division
-        ###  TO-DO -- implement caching here as well!
+
         with self._http_client() as client:
-            response = client.get(f"/v1/race/{int(season)}/{location}/stats", params=params)
+            resp = client.get(f"/v1/race/{int(season)}/{location}/stats", params=params)
+            if resp.status_code == 404:
+                raise RaceNotFound(f"No race found for season={season}, location={location}")
+            if resp.status_code != 200:
+                raise ApiError(f"Race stats fetch failed: {resp.status_code} {resp.text}")
+            rows = resp.json()
+        summary = pd.json_normalize(rows['summary'])
+        summary.insert(0, "season", rows['race']['season'])
+        summary.insert(1, "location", rows['race']['location'])
 
-            if response.status_code == 404:
-                raise RaceNotFound(f"No race found for season={season}, location='{location}'")
-            if response.status_code != 200:
-                raise ApiError(f"Race stats fetch failed: {response.status_code} {response.text}")
-
-            rows = response.json()
-            summary = pd.json_normalize(rows['summary'])
-            summary.insert(0, "season", rows['race']['season'])
-            summary.insert(1, "location", rows['race']['location'])
-
-            groups = pd.DataFrame(rows.get('groups', []))
-            if not groups.empty:
-                groups.insert(0, "season", rows['race']['season'])
-                groups.insert(1, "location", rows['race']['location'])
-            return summary, groups
+        groups = pd.DataFrame(rows.get('groups', []))
+        if not groups.empty:
+            groups.insert(0, "season", rows['race']['season'])
+            groups.insert(1, "location", rows['race']['location'])
+        return summary, groups
 
     def get_race(
             self,
@@ -431,4 +449,4 @@ if __name__ == '__main__':
     s3_races = client.list_races(season=3)
     race_stats = client.get_race_stats(season=6, location="singapore")
     race_stats = client.get_race_stats(season=7, location="london")
-    breakhere = 0
+    print(race_stats)
