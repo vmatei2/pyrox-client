@@ -12,8 +12,6 @@ from os.path import split
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Union, Tuple
 
-from fastapi import params
-
 import pyrox.constants as _ct
 from pyrox.errors import ApiError, RaceNotFound
 
@@ -23,7 +21,9 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pyarrow.dataset as ds
 from pyarrow import fs
-
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
 
 # Configuration
 DEFAULT_API_URL = "https://pyrox-api-proud-surf-3131.fly.dev"
@@ -188,8 +188,8 @@ class PyroxClient:
             df = pd.DataFrame(rows)
 
             etag = response.headers.get('etag')
-            self.cache.store(cache_key, df, etag)
 
+            self.cache.store(cache_key, df, etag)
             return df
 
     def list_races(self, season: Optional[int] = None, force_refresh: bool = False) -> pd.DataFrame:
@@ -212,9 +212,6 @@ class PyroxClient:
             division: Optional[str] = None
     ) -> pd.DataFrame:
         """Get race data directly from S3 (faster for bulk queries)"""
-
-        ### To-do -- this can/should use the maniefest to get the exact s3 path for my race!
-        #  To get the path - let's first get it from the manifest (this will be cached on a subsequent retry)
         manifest_df = self._get_manifest()
         s3_path = manifest_df.loc[(manifest_df["location"] == location) & (manifest_df["season"] == season), "path"].iloc[0]
         s3_path = self._normalise_s3_path(s3_path)
@@ -276,23 +273,28 @@ class PyroxClient:
             use_cache: bool = True,
             ttl_seconds: int = 72000) -> tuple[pd.DataFrame, pd.DataFrame]:
         """Get race statistics from cache or API endpoint - 2 dataframes, one for overall, one for grouped results"""
-        if gender is None:
-            cache_gender_notation = "all"
-        if division is None:
-            cache_division_notation = "all"
-        cache_key = f"stats_v_{season}_{location}_{cache_gender_notation}_{cache_division_notation}"
-        if use_cache and self.cache.is_fresh(cache_key, ttl_seconds=ttl_seconds):
-            cache = self.cache.load(cache_key)
-            return cache.get("summary_df", pd.DataFrame()), cache.get("groups_df", pd.DataFrame())
+        loc_key = (location or "").lower()
+        gkey = (gender or "all").lower()
+        dkey = (division or "all").lower()
 
-        #  if missing from Cache - query the API
-        summary_df, groups_df = self._get_race_from_s3(season, location, gender, division)
-        # save to cache
-        self.cache.store(cache_key, {"summary_df": summary_df, "groups_df": groups_df})
+        # two separate cache entries to keep CacheManager simple
+        cache_key_summary = f"stats_summary_v1_{season}_{loc_key}_{gkey}_{dkey}"
+        cache_key_groups  = f"stats_groups_v1_{season}_{loc_key}_{gkey}_{dkey}"
+
+        if use_cache and self.cache.is_fresh(cache_key_summary, ttl_seconds) and self.cache.is_fresh(cache_key_groups, ttl_seconds):
+            s = self.cache.load(cache_key_summary)
+            g = self.cache.load(cache_key_groups)
+            if s is not None and g is not None:
+                return s, g
+        # fetch from API (stats are not the same as full race rows)
+        summary_df, groups_df = self._get_race_stats_from_api(season, location, gender, division)
+        if use_cache:
+            self.cache.store(cache_key_summary, summary_df)
+            self.cache.store(cache_key_groups,  groups_df)
+
         return summary_df, groups_df
 
-
-    def _get_race_stats_from_api(self, season: int, location: str, gender: Optional[str] = None, division: Optional[str] = None) -> Tuple[pd.DataFrame:, pd.DataFrame]:
+    def _get_race_stats_from_api(self, season: int, location: str, gender: Optional[str] = None, division: Optional[str] = None) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """"Get race statistics from API endpoint"""
         params = {}
         if gender:
@@ -346,10 +348,19 @@ class PyroxClient:
         else:
             df = self._get_race_from_api(season, location, gender, division)
 
+        #  before returning-convert station columns to their actual exercise name
+        df = df.rename(columns=_ct.WORK_STATION_RENAMES)
+
+        TIME_COLS = list(_ct.WORK_STATION_RENAMES.values()) + [
+            "total_time", "work_time", "roxzone_time", "run_time"
+        ]
+
+        for c in TIME_COLS:
+            if c in df.columns:
+                df[c] = mmss_to_minutes(df[c])  # seconds as float; NaNs stay NaN
         # Cache the result
         if use_cache:
             self.cache.store(cache_key, df)
-
         return df
 
     def get_season(
@@ -443,10 +454,10 @@ class PyroxClient:
         }
 
 
-if __name__ == '__main__':
-    client = PyroxClient(prefer_s3=True)
-    mf = client._get_manifest()
-    s3_races = client.list_races(season=3)
-    race_stats = client.get_race_stats(season=6, location="singapore")
-    race_stats = client.get_race_stats(season=7, location="london")
-    print(race_stats)
+####    HELPERS     ######
+#### To move to separate file (potentially class) as they grow
+def mmss_to_minutes(s: pd.Series) -> pd.Series:
+    s = s.astype(str).str.strip()
+    # if it's MM:SS, promote to 0:MM:SS so pandas parses it
+    s = s.where(s.str.count(":") == 2, "0:" + s)
+    return pd.to_timedelta(s, errors="coerce").dt.total_seconds() / 60.0
