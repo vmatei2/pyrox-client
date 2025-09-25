@@ -9,9 +9,6 @@ import pandas as pd
 
 from pyrox.config import get_config
 from pyrox.errors import ManifestUnavailable
-import logging
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
 def _s3_open(path: str, mode: str = "rb", anon: bool = True):
     """
@@ -123,8 +120,6 @@ def load_manifest(refresh: bool = True) -> pd.DataFrame:
             current_etag = info.get("ETag")
         except Exception as e:
             # HEAD can fail (e.g., transient network); we'll fall back to cache or GET.
-
-            logger.info(f"Have not been able to retrieve head_s3 from the manifest uri: {s3_manifest_uri}. Encountered exception: {e}. Setting etag as none and looking for cache.")
             current_etag = None
 
     # 2) If we have a cached file and either:

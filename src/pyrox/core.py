@@ -126,11 +126,9 @@ class CacheManager:
 class PyroxClient:
     def __init__(
             self,
-            cache_dir: Optional[Path] = None,
-            prefer_cdn: bool = True,
+            cache_dir: Optional[Path] = None
     ):
         self.cache = CacheManager(cache_dir or DEFAULT_CACHE_DIR)
-        self.prefer_cdn = prefer_cdn
 
 
 
