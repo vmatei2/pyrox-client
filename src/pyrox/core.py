@@ -202,66 +202,6 @@ class PyroxClient:
                 .sort_values(["season", "location"])
                 .reset_index(drop=True))
 
-    def _get_race_from_s3(
-            self,
-            season: int,
-            location: str,
-            gender: Optional[str] = None,
-            division: Optional[str] = None
-    ) -> pd.DataFrame:
-        """Get race data directly from S3 (faster for bulk queries)"""
-        manifest_df = self._get_manifest()
-        s3_path = manifest_df.loc[(manifest_df["location"] == location) & (manifest_df["season"] == season), "path"].iloc[0]
-        s3_path = self._normalise_s3_path(s3_path)
-        try:
-            # List files in the partition
-            filter = None
-            if gender is not None:
-                expr = (ds.field("gender") == gender)
-                filter = expr if filter is None else (filter & expr)
-            if division is not None:
-                expr = (ds.field("division") == division)
-                filter = expr if filter is None else (filter & expr)
-
-            #  Create the dataset -- PyArrow discovers the partitions
-
-            dataset = ds.dataset(s3_path, filesystem=self.s3_fs, format="parquet")
-            table = dataset.to_table(filter=filter, use_threads=True)
-            if table.num_rows == 0:
-                raise RaceNotFound(f"No race data found at path: {s3_path}, for season {season}, location: {location}")
-            #  split blocks - splits groups of columns of same dtype into contiguous numpy blocks --> mpre efficient memory layout in Pandas
-            #  self_destruct = True - lets Arrow free the original buffers immediately after conversion, saving memory
-            return table.to_pandas(split_blocks=True, self_destruct=True)
-
-        except Exception as e:
-            # Fall back to API if S3 access fails
-            if "No race data found" in str(e) or isinstance(e, RaceNotFound):
-                raise
-
-    def _get_race_from_api(
-            self,
-            season: int,
-            location: str,
-            gender: Optional[str] = None,
-            division: Optional[str] = None
-    ) -> pd.DataFrame:
-        params = {}
-        if gender:
-            params["gender"] = gender
-        if division:
-            params["division"] = division
-
-        with self._http_client() as client:
-            response = client.get(f"/v1/race/{int(season)}/{location}", params=params)
-
-            if response.status_code == 404:
-                raise RaceNotFound(f"No race found for season={season}, location='{location}'")
-            if response.status_code != 200:
-                raise ApiError(f"Race fetch failed: {response.status_code} {response.text}")
-
-            rows = response.json()
-            return pd.DataFrame(rows)
-
     def _manifest_row(self, season: int, location: str) -> pd.Series:
         df = self._get_manifest()
         mask = (df["season"] == int(season)) & (df["location"].str.casefold() == location.casefold())
@@ -325,14 +265,10 @@ class PyroxClient:
             if cached is not None:
                 return cached
 
-        # Choose data source
-        if self.prefer_cdn:
-            try:
-                df = self._get_race_from_cdn(season, location, gender, division)
-            except (RaceNotFound, FileNotFoundError):
-                df = self._get_race_from_api(season, location, gender, division)
-        else:
-            df = self._get_race_from_api(season, location, gender, division)
+        try:
+            df = self._get_race_from_cdn(season, location, gender, division)
+        except (RaceNotFound, FileNotFoundError) as e:
+            raise FileNotFoundError(f"Read failed for season{season}, location={location} - {e}") from e
 
         #  before returning-convert station columns to their actual exercise name
         df = df.rename(columns=_ct.WORK_STATION_RENAMES)
