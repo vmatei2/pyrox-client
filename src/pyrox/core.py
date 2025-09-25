@@ -1,5 +1,5 @@
 """
-PYROX Client - Hybrid S3 + API Data Access
+PYROX Client - retrieve Hyrox race results programatically
 """
 
 from __future__ import annotations
@@ -133,15 +133,6 @@ class PyroxClient:
         self.prefer_cdn = prefer_cdn
 
 
-    def _http_client(self) -> httpx.Client:
-        """Create HTTP client for API requests"""
-        headers = {}
-        return httpx.Client(
-            base_url=self.api_url,
-            headers=headers,
-            timeout=30,
-            follow_redirects=True
-        )
 
     def _join_cdn(self, *parts: str) -> str:
         """https://d2wl4b7sx66tfb.cloudfront.net/processed/manifest/manifest.json"""
@@ -242,7 +233,7 @@ class PyroxClient:
             use_cache: bool = True
     ) -> pd.DataFrame:
         """
-        Function that either gets from cache or API or S3
+        Function that either gets from cache or CDN
         """
         # Create cache key
         cache_key = f"race_{season}_{location}_{gender or 'all'}_{division or 'all'}"

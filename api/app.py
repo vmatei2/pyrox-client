@@ -19,7 +19,7 @@ from pyrox.constants import ONE_HOUR_IN_SECONDS, ONE_HOUR_IN_MINUTES
 
 
 class Settings(BaseSettings):
-    pyrox_bucket: str = os.getenv("PYROX_BUCKET", "s3://hyrox-results")
+    pyrox_bucket: str = os.getenv("PYROX_BUCKET", "")
     api_key: Optional[str] = os.getenv("PYROX_API_KEY")
     aws_region: str = os.getenv("AWS_REGION", "eu-west-2")
 

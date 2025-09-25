@@ -1,4 +1,9 @@
-Python client to retrieve Hyrox race data as pandas DataFrames.
+Unofficial Python client to retrieve Hyrox race results data as pandas DataFrames.
+
+- The data served has been retrieved from Hyrox's official results website.
+- Currently serving historical data from seasons 2-7.
+- Going forward, more complex stats can be done on server side and directly returned to client (average / distributions) so users can get those returned directly instead of retrieving all race data with minimal filtering
+- Filtering options to be expanded (i.e. get race where total overall time is sub 60 mins / get race where wall ball time is sub 5 mins etc.)
 
 ## Install
 
@@ -37,14 +42,29 @@ london_male = client.get_race(season=6, location="london", gender="male")
 
 ## Methods
 
-- list_races(season: int | None = None) -> pd.DataFrame 
-- get_race(season: int, location: str, *, sex: str | None = None, division: str | None = None) -> pd.DataFrame 
-- get_season(season: int, locations: list[str] | None = None) -> pd.DataFrame 
-- get_race_stats(season: int, location: str) -> tuple[pd.DataFrame, pd.DataFrame] 
+- list_races(season: int | None = None) -> pd.DataFrame
+  - Return a dataframe with columns (season, location), which can then inform location names to pass down in the get_race() function
   
+```   
+#  example output
+client = PyroxClient()
+print(client.list_races(season=5).head(3))
+   season   location
+0       5  amsterdam
+1       5    anaheim
+2       5  barcelona
+```
+- get_race(season: int, location: str, gender: str | None = None, division: str | None = None) -> pd.DataFrame 
+  - Simply returns the specified race - gender (male / female / mixed) and division (open/pro) filtering available
+- get_season(season: int, locations: list[str] | None = None) -> pd.DataFrame 
+  - return all races, or a subset (if locations list passed down) for a specified season
 
 
-##  Example script showing comparison of an athlete's performance over 2 races against the average values in the race
+###  Example script showing comparison of an athlete's performance over 2 races against the average values in the race
+
+- Below script expects matplotlib / numpy / seaborn to be available on top of pyrox
+  - They can all be installed using similar 'pip install / uv pip install' as above
+
 ```commandline
 import pandas as pd
 import numpy as np
@@ -136,6 +156,6 @@ plt.show()
 
 
 ## Output 
-![img.png](img.png)
-![img_1.png](img_1.png)
+![img.png](https://github.com/vmatei2/pyrox-client/blob/main/img.png)
 
+![img_1.png](https://github.com/vmatei2/pyrox-client/blob/main/img_1.png)
