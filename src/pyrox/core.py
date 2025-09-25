@@ -8,25 +8,21 @@ import json
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from os.path import split
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Union, Tuple
+from typing import Any, Dict, Iterable, List, Optional
 import io
 
 import pyrox.constants as _ct
-from pyrox.errors import ApiError, RaceNotFound
+from pyrox.errors import RaceNotFound
 
 import httpx
 import pandas as pd
 import pyarrow.parquet as pq
-import pyarrow.dataset as ds
 import fsspec
-
-# Configuration
-DEFAULT_API_URL = "https://pyrox-api-proud-surf-3131.fly.dev"
-DEFAULT_API_KEY = os.getenv("PYROX_API_KEY")
+import logging
+logger = logging.getLogger("pyrox")
+logger.addHandler(logging.NullHandler())  # prevent “No handler” warnings
 DEFAULT_CACHE_DIR = Path.home() / ".cache" / "pyrox"
-DEFAULT_S3_BUCKET = "hyrox-results"
 DEFAULT_CDN_BASE = "https://d2wl4b7sx66tfb.cloudfront.net"  #  hit this for getting data via CCDN
 #  DEFAULT_API_URL = "http://localhost:8000"  --> used for testing when running api in docker container
 
@@ -130,24 +126,16 @@ class CacheManager:
 class PyroxClient:
     def __init__(
             self,
-            api_url: str = DEFAULT_API_URL,
-            api_key: Optional[str] = DEFAULT_API_KEY,
             cache_dir: Optional[Path] = None,
-            s3_bucket: str = DEFAULT_S3_BUCKET,
             prefer_cdn: bool = True,
     ):
-        self.api_url = api_url
-        self.api_key = api_key
         self.cache = CacheManager(cache_dir or DEFAULT_CACHE_DIR)
-        self.s3_bucket = s3_bucket
         self.prefer_cdn = prefer_cdn
 
 
     def _http_client(self) -> httpx.Client:
         """Create HTTP client for API requests"""
         headers = {}
-        if self.api_key:
-            headers["Authorization"] = f"Bearer {self.api_key}"
         return httpx.Client(
             base_url=self.api_url,
             headers=headers,
@@ -262,7 +250,9 @@ class PyroxClient:
         # Try cache first
         if use_cache and self.cache.is_fresh(cache_key, ttl_seconds=7200):  # 2 hour TTL
             cached = self.cache.load(cache_key)
+            logger.info(f"Using cached race {cache_key} and retrieing from cache")
             if cached is not None:
+                logger.info(f"Found race - serving cache")
                 return cached
 
         try:
@@ -283,6 +273,7 @@ class PyroxClient:
 
         # Cache the result
         if use_cache:
+            logger.info(f"Saving to cached race {cache_key}")
             self.cache.store(cache_key, df)
         return df
 
@@ -376,7 +367,6 @@ class PyroxClient:
             "items": list(self.cache.metadata.keys())
         }
 
-
 ####    HELPERS     ######
 #### To move to separate file (potentially class) as they grow
 def mmss_to_minutes(s: pd.Series) -> pd.Series:
@@ -384,14 +374,4 @@ def mmss_to_minutes(s: pd.Series) -> pd.Series:
     # if it's MM:SS, promote to 0:MM:SS so pandas parses it
     s = s.where(s.str.count(":") == 2, "0:" + s)
     return pd.to_timedelta(s, errors="coerce").dt.total_seconds() / 60.0
-
-
-if __name__ == '__main__':
-
-    client = PyroxClient()
-    df = client.get_race(season=6, location=("london"), use_cache=False)
-    df = client.get_race(season=6, location=("rotterdam"), use_cache=False)
-    races = client.list_races(season=7)
-    print(f"Have retrieved race - this many entries: {len(df)}")
-    print(f"found races: {races}")
 
