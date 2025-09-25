@@ -12,6 +12,7 @@ from os.path import split
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Union, Tuple
 import io
+
 import pyrox.constants as _ct
 from pyrox.errors import ApiError, RaceNotFound
 
@@ -20,6 +21,7 @@ import pandas as pd
 import pyarrow.parquet as pq
 import pyarrow.dataset as ds
 import fsspec
+
 # Configuration
 DEFAULT_API_URL = "https://pyrox-api-proud-surf-3131.fly.dev"
 DEFAULT_API_KEY = os.getenv("PYROX_API_KEY")
@@ -180,12 +182,11 @@ class PyroxClient:
                 cached = self.cache.load(cache_key)
                 if cached is not None:
                     return cached
-
             resp.raise_for_status()
             # now need to convert the csv answer returned to pandas df
             df = pd.read_csv(io.BytesIO(resp.content))
             etag = resp.headers.get("etag")
-            # store DataFrame with ETag
+
             self.cache.store(cache_key, df, etag)
             return df
 
@@ -343,6 +344,7 @@ class PyroxClient:
         for c in TIME_COLS:
             if c in df.columns:
                 df[c] = mmss_to_minutes(df[c])
+
         # Cache the result
         if use_cache:
             self.cache.store(cache_key, df)
@@ -456,4 +458,4 @@ if __name__ == '__main__':
     races = client.list_races(season=7)
     print(f"Have retrieved race - this many entries: {len(df)}")
     print(f"found races: {races}")
-    breakhere = 0
+
