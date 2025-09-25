@@ -11,25 +11,21 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from os.path import split
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Union, Tuple
-
+import io
 import pyrox.constants as _ct
 from pyrox.errors import ApiError, RaceNotFound
 
 import httpx
 import pandas as pd
-import pyarrow as pa
 import pyarrow.parquet as pq
 import pyarrow.dataset as ds
-from pyarrow import fs
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
-
+import fsspec
 # Configuration
 DEFAULT_API_URL = "https://pyrox-api-proud-surf-3131.fly.dev"
 DEFAULT_API_KEY = os.getenv("PYROX_API_KEY")
 DEFAULT_CACHE_DIR = Path.home() / ".cache" / "pyrox"
 DEFAULT_S3_BUCKET = "hyrox-results"
+DEFAULT_CDN_BASE = "https://d2wl4b7sx66tfb.cloudfront.net"  #  hit this for getting data via CCDN
 #  DEFAULT_API_URL = "http://localhost:8000"  --> used for testing when running api in docker container
 
 
@@ -136,16 +132,14 @@ class PyroxClient:
             api_key: Optional[str] = DEFAULT_API_KEY,
             cache_dir: Optional[Path] = None,
             s3_bucket: str = DEFAULT_S3_BUCKET,
-            prefer_s3: bool = True  #  Default to S3 for the bulk of the data
+            prefer_cdn: bool = True,
     ):
         self.api_url = api_url
         self.api_key = api_key
         self.cache = CacheManager(cache_dir or DEFAULT_CACHE_DIR)
         self.s3_bucket = s3_bucket
-        self.prefer_s3 = prefer_s3
+        self.prefer_cdn = prefer_cdn
 
-        #  Setup S3 filesystem
-        self.s3_fs = fs.S3FileSystem(region="eu-west-2", anonymous=True)
 
     def _http_client(self) -> httpx.Client:
         """Create HTTP client for API requests"""
@@ -159,36 +153,39 @@ class PyroxClient:
             follow_redirects=True
         )
 
-    def _get_manifest(self, force_refresh: bool = False) -> pd.DataFrame:
-        """Get race manifest (cached, with ETag support)"""
-        cache_key = "manifest"
+    def _join_cdn(self, *parts: str) -> str:
+        """https://d2wl4b7sx66tfb.cloudfront.net/processed/manifest/manifest.json"""
+        return "/".join([DEFAULT_CDN_BASE.rstrip("/")] + [p.strip("/") for p in parts])
 
-        if not force_refresh and self.cache.is_fresh(cache_key, ttl_seconds=_ct.TWO_HOURS_IN_SECONDS): #
+    def _get_manifest(self, force_refresh: bool = False) -> pd.DataFrame:
+        """
+        Load manifest csv via CDN with ETag-based caching.
+        """
+        cache_key = "manifest_cdn_v1"
+        if not force_refresh and self.cache.is_fresh(cache_key, ttl_seconds=_ct.TWO_HOURS_IN_SECONDS):
             cached = self.cache.load(cache_key)
             if cached is not None:
                 return cached
 
-        with self._http_client() as client:
-            headers = {}
-            cached_etag = self.cache.get_etag(cache_key)
-            if cached_etag and not force_refresh:
-                headers["If-None-Match"] = cached_etag
+        url = self._join_cdn("manifest/latest.csv")
+        etag_header = {}
+        cached_etag = self.cache.get_etag(cache_key)
+        if cached_etag and not force_refresh:
+            etag_header["If-None-Match"] = cached_etag
 
-            response = client.get("/v1/manifest", headers=headers)
+        with httpx.Client(timeout=20, follow_redirects=True) as client:
+            resp = client.get(url, headers=etag_header)
 
-            if response.status_code == 304:  # Not modified
+            if resp.status_code == 304:
                 cached = self.cache.load(cache_key)
                 if cached is not None:
                     return cached
 
-            if response.status_code != 200:
-                raise ApiError(f"Manifest fetch failed: {response.status_code} {response.text}")
-
-            rows = response.json()
-            df = pd.DataFrame(rows)
-
-            etag = response.headers.get('etag')
-
+            resp.raise_for_status()
+            # now need to convert the csv answer returned to pandas df
+            df = pd.read_csv(io.BytesIO(resp.content))
+            etag = resp.headers.get("etag")
+            # store DataFrame with ETag
             self.cache.store(cache_key, df, etag)
             return df
 
@@ -264,60 +261,48 @@ class PyroxClient:
             rows = response.json()
             return pd.DataFrame(rows)
 
-    def get_race_stats(
-            self,
-            season: int,
-            location: str,
-            gender: Optional[str] = None,
-            division: Optional[str] = None,
-            use_cache: bool = True,
-            ttl_seconds: int = 72000) -> tuple[pd.DataFrame, pd.DataFrame]:
-        """Get race statistics from cache or API endpoint - 2 dataframes, one for overall, one for grouped results"""
-        loc_key = (location or "").lower()
-        gkey = (gender or "all").lower()
-        dkey = (division or "all").lower()
+    def _manifest_row(self, season: int, location: str) -> pd.Series:
+        df = self._get_manifest()
+        mask = (df["season"] == int(season)) & (df["location"].str.casefold() == location.casefold())
+        if not mask.any():
+            raise RaceNotFound(f"No manifest entry for season={season}, location='{location}'")
+        return df.loc[mask].iloc[0]
 
-        # two separate cache entries to keep CacheManager simple
-        cache_key_summary = f"stats_summary_v1_{season}_{loc_key}_{gkey}_{dkey}"
-        cache_key_groups  = f"stats_groups_v1_{season}_{loc_key}_{gkey}_{dkey}"
+    def _s3_key_from_uri(self, s3_uri: str) -> str:
+        if s3_uri.startswith("s3://"):
+            ##  example output from splitting ['s3:', '', 'hyrox-results', 'processed', 'parquet/season=6/S6_2023_London__JGDMS4JI62E.parquet'] -- so taking 4th (due to cdn settings for bucket)
+            return s3_uri.split("/", 4)[4]  # after bucket name
+        return s3_uri
 
-        if use_cache and self.cache.is_fresh(cache_key_summary, ttl_seconds) and self.cache.is_fresh(cache_key_groups, ttl_seconds):
-            s = self.cache.load(cache_key_summary)
-            g = self.cache.load(cache_key_groups)
-            if s is not None and g is not None:
-                return s, g
-        # fetch from API (stats are not the same as full race rows)
-        summary_df, groups_df = self._get_race_stats_from_api(season, location, gender, division)
-        if use_cache:
-            self.cache.store(cache_key_summary, summary_df)
-            self.cache.store(cache_key_groups,  groups_df)
+    def _cdn_url_from_manifest(self, season: int, location: str) -> str:
+        row = self._manifest_row(season, location)
+        # Prefer an explicit 'path' (s3 uri or key). If you already store 'cdn_path', you can use it directly.
+        s3_path = str(row["path"])
+        key = self._s3_key_from_uri(s3_path)
+        return self._join_cdn(key)
 
-        return summary_df, groups_df
+    def _filters_for_race(self, gender: Optional[str], division: Optional[str]):
+        filters = []
+        if gender is not None:
+            filters.append(("gender", "=", gender))
+        if division is not None:
+            filters.append(("division", "=", division))
+        return filters or None
 
-    def _get_race_stats_from_api(self, season: int, location: str, gender: Optional[str] = None, division: Optional[str] = None) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        """"Get race statistics from API endpoint"""
-        params = {}
-        if gender:
-            params["gender"] = gender
-        if division:
-            params["division"] = division
-
-        with self._http_client() as client:
-            resp = client.get(f"/v1/race/{int(season)}/{location}/stats", params=params)
-            if resp.status_code == 404:
-                raise RaceNotFound(f"No race found for season={season}, location={location}")
-            if resp.status_code != 200:
-                raise ApiError(f"Race stats fetch failed: {resp.status_code} {resp.text}")
-            rows = resp.json()
-        summary = pd.json_normalize(rows['summary'])
-        summary.insert(0, "season", rows['race']['season'])
-        summary.insert(1, "location", rows['race']['location'])
-
-        groups = pd.DataFrame(rows.get('groups', []))
-        if not groups.empty:
-            groups.insert(0, "season", rows['race']['season'])
-            groups.insert(1, "location", rows['race']['location'])
-        return summary, groups
+    def _get_race_from_cdn(self, season: int, location: str, gender: Optional[str] = None,
+                           division: Optional[str] = None) -> pd.DataFrame:
+        url = self._cdn_url_from_manifest(season, location)
+        filters = self._filters_for_race(gender, division)
+        try:
+            with fsspec.open(url, "rb") as f:
+                table = pq.read_table(f, filters=filters)
+            if table.num_rows == 0:
+                raise RaceNotFound(f"No rows after filters at {url} (gender={gender}, division={division})")
+            return table.to_pandas(split_blocks=True, self_destruct=True)
+        except RaceNotFound:
+            raise
+        except Exception as e:
+            raise FileNotFoundError(f"CDN read failed for {url}: {e}") from e
 
     def get_race(
             self,
@@ -340,9 +325,9 @@ class PyroxClient:
                 return cached
 
         # Choose data source
-        if self.prefer_s3:
+        if self.prefer_cdn:
             try:
-                df = self._get_race_from_s3(season, location, gender, division)
+                df = self._get_race_from_cdn(season, location, gender, division)
             except (RaceNotFound, FileNotFoundError):
                 df = self._get_race_from_api(season, location, gender, division)
         else:
@@ -357,7 +342,7 @@ class PyroxClient:
 
         for c in TIME_COLS:
             if c in df.columns:
-                df[c] = mmss_to_minutes(df[c])  # seconds as float; NaNs stay NaN
+                df[c] = mmss_to_minutes(df[c])
         # Cache the result
         if use_cache:
             self.cache.store(cache_key, df)
@@ -461,3 +446,14 @@ def mmss_to_minutes(s: pd.Series) -> pd.Series:
     # if it's MM:SS, promote to 0:MM:SS so pandas parses it
     s = s.where(s.str.count(":") == 2, "0:" + s)
     return pd.to_timedelta(s, errors="coerce").dt.total_seconds() / 60.0
+
+
+if __name__ == '__main__':
+
+    client = PyroxClient()
+    df = client.get_race(season=6, location=("london"), use_cache=False)
+    df = client.get_race(season=6, location=("rotterdam"), use_cache=False)
+    races = client.list_races(season=7)
+    print(f"Have retrieved race - this many entries: {len(df)}")
+    print(f"found races: {races}")
+    breakhere = 0
