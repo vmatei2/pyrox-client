@@ -1,3 +1,17 @@
+# pyrox-client
+
+Unofficial Python client for HYROX race results — load public results into pandas DataFrames.
+
+[![PyPI - Version](https://img.shields.io/pypi/v/pyrox-client.svg)](https://pypi.org/project/pyrox-client/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/pyrox-client.svg)](https://pypi.org/project/pyrox-client/)
+[![Wheel](https://img.shields.io/pypi/wheel/pyrox-client.svg)](https://pypi.org/project/pyrox-client/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Type checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue.svg)](https://mypy-lang.org/)
+[![Downloads](https://static.pepy.tech/badge/pyrox-client/month)](https://pepy.tech/project/pyrox-client)
+
+> Load HYROX race results into pandas in a few lines. Built for people who love fitness *and* data.
+
+
 Unofficial Python client for HYROX race results — load public results into pandas DataFrames in a few lines. Built for people who love fitness and data: analyse performance trends, understand HYROX’s unique demands, and open up new research avenues. 
 Whether you’re a data scientist, quant, engineer, or an athlete looking to develop technical skills, this project aims to provide a quick, easy way to access an exciting set of data.
 
