@@ -4,8 +4,6 @@ Unofficial Python client for HYROX race results — load public results into pan
 
 [![PyPI - Version](https://img.shields.io/pypi/v/pyrox-client.svg)](https://pypi.org/project/pyrox-client/)
 [![Wheel](https://img.shields.io/pypi/wheel/pyrox-client.svg)](https://pypi.org/project/pyrox-client/)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Type checked: mypy](https://img.shields.io/badge/type%20checked-mypy-blue.svg)](https://mypy-lang.org/)
 [![Downloads](https://static.pepy.tech/badge/pyrox-client/month)](https://pepy.tech/project/pyrox-client)
 
 > Load HYROX race results into pandas in a few lines. Built for people who love fitness *and* data.
@@ -63,7 +61,7 @@ london_2024_s7 = client.get_race(season=7, location="london", year=2024)
 list_races(season: int | None = None) -> pd.DataFrame
 ```
 
-Returns a Dataframe of available races:
+ - returns a Dataframe of available races
 ```commandline
 from pyrox import PyroxClient
 
@@ -75,6 +73,7 @@ print(client.list_races(season=5).head(3))
 # 2       5  barcelona
 ```
 
+
 ```commandline
 get_race(
     season: int,
@@ -85,8 +84,8 @@ get_race(
     use_cache: bool = True,
 ) -> pd.DataFrame
 ```
+- returns a single race as a pandas dataframe - with optional filtering
 
-Returns a single race as a pandas dataframe - with optional filtering
 ```commandline
 get_season(
     season: int,
@@ -94,16 +93,16 @@ get_season(
     use_cache: bool = True,
 ) -> pd.DataFrame
 ```
-Returns a combinded Dataframe for a whole season (or a set of locations passed in)
+- returns a combinded Dataframe for a whole season (or a set of locations passed in)
 ```commandline
 clear_cache(pattern: str = "*") -> None
 ```
-Clears local cache entries (regex pattern search option included)
+- clears local cache entries (regex pattern search option included)
 
 ```commandline
 cache_info() -> dict
 ```
-Returns cache statistics: `````{"total_size": int, "total_items": int, "items": list[str]}`````
+- returns cache statistics: `````{"total_size": int, "total_items": int, "items": list[str]}`````
 
 ###  Example - compare an athlete's two races vs field averages
 
@@ -158,9 +157,9 @@ stations_cmp = pd.DataFrame({
 
 
 ## Output 
-![](img.png)
+![](https://raw.githubusercontent.com/vmatei2/pyrox-client/refs/heads/main/img.png)
 
-![](img_1.png)
+![](https://raw.githubusercontent.com/vmatei2/pyrox-client/refs/heads/main/img_1.png)
 
 ### Disclaimer
 
