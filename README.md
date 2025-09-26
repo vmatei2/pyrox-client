@@ -10,18 +10,7 @@ Unofficial Python client for HYROX race results — load public results into pan
 
 > Load HYROX race results into pandas in a few lines. Built for people who love fitness *and* data.
 
-
 Unofficial Python client for HYROX race results — load public results into pandas DataFrames in a few lines. Built for people who love fitness and data: analyse performance trends, understand HYROX’s unique demands, and open up new research avenues. 
-Whether you’re a data scientist, quant, engineer, or an athlete looking to develop technical skills, this project aims to provide a quick, easy way to access an exciting set of data.
-
-A few notes:
-
-- This client servers publicly available data from the results website.
-- Currently serving historical data from seasons 2-7. (season 5-6 have been tested/used for analysis prior - open to feedback / issues with other season's data!)
-- Going forward, more complex stats can be calculated and directly returned to client (average / distributions) so users can get those returned directly instead of retrieving all race data with minimal filtering
-- Filtering options to be expanded (i.e. get race where total overall time is sub 60 mins / get race where wall ball time is sub 5 mins etc.)
-- By default, pyrox caches race data locally. Set (use_cache=False) when querying client.get_race() and client.get_season to opt out of race data being stored down on your machine.
-
 
 ## Install
 
@@ -60,48 +49,74 @@ london_2025_s7 = client.get_race(season=7, location="london", year=2025)
 london_2024_s7 = client.get_race(season=7, location="london", year=2024)
 ```
 
-## Methods
+## What's included? 
 
-- list_races(season: int | None = None) -> pd.DataFrame
-  - Return a dataframe with columns (season, location), which can then inform location names to pass down in the get_race() function
-  
-```   
-#  example output
+- Servers publicly available race results from the offical results website
+- Historical coverage of Season 2-7 (for now) (season 5 and 6 are most used/tested in analysis; please open issues for any data problems spotted)
+- Client-side caching by default (local). Set ```use_cache=False``` when querying ```get_race()``` or ```get_season()``` to opt out.
+- Going forward - would like to add server-side computed stats and option for enriching filters (i..e "overall time sub 60 mins / only athletes with wall ball time sub 5 mins"")
+
+
+## API
+
+```commandline
+list_races(season: int | None = None) -> pd.DataFrame
+```
+
+Returns a Dataframe of available races:
+```commandline
+from pyrox import PyroxClient
+
 client = PyroxClient()
 print(client.list_races(season=5).head(3))
-   season   location
-0       5  amsterdam
-1       5    anaheim
-2       5  barcelona
+#    season   location
+# 0       5  amsterdam
+# 1       5    anaheim
+# 2       5  barcelona
 ```
-- get_race(season: int, location: str, year:int | None = None, gender: str | None = None, division: str | None = None, use_cache: bool = True) -> pd.DataFrame 
-  - Simply returns the specified race - gender (male / female / mixed) and division (open/pro) filtering available
 
-- get_season(season: int, locations: list[str] | None = None) -> pd.DataFrame 
-  - return all races, or a subset (if locations list passed down) for a specified season
+```commandline
+get_race(
+    season: int,
+    location: str,
+    year: int | None = None,
+    gender: str | None = None,      # "male" | "female" | "mixed"
+    division: str | None = None,    # "open" | "pro" (case-insensitive contains)
+    use_cache: bool = True,
+) -> pd.DataFrame
+```
 
-- clear_cache(pattern: str = "*"")
-  - function to clear local cache, optionally filter based on the input pattern
+Returns a single race as a pandas dataframe - with optional filtering
+```commandline
+get_season(
+    season: int,
+    locations: list[str] | None = None,
+    use_cache: bool = True,
+) -> pd.DataFrame
+```
+Returns a combinded Dataframe for a whole season (or a set of locations passed in)
+```commandline
+clear_cache(pattern: str = "*") -> None
+```
+Clears local cache entries (regex pattern search option included)
 
-- cache_info()
-  - get cache statistics on the local machine (returns total_szie, total_items, items_list)
+```commandline
+cache_info() -> dict
+```
+Returns cache statistics: `````{"total_size": int, "total_items": int, "items": list[str]}`````
 
-###  Example script showing comparison of an athlete's performance over 2 races against the average values in the race
+###  Example - compare an athlete's two races vs field averages
 
-- Below script expects matplotlib / numpy / seaborn to be available on top of pyrox
-  - They can all be installed using similar 'pip install / uv pip install' as above
-- Using the client, and adding our own calculations on top, it can be quite quick to generate interesting insights and an idea of how an athlete has evolved compared to their own previous performance and to the rest of the field
+> below code requires ```pandas``` and ```numpy``` and the graphs are generated via ```matplotlib``` and ```seaborn```
 
 ```commandline
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 import pyrox
 
 client = pyrox.PyroxClient()
-####   DATA Prep
-run_cols = [f"run{i}_time" for i in range(1, 9)]
+
+run_cols = [f"run{i}_time" for i in range(1, 8+1)]
 station_cols = [
     "skiErg_time","sledPush_time","sledPull_time","burpeeBroadJump_time",
     "rowErg_time","farmersCarry_time","sandbagLunges_time","wallBalls_time",
@@ -115,22 +130,18 @@ def pick_athlete_row(df: pd.DataFrame, athlete: str) -> pd.Series:
         raise ValueError(f"Athlete '{athlete}' not found")
     return sub.iloc[0]
 
-def male_open(df: pd.DataFrame) -> pd.DataFrame:
-    g = df["gender"].astype(str).str.lower().str.startswith("m")
-    d = df["division"].astype(str).str.lower().str.contains("open")
-    return df[g & d]
-    
 rot = client.get_race(season=6, location="rotterdam", gender="male", division="open")
 bcn = client.get_race(season=7, location="barcelona", gender="male", division="open")
+
 athlete = "surname, name"
 user_rot = pick_athlete_row(rot, athlete)
 user_bcn = pick_athlete_row(bcn, athlete)
+
 rot_run_avg = rot[run_cols].mean()
 bcn_run_avg = bcn[run_cols].mean()
 rot_sta_avg = rot[station_cols].mean()
 bcn_sta_avg = bcn[station_cols].mean()
 
-# --- build comparison frames
 runs_cmp = pd.DataFrame({
     "segment": range(1, 9),
     "Rotterdam (athlete)": [user_rot[c] for c in run_cols],
@@ -142,6 +153,7 @@ stations_cmp = pd.DataFrame({
     "Rotterdam (athlete)": [user_rot.get(c, np.nan) for c in station_cols],
     "Barcelona (athlete)": [user_bcn.get(c, np.nan) for c in station_cols],
 }).set_index("station")
+
 ```
 
 
