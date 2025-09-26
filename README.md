@@ -44,8 +44,7 @@ london_male = client.get_race(season=6, location="london", gender="male")
 #  Returning data for May (London Olympia race)
 london_2025_s7 = client.get_race(season=7, location="london", year=2025)
 #  Returning data for November (London Excel Race)
-london_2024_s7 = client.get_race(season=7, location="london", year=2024
-
+london_2024_s7 = client.get_race(season=7, location="london", year=2024)
 ```
 
 ## Methods

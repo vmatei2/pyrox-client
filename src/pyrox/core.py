@@ -12,8 +12,8 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 import io
 
-import constants as _ct
-from errors import RaceNotFound
+from . import constants as _ct
+from .errors import RaceNotFound
 
 import httpx
 import pandas as pd
@@ -239,7 +239,7 @@ class PyroxClient:
         Function that either gets from cache or CDN
         """
         # Create cache key
-        cache_key = f"race_{season}_{location}_{gender or 'all'}_{division or 'all'}"
+        cache_key = f"race_{season}_{location}_{year or 'all'}_{gender or 'all'}_{division or 'all'}"
 
         # Try cache first
         if use_cache and self.cache.is_fresh(cache_key, ttl_seconds=7200):  # 2 hour TTL
