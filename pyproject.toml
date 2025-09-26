@@ -7,7 +7,7 @@ name = "pyrox-client"
 dynamic = ["version"]
 description = "HYROX race data client – retrieve full race results via Python"
 authors = [{ name = "Vlad Matei" }]
-readme = "README.md"
+readme = {file="README.md", content-type = "text/markdown" }
 requires-python = ">=3.9"
 dependencies = [
     "pandas>=2.2",
@@ -21,17 +21,29 @@ dependencies = [
     "pyarrow>=14.0.0,<18.0.0",  #  stable versions with wheels, had issues with latest
 ]
 
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
 
-# You’re using a src/ layout. This tells Hatch which package to build.
+urls."Homepage" = "https://github.com/vmatei2/pyrox-client"
+urls."Issues"   = "https://github.com/vmatei2/pyrox-client/issues"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyrox"]
 
-# Ensure sdist includes your source + docs
 [tool.hatch.build.targets.sdist]
 include = [
   "src/pyrox",
   "README.md",
-  "pyproject.toml"
+  "pyproject.toml",
+  "*.png"
 ]
 
 [tool.hatch.version]
