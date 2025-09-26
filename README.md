@@ -41,7 +41,10 @@ subset_s6 = client.get_season(season=6, locations=["london", "hamburg"])
 london_race = client.get_race(season=6, location="london")
 rott_race = client.get_race(season=6, location="rotterdam")
 london_male = client.get_race(season=6, location="london", gender="male")
-
+#  Returning data for May (London Olympia race)
+london_2025_s7 = client.get_race(season=7, location="london", year=2025)
+#  Returning data for November (London Excel Race)
+london_2024_s7 = client.get_race(season=7, location="london", year=2024
 
 ```
 
@@ -59,8 +62,9 @@ print(client.list_races(season=5).head(3))
 1       5    anaheim
 2       5  barcelona
 ```
-- get_race(season: int, location: str, gender: str | None = None, division: str | None = None, use_cache: bool = True) -> pd.DataFrame 
+- get_race(season: int, location: str, year:int | None = None, gender: str | None = None, division: str | None = None, use_cache: bool = True) -> pd.DataFrame 
   - Simply returns the specified race - gender (male / female / mixed) and division (open/pro) filtering available
+
 - get_season(season: int, locations: list[str] | None = None) -> pd.DataFrame 
   - return all races, or a subset (if locations list passed down) for a specified season
 
@@ -74,6 +78,7 @@ print(client.list_races(season=5).head(3))
 
 - Below script expects matplotlib / numpy / seaborn to be available on top of pyrox
   - They can all be installed using similar 'pip install / uv pip install' as above
+- Using the client, and adding our own calculations on top, it can be quite quick to generate interesting insights and an idea of how an athlete has evolved compared to their own previous performance and to the rest of the field
 
 ```commandline
 import pandas as pd
@@ -125,41 +130,13 @@ stations_cmp = pd.DataFrame({
     "Rotterdam (athlete)": [user_rot.get(c, np.nan) for c in station_cols],
     "Barcelona (athlete)": [user_bcn.get(c, np.nan) for c in station_cols],
 }).set_index("station")
-
-sns.set_style("darkgrid")
-plt.figure()
-plt.plot(runs_cmp.index, runs_cmp["Rotterdam (athlete)"], marker="o", label="Rotterdam (athlete)")
-plt.plot(runs_cmp.index, runs_cmp["Barcelona (athlete)"], marker="o", label="Barcelona (athlete)")
-plt.plot(runs_cmp.index, rot_run_avg.values, marker="o", linestyle="--", label="Rotterdam Avg (Male Open)")
-plt.plot(runs_cmp.index, bcn_run_avg.values, marker="o", linestyle="--", label="Barcelona Avg (Male Open)")
-plt.xticks(runs_cmp.index)
-plt.xlabel("Run #")
-plt.ylabel("Minutes")
-plt.title("Run Splits — Athlete vs Race Averages")
-plt.legend()
-plt.tight_layout()
-plt.show()
-
-plt.figure()
-plt.plot(stations_cmp.index, stations_cmp["Rotterdam (athlete)"], marker="o", label="Rotterdam (athlete)")
-plt.plot(stations_cmp.index, stations_cmp["Barcelona (athlete)"], marker="o", label="Barcelona (athlete)")
-plt.plot(stations_cmp.index, rot_sta_avg.values, marker="o", linestyle="--", label="Rotterdam Avg (Male Open)")
-plt.plot(stations_cmp.index, bcn_sta_avg.values, marker="o", linestyle="--", label="Barcelona Avg (Male Open)")
-plt.xticks(rotation=0)
-plt.xlabel("Station")
-plt.ylabel("Minutes")
-plt.title("Station Splits — Athlete vs Race Averages")
-plt.legend()
-plt.tight_layout()
-plt.show()
 ```
 
 
 ## Output 
-![](https://raw.githubusercontent.com/vmatei2/pyrox-client/refs/heads/main/img.png?token=GHSAT0AAAAAADG2PDALTRNQE53L4BHBB4ZC2GVLUVA)
+![](img.png)
 
-
-![](https://raw.githubusercontent.com/vmatei2/pyrox-client/refs/heads/main/img_1.png?token=GHSAT0AAAAAADG2PDAK5BNBEOLUKFAFVQUC2GVLVFQ)
+![](img_1.png)
 
 ### Disclaimer
 

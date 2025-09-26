@@ -12,8 +12,8 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 import io
 
-import pyrox.constants as _ct
-from pyrox.errors import RaceNotFound
+import constants as _ct
+from errors import RaceNotFound
 
 import httpx
 import pandas as pd
@@ -23,7 +23,7 @@ import logging
 logger = logging.getLogger("pyrox")
 logger.addHandler(logging.NullHandler())  # prevent “No handler” warnings
 DEFAULT_CACHE_DIR = Path.home() / ".cache" / "pyrox"
-DEFAULT_CDN_BASE = "https://d2wl4b7sx66tfb.cloudfront.net"  #  hit this for getting data via CCDN
+DEFAULT_CDN_BASE = "https://d2wl4b7sx66tfb.cloudfront.net"  # getting data via CDN
 #  DEFAULT_API_URL = "http://localhost:8000"  --> used for testing when running api in docker container
 
 
@@ -179,9 +179,13 @@ class PyroxClient:
                 .sort_values(["season", "location"])
                 .reset_index(drop=True))
 
-    def _manifest_row(self, season: int, location: str) -> pd.Series:
+    def _manifest_row(self, season: int, location: str, year:Optional[int] = None) -> pd.Series:
         df = self._get_manifest()
-        mask = (df["season"] == int(season)) & (df["location"].str.casefold() == location.casefold())
+
+        mask = (df["season"].eq(int(season))
+                & df["location"].str.casefold().eq(location.casefold()))
+        if year is not None:
+            mask &= df["year"].eq(int(year))
         if not mask.any():
             raise RaceNotFound(f"No manifest entry for season={season}, location='{location}'")
         return df.loc[mask].iloc[0]
@@ -192,8 +196,8 @@ class PyroxClient:
             return s3_uri.split("/", 4)[4]  # after bucket name
         return s3_uri
 
-    def _cdn_url_from_manifest(self, season: int, location: str) -> str:
-        row = self._manifest_row(season, location)
+    def _cdn_url_from_manifest(self, season: int, location: str, year: Optional[int] = None) -> str:
+        row = self._manifest_row(season, location, year)
         # Prefer an explicit 'path' (s3 uri or key). If you already store 'cdn_path', you can use it directly.
         s3_path = str(row["path"])
         key = self._s3_key_from_uri(s3_path)
@@ -207,9 +211,9 @@ class PyroxClient:
             filters.append(("division", "=", division))
         return filters or None
 
-    def _get_race_from_cdn(self, season: int, location: str, gender: Optional[str] = None,
+    def _get_race_from_cdn(self, season: int, location: str, year: Optional[int]=None, gender: Optional[str] = None,
                            division: Optional[str] = None) -> pd.DataFrame:
-        url = self._cdn_url_from_manifest(season, location)
+        url = self._cdn_url_from_manifest(season, location, year)
         filters = self._filters_for_race(gender, division)
         try:
             with fsspec.open(url, "rb") as f:
@@ -226,6 +230,7 @@ class PyroxClient:
             self,
             season: int,
             location: str,
+            year: Optional[int] = None,
             gender: Optional[str] = None,
             division: Optional[str] = None,
             use_cache: bool = True
@@ -245,7 +250,7 @@ class PyroxClient:
                 return cached
 
         try:
-            df = self._get_race_from_cdn(season, location, gender, division)
+            df = self._get_race_from_cdn(season, location, year, gender, division)
         except (RaceNotFound, FileNotFoundError) as e:
             raise FileNotFoundError(f"Read failed for season{season}, location={location} - {e}") from e
 
@@ -259,7 +264,6 @@ class PyroxClient:
         for c in TIME_COLS:
             if c in df.columns:
                 df[c] = mmss_to_minutes(df[c])
-
         # Cache the result
         if use_cache:
             logger.info(f"Saving to cached race {cache_key}")
@@ -364,3 +368,6 @@ def mmss_to_minutes(s: pd.Series) -> pd.Series:
     s = s.where(s.str.count(":") == 2, "0:" + s)
     return pd.to_timedelta(s, errors="coerce").dt.total_seconds() / 60.0
 
+
+if __name__ == '__main__':
+    client = PyroxClient()

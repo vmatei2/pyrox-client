@@ -13,7 +13,8 @@ import respx
 import httpx
 import tempfile
 from pathlib import Path
-from pyrox.core import PyroxClient
+from src.pyrox import PyroxClient
+
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
@@ -38,7 +39,6 @@ def sample_race_data():
         {'athlete name': 'Chris Christian', 'gender': 'M', 'division': 'open', 'time': '59:00:00'}
     ])
 
-
 def test_get_race_from_cache_when_refresh(client, sample_race_data):
     """Test that get race returns cached data when the cache is fresh"""
     cache_key = "race_2023_london_all_all"
@@ -60,14 +60,29 @@ def test_get_race_from_s3_when_not_cache(client, sample_race_data):
     #  asert we get returned what we expected
     pd.testing.assert_frame_equal(result, sample_race_data)
 
+def test_cdn_url_from_manifest(client):
+    manifest_rows = [
+        {"season": 7, "location": "Liverpool", "path": "some_s3_path_liverpool" },
+        {"season": 7, "location": "London", "path": "some_s3_path_2024", "year": 2024},
+        {"season": 7, "location": "London", "path": "some_s3_path_2025", "year" : 2025},
+        {"season": 7, "location": "Manchester", "path": "some_s3_path"},
+        {"season": 6, "location": "Cardiff", "path": "some_s3_path"}
+    ]
+    with patch.object(client, "_get_manifest", return_value=pd.DataFrame(manifest_rows)):
+        path_2025 = client._cdn_url_from_manifest(season=7, location="London", year=2025)
 
-
+        assert(path_2025 == client._join_cdn("some_s3_path_2025"))
+        path_2024 = client._cdn_url_from_manifest(season=7, location="london", year=2024)
+        assert(path_2024 == client._join_cdn("some_s3_path_2024"))
+        path_liverpool =  client._cdn_url_from_manifest(season=7, location="liverpool")
+        assert(path_liverpool == client._join_cdn("some_s3_path_liverpool"))
 
 @respx.mock
 def test_list_races(client):
     manifest_rows = [
         {"season": 7, "location": "Liverpool", "path": "some_s3_path" },
-        {"season": 7, "location": "London", "path": "some_s3_path"},
+        {"season": 7, "location": "London", "path": "some_s3_path_2024", "year": 2024},
+        {"season": 7, "location": "London", "path": "some_s3_path", "year" : 2025},
         {"season": 7, "location": "Manchester", "path": "some_s3_path"},
         {"season": 6, "location": "Cardiff", "path": "some_s3_path"}
     ]
