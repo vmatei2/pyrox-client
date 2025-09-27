@@ -41,6 +41,10 @@ subset_s6 = client.get_season(season=6, locations=["london", "hamburg"])
 london_race = client.get_race(season=6, location="london")
 rott_race = client.get_race(season=6, location="rotterdam")
 london_male = client.get_race(season=6, location="london", gender="male")
+# Filter athletes finishing under an hour (times parsed to minutes)
+london_sub60 = client.get_race(season=6, location="london", total_time=60)
+# Open interval: keep athletes with 50 < total_time < 60 minutes
+london_50_60 = client.get_race(season=6, location="london", total_time=(50, 60))
 #  Returning data for May (London Olympia race)
 london_2025_s7 = client.get_race(season=7, location="london", year=2025)
 #  Returning data for November (London Excel Race)
@@ -52,7 +56,7 @@ london_2024_s7 = client.get_race(season=7, location="london", year=2024)
 - Servers publicly available race results from the offical results website
 - Historical coverage of Season 2-7 (for now) (season 5 and 6 are most used/tested in analysis; please open issues for any data problems spotted)
 - Client-side caching by default (local). Set ```use_cache=False``` when querying ```get_race()``` or ```get_season()``` to opt out.
-- Going forward - would like to add server-side computed stats and option for enriching filters (i..e "overall time sub 60 mins / only athletes with wall ball time sub 5 mins"")
+- Client-side helpers for gender, division, and total finish time filtering (single threshold or open interval)
 
 
 ## API
@@ -81,10 +85,13 @@ get_race(
     year: int | None = None,
     gender: str | None = None,      # "male" | "female" | "mixed"
     division: str | None = None,    # "open" | "pro" (case-insensitive contains)
+    total_time: float | tuple[float | None, float | None] | None = None,
     use_cache: bool = True,
 ) -> pd.DataFrame
 ```
-- returns a single race as a pandas dataframe - with optional filtering
+- returns a single race as a pandas dataframe - with optional filtering. ``total_time`` operates on
+  minutes after parsing (e.g. ``total_time=60`` keeps athletes under an hour, ``total_time=(50, 60)``
+  keeps athletes between 50 and 60 minutes exclusive; use ``None`` for an open bound).
 
 ```commandline
 get_season(
@@ -167,4 +174,3 @@ Pyrox is an independent project and is not affiliated with, endorsed or sponsore
 Hyrox and related marks are trademarks of their respective owners; and they are used here only for descriptive purposes.
 
 Client-side caching is user controlled as explained above (depending on an input parameter passed down).
-

@@ -14,6 +14,7 @@ import httpx
 import tempfile
 from pathlib import Path
 from src.pyrox import PyroxClient
+from src.pyrox.core import mmss_to_minutes
 
 import pandas as pd
 from pandas.testing import assert_frame_equal
@@ -35,13 +36,14 @@ def client(mock_cache_dir):
 def sample_race_data():
     """Sample race data for testing"""
     return pd.DataFrame([
-        {'athlete name': 'John Jono', 'gender': 'M', 'division': 'pro', 'time': '56:00:01'},
-        {'athlete name': 'Chris Christian', 'gender': 'M', 'division': 'open', 'time': '59:00:00'}
+        {'athlete name': 'Alex Atherton', 'gender': 'M', 'division': 'pro', 'total_time': '00:54:30'},
+        {'athlete name': 'Blake Brown', 'gender': 'M', 'division': 'open', 'total_time': '00:56:30'},
+        {'athlete name': 'Casey Clark', 'gender': 'F', 'division': 'pro', 'total_time': '01:02:00'}
     ])
 
 def test_get_race_from_cache_when_refresh(client, sample_race_data):
     """Test that get race returns cached data when the cache is fresh"""
-    cache_key = "race_2023_london_all_all"
+    cache_key = "race_5_London_all_all_all"
     client.cache.store(cache_key, sample_race_data)
 
     #  Moch cache isFresh to return true
@@ -58,7 +60,29 @@ def test_get_race_from_s3_when_not_cache(client, sample_race_data):
             result = client.get_race(season=5, location="London")
 
     #  asert we get returned what we expected
-    pd.testing.assert_frame_equal(result, sample_race_data)
+    expected = sample_race_data.copy().reset_index(drop=True)
+    expected["total_time"] = mmss_to_minutes(expected["total_time"])
+    assert_frame_equal(result, expected)
+
+
+def test_get_race_filters_total_time_lt(client, sample_race_data):
+    with patch.object(client.cache, "is_fresh", return_value=False):
+        with patch.object(client, "_get_race_from_cdn", return_value=sample_race_data):
+            result = client.get_race(season=5, location="London", total_time=60)
+
+    assert result["athlete name"].tolist() == ["Alex Atherton", "Blake Brown"]
+    assert (result["total_time"] < 60).all()
+    #  ensure the total time returned is of the expected type!
+    assert (result["total_time"].dtype == float)
+
+def test_get_race_filters_total_time_range(client, sample_race_data):
+    with patch.object(client.cache, "is_fresh", return_value=False):
+        with patch.object(client, "_get_race_from_cdn", return_value=sample_race_data):
+            result = client.get_race(season=5, location="London", total_time=(55, 60))
+
+    assert result["athlete name"].tolist() == ["Blake Brown"]
+    assert (result["total_time"] > 55).all()
+    assert (result["total_time"] < 60).all()
 
 def test_cdn_url_from_manifest(client):
     manifest_rows = [
@@ -104,4 +128,3 @@ def test_package_exposes_version():
     # We expect a string-like version.
     assert hasattr(pkg, "__version__"), "pyrox.__version__ should exist"
     assert isinstance(pkg.__version__, str) and pkg.__version__, "__version__ should be non-empty"
-

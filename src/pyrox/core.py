@@ -233,13 +233,52 @@ class PyroxClient:
             year: Optional[int] = None,
             gender: Optional[str] = None,
             division: Optional[str] = None,
+            total_time: Optional[float | tuple[Optional[float], Optional[float]]] = None,
             use_cache: bool = True
     ) -> pd.DataFrame:
         """
-        Function that either gets from cache or CDN
+        Fetch race results, optionally filtering by gender, division, and total time.
+
+        Args:
+            season: Hyrox season identifier.
+            location: Host city/location for the race.
+            year: Optional calendar year to disambiguate multi-year locations.
+            gender: Optional gender filter applied server-side when available.
+            division: Optional division filter applied server-side when available.
+            total_time: When provided, filters athletes based on their total race time
+                expressed in minutes. Supply a single value to return results with a
+                total time strictly less than the value, or a two-element tuple to
+                represent an open interval ``(lower, upper)`` where either bound may be
+                ``None`` to leave that side unbounded.
+            use_cache: Whether to read/write from the local cache.
         """
+
+        def _format_bound(value: Optional[float]) -> str:
+            if value is None:
+                return "none"
+            return f"{float(value):g}"
+
+        if total_time is None:
+            lower_bound: Optional[float] = None
+            upper_bound: Optional[float] = None
+            total_time_key = "all"
+        elif isinstance(total_time, tuple):
+            if len(total_time) != 2:
+                raise ValueError("total_time tuple must contain exactly two values (lower, upper)")
+            raw_lower, raw_upper = total_time
+            lower_bound = float(raw_lower) if raw_lower is not None else None
+            upper_bound = float(raw_upper) if raw_upper is not None else None
+            total_time_key = f"range_{_format_bound(lower_bound)}_{_format_bound(upper_bound)}"
+        else:
+            lower_bound = None
+            upper_bound = float(total_time)
+            total_time_key = f"lt_{_format_bound(upper_bound)}"
+
         # Create cache key
-        cache_key = f"race_{season}_{location}_{year or 'all'}_{gender or 'all'}_{division or 'all'}"
+        cache_key = (
+            f"race_{season}_{location}_{year or 'all'}_{gender or 'all'}_"
+            f"{division or 'all'}_{total_time_key}"
+        )
 
         # Try cache first
         if use_cache and self.cache.is_fresh(cache_key, ttl_seconds=7200):  # 2 hour TTL
@@ -254,16 +293,28 @@ class PyroxClient:
         except (RaceNotFound, FileNotFoundError) as e:
             raise FileNotFoundError(f"Read failed for season{season}, location={location} - {e}") from e
 
-        #  before returning-convert station columns to their actual exercise name
+        # Before returning, convert station columns to their exercise names
         df = df.rename(columns=_ct.WORK_STATION_RENAMES)
 
-        TIME_COLS = list(_ct.WORK_STATION_RENAMES.values()) + [
+        time_cols = list(_ct.WORK_STATION_RENAMES.values()) + [
             "total_time", "work_time", "roxzone_time", "run_time"
         ]
 
-        for c in TIME_COLS:
-            if c in df.columns:
-                df[c] = mmss_to_minutes(df[c])
+        for col in time_cols:
+            if col in df.columns:
+                df[col] = mmss_to_minutes(df[col])
+
+        if lower_bound is not None or upper_bound is not None:
+            if "total_time" not in df.columns:
+                raise KeyError("total_time column is not available in the retrieved race data")
+            total_time_series = df["total_time"].astype(float)
+            mask = pd.Series(True, index=df.index)
+            if lower_bound is not None:
+                mask &= total_time_series > lower_bound
+            if upper_bound is not None:
+                mask &= total_time_series < upper_bound
+            df = df[mask].reset_index(drop=True)
+
         # Cache the result
         if use_cache:
             logger.info(f"Saving to cached race {cache_key}")
