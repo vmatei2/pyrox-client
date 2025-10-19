@@ -6,18 +6,33 @@ what is being checked. They avoid real network calls by focusing on module
 structure and basic function contracts.
 """
 import importlib
+import tempfile
+import threading
+import time
+from pathlib import Path
+from types import MethodType
+from typing import List
 from unittest.mock import patch
 
-import pytest
-import respx
-import httpx
-import tempfile
-from pathlib import Path
-from src.pyrox import PyroxClient
-from src.pyrox.core import mmss_to_minutes
-
 import pandas as pd
+import pytest
+try:  # pragma: no cover - exercised only when respx missing locally
+    import respx
+except ModuleNotFoundError:
+    class _RespxStub:
+        @staticmethod
+        def mock(func=None, **_):
+            if func is None:
+                def decorator(inner):
+                    return inner
+                return decorator
+            return func
+
+    respx = _RespxStub()
 from pandas.testing import assert_frame_equal
+
+from src.pyrox import PyroxClient
+from src.pyrox.core import CacheManager, mmss_to_minutes
 
 
 @pytest.fixture
@@ -115,6 +130,50 @@ def test_list_races(client):
         expected = pd.DataFrame({"season": [6], "location":["Cardiff"]})
         #  assert the manifest has been filtered to only return the specified season
         assert_frame_equal(df, expected)
+
+
+def test_cache_manager_store_thread_safety(tmp_path):
+    cache = CacheManager(cache_dir=tmp_path)
+    df = pd.DataFrame({"value": [1]})
+
+    started = threading.Event()
+    continue_event = threading.Event()
+    original_write = cache._write_metadata_locked
+
+    def patched_write_metadata(self):
+        first_iteration = True
+        for _ in self.metadata:
+            if first_iteration:
+                first_iteration = False
+                started.set()
+                assert continue_event.wait(timeout=1), "timed out while waiting to simulate concurrent write"
+        original_write()
+
+    cache._write_metadata_locked = MethodType(patched_write_metadata, cache)
+
+    errors: List[Exception] = []
+
+    def store_key(name: str) -> None:
+        try:
+            cache.store(name, df)
+        except Exception as exc:  # pragma: no cover - failure path assertion below
+            errors.append(exc)
+
+    first = threading.Thread(target=store_key, args=("alpha",))
+    first.start()
+    assert started.wait(timeout=1), "cache did not begin writing metadata in time"
+
+    second = threading.Thread(target=store_key, args=("bravo",))
+    second.start()
+    time.sleep(0.05)
+    continue_event.set()
+
+    first.join(timeout=1)
+    second.join(timeout=1)
+
+    assert not first.is_alive() and not second.is_alive(), "store threads failed to finish"
+    assert not errors, f"unexpected cache errors: {errors}"
+    assert sorted(cache.metadata_snapshot().keys()) == ["alpha", "bravo"]
 
 def test_package_exposes_version():
     """

@@ -9,11 +9,12 @@ import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+from threading import RLock
 from typing import Any, Dict, Iterable, List, Optional
 import io
 
-from . import constants as _ct
-from .errors import RaceNotFound
+import src.pyrox.constants as _ct
+from src.pyrox.errors import RaceNotFound
 
 import httpx
 import pandas as pd
@@ -35,18 +36,20 @@ class CacheManager:
         self.cache_dir = cache_dir
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.metadata_file = cache_dir / "metadata.json"
+        self._lock = RLock()
+        self.metadata: Dict[str, Any] = {}
         self._load_metadata()
 
     def _load_metadata(self):
         """Load cache metadata from file"""
-        if self.metadata_file.exists():
-            with open(self.metadata_file) as f:
-                self.metadata = json.load(f)
-        else:
-            self.metadata = {}
+        with self._lock:
+            if self.metadata_file.exists():
+                with open(self.metadata_file) as f:
+                    self.metadata = json.load(f)
+            else:
+                self.metadata = {}
 
-    def _save_metadata(self):
-        """Save cache metadata to file"""
+    def _write_metadata_locked(self) -> None:
         with open(self.metadata_file, "w") as f:
             json.dump(self.metadata, f, indent=2)
 
@@ -58,16 +61,21 @@ class CacheManager:
 
     def is_fresh(self, key: str, ttl_seconds: int = _ct.TWO_HOURS_IN_SECONDS) -> bool:
         """Check if cached item is fresh enough"""
-        if key not in self.metadata:
+        with self._lock:
+            entry = self.metadata.get(key)
+
+        if entry is None:
             return False
 
-        cache_time = self.metadata[key].get('timestamp', 0)
+        cache_time = entry.get('timestamp', 0)
         #  boolean checking if the difference between current time and latest cache time is lower than time to load decided above!
         return (time.time() - cache_time) < ttl_seconds
 
     def get_etag(self, key: str) -> Optional[str]:
         """Get etag for given key"""
-        return self.metadata.get(key, {}).get('etag', None)
+        with self._lock:
+            entry = self.metadata.get(key)
+            return entry.get('etag') if entry else None
 
     def store(self, key:str, df: pd.DataFrame, etag:Optional[str]=None) -> None:
         """Store Dataframe in ache with metadata"""
@@ -77,50 +85,61 @@ class CacheManager:
         df.to_parquet(cache_path, compression=_ct.SNAPPY_COMPRESSION, index=False)
 
         #  Store the metadata
-        self.metadata[key] = {
-            "timestamp": time.time(),
-            "etag": etag,
-            "path": str(cache_path),
-            "rows": len(df),
-            "size_mb": cache_path.stat().st_size / 1024 / 1024
-        }
+        with self._lock:
+            self.metadata[key] = {
+                "timestamp": time.time(),
+                "etag": etag,
+                "path": str(cache_path),
+                "rows": len(df),
+                "size_mb": cache_path.stat().st_size / 1024 / 1024
+            }
 
-        self._save_metadata()
+            self._write_metadata_locked()
 
     def load(self, key: str) -> Optional[pd.DataFrame]:
         """Load DataFrame from cache if exists"""
-        if key not in self.metadata:
-            return None
+        with self._lock:
+            if key not in self.metadata:
+                return None
 
         cache_path = self.get_cache_path(key)
         if not cache_path.exists():
             # Cleanup stale metadata
-            del self.metadata[key]
-            self._save_metadata()
+            with self._lock:
+                if key in self.metadata:
+                    del self.metadata[key]
+                    self._write_metadata_locked()
             return None
 
         try:
             return pd.read_parquet(cache_path)
         except Exception as e:
             cache_path.unlink(missing_ok=True)
-            if key in self.metadata:
-                del self.metadata[key]
-                self._save_metadata()
+            with self._lock:
+                if key in self.metadata:
+                    del self.metadata[key]
+                    self._write_metadata_locked()
             return None
 
     def clear(self, pattern: str = "*"):
         """Clear cache items matching pattern"""
         import fnmatch
-        to_remove = []
-        for key in self.metadata:
-            if fnmatch.fnmatch(key, pattern):
-                cache_path = self.get_cache_path(key)
-                cache_path.unlink(missing_ok=True)
-                to_remove.append(key)
+        with self._lock:
+            to_remove = [key for key in self.metadata if fnmatch.fnmatch(key, pattern)]
 
         for key in to_remove:
-            del self.metadata[key]
-        self._save_metadata()
+            cache_path = self.get_cache_path(key)
+            cache_path.unlink(missing_ok=True)
+
+        if to_remove:
+            with self._lock:
+                for key in to_remove:
+                    self.metadata.pop(key, None)
+                self._write_metadata_locked()
+
+    def metadata_snapshot(self) -> Dict[str, Any]:
+        with self._lock:
+            return self.metadata.copy()
 
 
 class PyroxClient:
@@ -400,15 +419,16 @@ class PyroxClient:
 
     def cache_info(self) -> Dict[str, Any]:
         """Get cache statistics"""
+        metadata = self.cache.metadata_snapshot()
         total_size = sum(
             item.get('size_mb', 0)
-            for item in self.cache.metadata.values()
+            for item in metadata.values()
         )
         return {
             "cache_dir": str(self.cache.cache_dir),
-            "total_items": len(self.cache.metadata),
+            "total_items": len(metadata),
             "total_size_mb": round(total_size, 2),
-            "items": list(self.cache.metadata.keys())
+            "items": list(metadata.keys())
         }
 
 ####    HELPERS     ######
@@ -422,3 +442,10 @@ def mmss_to_minutes(s: pd.Series) -> pd.Series:
 
 if __name__ == '__main__':
     client = PyroxClient()
+    manifest = client._get_manifest(force_refresh=True)
+    valencia = client.get_race(location="Valencia", season=8, use_cache=False)
+    hamburg = client.get_race(location="Hamburg", season=8, use_cache=False)
+    barcelona = client.get_race(location="Barcelona", season=7, year=2025, use_cache=False, division='open')
+
+    s8 = client.get_season(season=8, use_cache=False, division='open', gender='male')
+    breakhere = 0
