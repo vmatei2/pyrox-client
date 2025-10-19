@@ -13,7 +13,9 @@ from threading import RLock
 from typing import Any, Dict, Iterable, List, Optional
 import io
 
-import src.pyrox.constants as _ct
+from . import constants as _ct
+from .errors import RaceNotFound
+
 from src.pyrox.errors import RaceNotFound
 
 import httpx
