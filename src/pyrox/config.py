@@ -4,7 +4,7 @@ import os
 
 from platformdirs import user_cache_dir
 
-from pyrox.errors import ConfigError
+from .errors import ConfigError
 
 APP_NAME = "pyrox"
 APP_AUTHOR = "pyrox"

@@ -16,8 +16,6 @@ import io
 from . import constants as _ct
 from .errors import RaceNotFound
 
-from src.pyrox.errors import RaceNotFound
-
 import httpx
 import pandas as pd
 import pyarrow.parquet as pq
@@ -444,10 +442,9 @@ def mmss_to_minutes(s: pd.Series) -> pd.Series:
 
 if __name__ == '__main__':
     client = PyroxClient()
-    manifest = client._get_manifest(force_refresh=True)
-    valencia = client.get_race(location="Valencia", season=8, use_cache=False)
-    hamburg = client.get_race(location="Hamburg", season=8, use_cache=False)
-    barcelona = client.get_race(location="Barcelona", season=7, year=2025, use_cache=False, division='open')
 
-    s8 = client.get_season(season=8, use_cache=False, division='open', gender='male')
+    s6 = client.get_season(6, use_cache=False)
+    s7 = client.get_season(7, use_cache=False)
+    s8 = client.get_season(8, use_cache=False)
+
     breakhere = 0
