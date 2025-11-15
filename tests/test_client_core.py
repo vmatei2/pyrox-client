@@ -16,6 +16,7 @@ from unittest.mock import patch
 
 import pandas as pd
 import pytest
+
 try:  # pragma: no cover - exercised only when respx missing locally
     import respx
 except ModuleNotFoundError:
@@ -25,8 +26,10 @@ except ModuleNotFoundError:
             if func is None:
                 def decorator(inner):
                     return inner
+
                 return decorator
             return func
+
 
     respx = _RespxStub()
 from pandas.testing import assert_frame_equal
@@ -47,14 +50,16 @@ def mock_cache_dir():
 def client(mock_cache_dir):
     return PyroxClient(cache_dir=mock_cache_dir)
 
+
 @pytest.fixture
 def sample_race_data():
     """Sample race data for testing"""
     return pd.DataFrame([
-        {'athlete name': 'Alex Atherton', 'gender': 'M', 'division': 'pro', 'total_time': '00:54:30'},
-        {'athlete name': 'Blake Brown', 'gender': 'M', 'division': 'open', 'total_time': '00:56:30'},
-        {'athlete name': 'Casey Clark', 'gender': 'F', 'division': 'pro', 'total_time': '01:02:00'}
+        {'name': 'Alex Atherton', 'gender': 'M', 'division': 'pro', 'total_time': '00:54:30'},
+        {'name': 'Blake Brown', 'gender': 'M', 'division': 'open', 'total_time': '00:56:30'},
+        {'name': 'Casey Clark', 'gender': 'F', 'division': 'pro', 'total_time': '01:02:00'}
     ])
+
 
 def test_get_race_from_cache_when_refresh(client, sample_race_data):
     """Test that get race returns cached data when the cache is fresh"""
@@ -69,6 +74,7 @@ def test_get_race_from_cache_when_refresh(client, sample_race_data):
     #  asert we get returned what we expected
     pd.testing.assert_frame_equal(result, sample_race_data)
 
+
 def test_get_race_from_s3_when_not_cache(client, sample_race_data):
     with patch.object(client.cache, "is_fresh", return_value=False):
         with patch.object(client, "_get_race_from_cdn", return_value=sample_race_data):
@@ -80,54 +86,67 @@ def test_get_race_from_s3_when_not_cache(client, sample_race_data):
     assert_frame_equal(result, expected)
 
 
+def test_get_athlete_in_race(client, sample_race_data):
+    """Test that athlete specific searching works as expected"""
+    with patch.object(client, "get_race", return_value=sample_race_data):
+        user = client.get_athlete_in_race(season=5, athlete_name='atherton', location='London')
+        assert list(user['name']) == ['Alex Atherton']
+        # athlete that is not in the race
+        missing = client.get_athlete_in_race(season=5, athlete_name='missing', location='london')
+        assert len(missing) == 0
+
+
 def test_get_race_filters_total_time_lt(client, sample_race_data):
     with patch.object(client.cache, "is_fresh", return_value=False):
         with patch.object(client, "_get_race_from_cdn", return_value=sample_race_data):
             result = client.get_race(season=5, location="London", total_time=60)
 
-    assert result["athlete name"].tolist() == ["Alex Atherton", "Blake Brown"]
+    assert result["name"].tolist() == ["Alex Atherton", "Blake Brown"]
     assert (result["total_time"] < 60).all()
     #  ensure the total time returned is of the expected type!
     assert (result["total_time"].dtype == float)
+
 
 def test_get_race_filters_total_time_range(client, sample_race_data):
     with patch.object(client.cache, "is_fresh", return_value=False):
         with patch.object(client, "_get_race_from_cdn", return_value=sample_race_data):
             result = client.get_race(season=5, location="London", total_time=(55, 60))
 
-    assert result["athlete name"].tolist() == ["Blake Brown"]
+    assert result["name"].tolist() == ["Blake Brown"]
     assert (result["total_time"] > 55).all()
     assert (result["total_time"] < 60).all()
 
+
 def test_cdn_url_from_manifest(client):
     manifest_rows = [
-        {"season": 7, "location": "Liverpool", "path": "some_s3_path_liverpool" },
+        {"season": 7, "location": "Liverpool", "path": "some_s3_path_liverpool"},
         {"season": 7, "location": "London", "path": "some_s3_path_2024", "year": 2024},
-        {"season": 7, "location": "London", "path": "some_s3_path_2025", "year" : 2025},
+        {"season": 7, "location": "London", "path": "some_s3_path_2025", "year": 2025},
         {"season": 7, "location": "Manchester", "path": "some_s3_path"},
         {"season": 6, "location": "Cardiff", "path": "some_s3_path"}
     ]
     with patch.object(client, "_get_manifest", return_value=pd.DataFrame(manifest_rows)):
         path_2025 = client._cdn_url_from_manifest(season=7, location="London", year=2025)
 
-        assert(path_2025 == client._join_cdn("some_s3_path_2025"))
+        assert (path_2025 == client._join_cdn("some_s3_path_2025"))
         path_2024 = client._cdn_url_from_manifest(season=7, location="london", year=2024)
-        assert(path_2024 == client._join_cdn("some_s3_path_2024"))
-        path_liverpool =  client._cdn_url_from_manifest(season=7, location="liverpool")
-        assert(path_liverpool == client._join_cdn("some_s3_path_liverpool"))
+        assert (path_2024 == client._join_cdn("some_s3_path_2024"))
+        path_liverpool = client._cdn_url_from_manifest(season=7, location="liverpool")
+        assert (path_liverpool == client._join_cdn("some_s3_path_liverpool"))
+
 
 @respx.mock
 def test_list_races(client):
     manifest_rows = [
-        {"season": 7, "location": "Liverpool", "path": "some_s3_path" },
+        {"season": 7, "location": "Liverpool", "path": "some_s3_path"},
         {"season": 7, "location": "London", "path": "some_s3_path_2024", "year": 2024},
-        {"season": 7, "location": "London", "path": "some_s3_path", "year" : 2025},
+        {"season": 7, "location": "London", "path": "some_s3_path", "year": 2025},
         {"season": 7, "location": "Manchester", "path": "some_s3_path"},
         {"season": 6, "location": "Cardiff", "path": "some_s3_path"}
     ]
-    with patch.object(client, "_get_manifest",return_value=pd.DataFrame(manifest_rows)):
+    with patch.object(client, "_get_manifest", return_value=pd.DataFrame(manifest_rows)):
         df = client.list_races(season=6)
-        expected = pd.DataFrame({"season": [6], "location":["Cardiff"]})
+        expected = pd.DataFrame({"season": [6], "location": ["Cardiff"]})
         #  assert the manifest has been filtered to only return the specified season
         assert_frame_equal(df, expected)
 
@@ -174,6 +193,7 @@ def test_cache_manager_store_thread_safety(tmp_path):
     assert not first.is_alive() and not second.is_alive(), "store threads failed to finish"
     assert not errors, f"unexpected cache errors: {errors}"
     assert sorted(cache.metadata_snapshot().keys()) == ["alpha", "bravo"]
+
 
 def test_package_exposes_version():
     """

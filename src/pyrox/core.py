@@ -340,6 +340,50 @@ class PyroxClient:
             self.cache.store(cache_key, df)
         return df
 
+    def get_athlete_in_race(self,
+                            season: int,
+                            location: str,
+                            athlete_name: str,
+                            year: Optional[int] = None,
+                            gender: Optional[str] = None,
+                            division: Optional[str] = None,
+                            max_workers: int = 8,
+                            use_cache: bool = True):
+        """
+        Get a specific athlete's (or doubles pair) race entry
+        :param season:
+        :param location:
+        :param athlete_name:
+        :param year:
+        :param gender:
+        :param division:
+        :param max_workers:
+        :param use_cache:
+        :return:
+        """
+
+        if athlete_name is None:
+            raise ValueError(f"Pleaes provide athlete name value.")
+
+        df = self.get_race(
+            season=season,
+            location=location,
+            year=year,
+            gender=gender,
+            division=division,
+            use_cache=use_cache
+        )
+
+        if "name" not in df.columns:
+            raise KeyError("Column 'name not found in race data.")
+
+        lower_name = athlete_name.strip().casefold()
+
+        df = df[df['name'].astype(str).str.casefold().str.contains(lower_name)]
+
+        return df.reset_index(drop=True)
+
+
     def get_season(
             self,
             season: int,
