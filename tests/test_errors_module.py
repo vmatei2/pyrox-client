@@ -21,7 +21,7 @@ def test_errors_are_importable_and_catchable():
     # Representative specific errors (adjust to match actual definitions)
     specific = [
         name
-        for name in ("PyroxError", "ConfigError", "ManifestUnavailable")
+        for name in ("PyroxError", "RaceNotFound", "AthleteNotFound")
         if hasattr(errors, name)
     ]
     assert specific, "At least one specific error type should exist"

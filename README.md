@@ -56,6 +56,7 @@ london_2024_s7 = client.get_race(season=7, location="london", year=2024)
 - Servers publicly available race results from the offical results website
 - Historical coverage of Season 2-7 (for now) (season 5 and 6 are most used/tested in analysis; please open issues for any data problems spotted)
 - Client-side caching by default (local). Set ```use_cache=False``` when querying ```get_race()``` or ```get_season()``` to opt out.
+- Read-only CDN data source – the client always fetches from the public Pyrox CloudFront bucket (no bucket configuration required or supported).
 - Client-side helpers for gender, division, and total finish time filtering (single threshold or open interval)
 
 
@@ -173,4 +174,4 @@ stations_cmp = pd.DataFrame({
 Pyrox is an independent project and is not affiliated with, endorsed or sponsored by the official Hyrox business and event organisers.
 Hyrox and related marks are trademarks of their respective owners; and they are used here only for descriptive purposes.
 
-Client-side caching is user controlled as explained above (depending on an input parameter passed down).
+Client-side caching is user controlled via the ```use_cache``` flag shown above.

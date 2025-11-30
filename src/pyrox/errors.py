@@ -11,41 +11,14 @@ from __future__ import annotations
 
 __all__ = [
     "PyroxError",
-    "ConfigError",
-    "ManifestUnavailable",
-    "ApiError",
     "RaceNotFound",
-    "ParquetReadError",
+    "AthleteNotFound",
 ]
 
 
 class PyroxError(Exception):
     """Base class for all pyrox-specific errors."""
-    pass
 
-
-class ConfigError(PyroxError):
-    """
-    Raised when the client configuration is invalid or incomplete.
-    Example: bucket URI not set or malformed.
-    """
-    pass
-
-
-class ManifestUnavailable(PyroxError):
-    """
-    Raised when the manifest cannot be retrieved or parsed.
-
-    Typical reasons:
-      - Network/S3 access problems
-      - File missing or not public
-      - CSV missing required columns (season, location, path)
-    """
-    pass
-
-
-class ApiError(PyroxError):
-    """Raised when an HTTP call to the Pyrox API fails."""
     pass
 
 
@@ -55,12 +28,13 @@ class RaceNotFound(PyroxError, LookupError):
 
     Inherit from LookupError to feel natural in 'lookup' code paths.
     """
-    pass
 
 
-class ParquetReadError(PyroxError, IOError):
+class AthleteNotFound(PyroxError, LookupError):
     """
-    Raised when the parquet for a race cannot be read (S3 read failure,
-    corrupted object, incompatible parquet version, etc.).
+    Raised when a specific athlete is not found in a race.
+
+    Inerit from LookupError to feel natural in 'lookup' code paths.
     """
-    pass
+
+

@@ -3,35 +3,36 @@ PYROX Client - retrieve Hyrox race results programatically
 """
 
 from __future__ import annotations
+
 import hashlib
+import io
 import json
-import os
+import logging
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from threading import RLock
 from typing import Any, Dict, Iterable, List, Optional
-import io
 
-from . import constants as _ct
-from .errors import RaceNotFound
-
+import fsspec
 import httpx
 import pandas as pd
 import pyarrow.parquet as pq
-import fsspec
-import logging
+
+from . import constants as _ct
+from .errors import RaceNotFound, AthleteNotFound
+
 logger = logging.getLogger("pyrox")
 logger.addHandler(logging.NullHandler())  # prevent “No handler” warnings
 DEFAULT_CACHE_DIR = Path.home() / ".cache" / "pyrox"
 DEFAULT_CDN_BASE = "https://d2wl4b7sx66tfb.cloudfront.net"  # getting data via CDN
-#  DEFAULT_API_URL = "http://localhost:8000"  --> used for testing when running api in docker container
 
 
 class CacheManager:
     """
     Handles local caching with ETags and TTL
     """
+
     def __init__(self, cache_dir: Path = DEFAULT_CACHE_DIR):
         self.cache_dir = cache_dir
         self.cache_dir.mkdir(parents=True, exist_ok=True)
@@ -53,7 +54,7 @@ class CacheManager:
         with open(self.metadata_file, "w") as f:
             json.dump(self.metadata, f, indent=2)
 
-    def get_cache_path(self, key:str) -> Path:
+    def get_cache_path(self, key: str) -> Path:
         """get cahce file path for a given key"""
         #  using hash to avoid filesystem issues with long/special characters
         key_hash = hashlib.md5(key.encode("utf-8")).hexdigest()
@@ -67,7 +68,7 @@ class CacheManager:
         if entry is None:
             return False
 
-        cache_time = entry.get('timestamp', 0)
+        cache_time = entry.get("timestamp", 0)
         #  boolean checking if the difference between current time and latest cache time is lower than time to load decided above!
         return (time.time() - cache_time) < ttl_seconds
 
@@ -75,9 +76,9 @@ class CacheManager:
         """Get etag for given key"""
         with self._lock:
             entry = self.metadata.get(key)
-            return entry.get('etag') if entry else None
+            return entry.get("etag") if entry else None
 
-    def store(self, key:str, df: pd.DataFrame, etag:Optional[str]=None) -> None:
+    def store(self, key: str, df: pd.DataFrame, etag: Optional[str] = None) -> None:
         """Store Dataframe in ache with metadata"""
         cache_path = self.get_cache_path(key)
 
@@ -91,7 +92,7 @@ class CacheManager:
                 "etag": etag,
                 "path": str(cache_path),
                 "rows": len(df),
-                "size_mb": cache_path.stat().st_size / 1024 / 1024
+                "size_mb": cache_path.stat().st_size / 1024 / 1024,
             }
 
             self._write_metadata_locked()
@@ -114,6 +115,7 @@ class CacheManager:
         try:
             return pd.read_parquet(cache_path)
         except Exception as e:
+            logger.warning(f"Failed to read cache for key {key}: {e}")
             cache_path.unlink(missing_ok=True)
             with self._lock:
                 if key in self.metadata:
@@ -124,6 +126,7 @@ class CacheManager:
     def clear(self, pattern: str = "*"):
         """Clear cache items matching pattern"""
         import fnmatch
+
         with self._lock:
             to_remove = [key for key in self.metadata if fnmatch.fnmatch(key, pattern)]
 
@@ -143,13 +146,8 @@ class CacheManager:
 
 
 class PyroxClient:
-    def __init__(
-            self,
-            cache_dir: Optional[Path] = None
-    ):
+    def __init__(self, cache_dir: Optional[Path] = None):
         self.cache = CacheManager(cache_dir or DEFAULT_CACHE_DIR)
-
-
 
     def _join_cdn(self, *parts: str) -> str:
         """https://d2wl4b7sx66tfb.cloudfront.net/processed/manifest/manifest.json"""
@@ -160,7 +158,9 @@ class PyroxClient:
         Load manifest csv via CDN with ETag-based caching.
         """
         cache_key = "manifest_cdn_v1"
-        if not force_refresh and self.cache.is_fresh(cache_key, ttl_seconds=_ct.TWO_HOURS_IN_SECONDS):
+        if not force_refresh and self.cache.is_fresh(
+            cache_key, ttl_seconds=_ct.TWO_HOURS_IN_SECONDS
+        ):
             cached = self.cache.load(cache_key)
             if cached is not None:
                 return cached
@@ -186,27 +186,36 @@ class PyroxClient:
             self.cache.store(cache_key, df, etag)
             return df
 
-    def list_races(self, season: Optional[int] = None, force_refresh: bool = False) -> pd.DataFrame:
+    def list_races(
+        self, season: Optional[int] = None, force_refresh: bool = False
+    ) -> pd.DataFrame:
         """List available races"""
         df = self._get_manifest(force_refresh=force_refresh)
 
         if season is not None:
             df = df[df["season"] == int(season)]
 
-        return (df[["season", "location"]]
-                .drop_duplicates()
-                .sort_values(["season", "location"])
-                .reset_index(drop=True))
+        return (
+            df[["season", "location"]]
+            .drop_duplicates()
+            .sort_values(["season", "location"])
+            .reset_index(drop=True)
+        )
 
-    def _manifest_row(self, season: int, location: str, year:Optional[int] = None) -> pd.Series:
+    def _manifest_row(
+        self, season: int, location: str, year: Optional[int] = None
+    ) -> pd.Series:
         df = self._get_manifest()
 
-        mask = (df["season"].eq(int(season))
-                & df["location"].str.casefold().eq(location.casefold()))
+        mask = df["season"].eq(int(season)) & df["location"].str.casefold().eq(
+            location.casefold()
+        )
         if year is not None:
             mask &= df["year"].eq(int(year))
         if not mask.any():
-            raise RaceNotFound(f"No manifest entry for season={season}, location='{location}'")
+            raise RaceNotFound(
+                f"No manifest entry for season={season}, location='{location}'"
+            )
         return df.loc[mask].iloc[0]
 
     def _s3_key_from_uri(self, s3_uri: str) -> str:
@@ -215,7 +224,9 @@ class PyroxClient:
             return s3_uri.split("/", 4)[4]  # after bucket name
         return s3_uri
 
-    def _cdn_url_from_manifest(self, season: int, location: str, year: Optional[int] = None) -> str:
+    def _cdn_url_from_manifest(
+        self, season: int, location: str, year: Optional[int] = None
+    ) -> str:
         row = self._manifest_row(season, location, year)
         # Prefer an explicit 'path' (s3 uri or key). If you already store 'cdn_path', you can use it directly.
         s3_path = str(row["path"])
@@ -230,15 +241,23 @@ class PyroxClient:
             filters.append(("division", "=", division))
         return filters or None
 
-    def _get_race_from_cdn(self, season: int, location: str, year: Optional[int]=None, gender: Optional[str] = None,
-                           division: Optional[str] = None) -> pd.DataFrame:
+    def _get_race_from_cdn(
+        self,
+        season: int,
+        location: str,
+        year: Optional[int] = None,
+        gender: Optional[str] = None,
+        division: Optional[str] = None,
+    ) -> pd.DataFrame:
         url = self._cdn_url_from_manifest(season, location, year)
         filters = self._filters_for_race(gender, division)
         try:
             with fsspec.open(url, "rb") as f:
                 table = pq.read_table(f, filters=filters)
             if table.num_rows == 0:
-                raise RaceNotFound(f"No rows after filters at {url} (gender={gender}, division={division})")
+                raise RaceNotFound(
+                    f"No rows after filters at {url} (gender={gender}, division={division})"
+                )
             return table.to_pandas(split_blocks=True, self_destruct=True)
         except RaceNotFound:
             raise
@@ -246,14 +265,14 @@ class PyroxClient:
             raise FileNotFoundError(f"CDN read failed for {url}: {e}") from e
 
     def get_race(
-            self,
-            season: int,
-            location: str,
-            year: Optional[int] = None,
-            gender: Optional[str] = None,
-            division: Optional[str] = None,
-            total_time: Optional[float | tuple[Optional[float], Optional[float]]] = None,
-            use_cache: bool = True
+        self,
+        season: int,
+        location: str,
+        year: Optional[int] = None,
+        gender: Optional[str] = None,
+        division: Optional[str] = None,
+        total_time: Optional[float | tuple[Optional[float], Optional[float]]] = None,
+        use_cache: bool = True,
     ) -> pd.DataFrame:
         """
         Fetch race results, optionally filtering by gender, division, and total time.
@@ -283,11 +302,15 @@ class PyroxClient:
             total_time_key = "all"
         elif isinstance(total_time, tuple):
             if len(total_time) != 2:
-                raise ValueError("total_time tuple must contain exactly two values (lower, upper)")
+                raise ValueError(
+                    "total_time tuple must contain exactly two values (lower, upper)"
+                )
             raw_lower, raw_upper = total_time
             lower_bound = float(raw_lower) if raw_lower is not None else None
             upper_bound = float(raw_upper) if raw_upper is not None else None
-            total_time_key = f"range_{_format_bound(lower_bound)}_{_format_bound(upper_bound)}"
+            total_time_key = (
+                f"range_{_format_bound(lower_bound)}_{_format_bound(upper_bound)}"
+            )
         else:
             lower_bound = None
             upper_bound = float(total_time)
@@ -304,19 +327,24 @@ class PyroxClient:
             cached = self.cache.load(cache_key)
             logger.info(f"Using cached race {cache_key} and retrieing from cache")
             if cached is not None:
-                logger.info(f"Found race - serving cache")
+                logger.info("Found race - serving cache")
                 return cached
 
         try:
             df = self._get_race_from_cdn(season, location, year, gender, division)
         except (RaceNotFound, FileNotFoundError) as e:
-            raise FileNotFoundError(f"Read failed for season{season}, location={location} - {e}") from e
+            raise FileNotFoundError(
+                f"Read failed for season{season}, location={location} - {e}"
+            ) from e
 
         # Before returning, convert station columns to their exercise names
         df = df.rename(columns=_ct.WORK_STATION_RENAMES)
 
         time_cols = list(_ct.WORK_STATION_RENAMES.values()) + [
-            "total_time", "work_time", "roxzone_time", "run_time"
+            "total_time",
+            "work_time",
+            "roxzone_time",
+            "run_time",
         ]
 
         for col in time_cols:
@@ -325,7 +353,9 @@ class PyroxClient:
 
         if lower_bound is not None or upper_bound is not None:
             if "total_time" not in df.columns:
-                raise KeyError("total_time column is not available in the retrieved race data")
+                raise KeyError(
+                    "total_time column is not available in the retrieved race data"
+                )
             total_time_series = df["total_time"].astype(float)
             mask = pd.Series(True, index=df.index)
             if lower_bound is not None:
@@ -340,15 +370,16 @@ class PyroxClient:
             self.cache.store(cache_key, df)
         return df
 
-    def get_athlete_in_race(self,
-                            season: int,
-                            location: str,
-                            athlete_name: str,
-                            year: Optional[int] = None,
-                            gender: Optional[str] = None,
-                            division: Optional[str] = None,
-                            max_workers: int = 8,
-                            use_cache: bool = True):
+    def get_athlete_in_race(
+        self,
+        season: int,
+        location: str,
+        athlete_name: str,
+        year: Optional[int] = None,
+        gender: Optional[str] = None,
+        division: Optional[str] = None,
+        use_cache: bool = True,
+    ):
         """
         Get a specific athlete's (or doubles pair) race entry
         :param season:
@@ -357,13 +388,12 @@ class PyroxClient:
         :param year:
         :param gender:
         :param division:
-        :param max_workers:
         :param use_cache:
         :return:
         """
 
         if athlete_name is None:
-            raise ValueError(f"Pleaes provide athlete name value.")
+            raise ValueError("Pleaes provide athlete name value.")
 
         df = self.get_race(
             season=season,
@@ -371,34 +401,40 @@ class PyroxClient:
             year=year,
             gender=gender,
             division=division,
-            use_cache=use_cache
+            use_cache=use_cache,
         )
 
         if "name" not in df.columns:
-            raise KeyError("Column 'name not found in race data.")
+            raise KeyError("Column 'name' not found in race data.")
 
         lower_name = athlete_name.strip().casefold()
 
-        df = df[df['name'].astype(str).str.casefold().str.contains(lower_name)]
+        df = df[df["name"].astype(str).str.casefold().str.contains(lower_name)]
+
+        if len(df) == 0:
+            raise AthleteNotFound(
+                f"Athlete '{athlete_name}' not found in season={season}, location='{location}'"
+            )
 
         return df.reset_index(drop=True)
 
-
     def get_season(
-            self,
-            season: int,
-            locations: Optional[Iterable[str]] = None,
-            gender: Optional[str] = None,
-            division: Optional[str] = None,
-            max_workers: int = 8,
-            use_cache: bool = True
+        self,
+        season: int,
+        locations: Optional[Iterable[str]] = None,
+        gender: Optional[str] = None,
+        division: Optional[str] = None,
+        max_workers: int = 8,
+        use_cache: bool = True,
     ) -> pd.DataFrame:
         """
         Get all races for a season
         """
         # Create cache key for the entire season query
         locations_key = ",".join(sorted(locations)) if locations else "all"
-        cache_key = f"season_{season}_{locations_key}_{gender or 'all'}_{division or 'all'}"
+        cache_key = (
+            f"season_{season}_{locations_key}_{gender or 'all'}_{division or 'all'}"
+        )
 
         # Try cache first
         if use_cache and self.cache.is_fresh(cache_key, ttl_seconds=3600):  # 1 hour TTL
@@ -421,14 +457,13 @@ class PyroxClient:
                 location=location,
                 gender=gender,
                 division=division,
-                use_cache=use_cache
+                use_cache=use_cache,
             )
 
         frames: List[pd.DataFrame] = []
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = [
-                executor.submit(fetch_one, loc)
-                for loc in manifest["location"].tolist()
+                executor.submit(fetch_one, loc) for loc in manifest["location"].tolist()
             ]
 
             for future in as_completed(futures):
@@ -451,7 +486,7 @@ class PyroxClient:
 
         return result
 
-    def _normalise_s3_path(self, path:str) -> str:
+    def _normalise_s3_path(self, path: str) -> str:
         """Small helper function to bascially remove s3 prefix and return URL that is epxected for pyarrow retrieval"""
         if path.startswith("s3://"):
             return path[5:]  #  strip 's3://'
@@ -464,16 +499,14 @@ class PyroxClient:
     def cache_info(self) -> Dict[str, Any]:
         """Get cache statistics"""
         metadata = self.cache.metadata_snapshot()
-        total_size = sum(
-            item.get('size_mb', 0)
-            for item in metadata.values()
-        )
+        total_size = sum(item.get("size_mb", 0) for item in metadata.values())
         return {
             "cache_dir": str(self.cache.cache_dir),
             "total_items": len(metadata),
             "total_size_mb": round(total_size, 2),
-            "items": list(metadata.keys())
+            "items": list(metadata.keys()),
         }
+
 
 ####    HELPERS     ######
 #### To move to separate file (potentially class) as they grow
@@ -484,7 +517,7 @@ def mmss_to_minutes(s: pd.Series) -> pd.Series:
     return pd.to_timedelta(s, errors="coerce").dt.total_seconds() / 60.0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     client = PyroxClient()
 
     s6 = client.get_season(6, use_cache=False)

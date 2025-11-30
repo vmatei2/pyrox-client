@@ -1,11 +1,9 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- Source: `src/pyrox/` (src-layout; package name `pyrox`). Key modules: `core.py` (HTTP client), `config.py` (env/config), `manifest.py` (data shapes), `errors.py` (exceptions), `__init__.py` (package metadata).
-- CLI/entry: `main.py` (simple executable script for local runs).
-- API demo: `api/` (Fly.io/Docker deploy target for testing the client). `api/Dockerfile` builds an image that includes `src/` and sets `PYTHONPATH`.
 - Docs: `README.md`, `NOTES.md`.
 - Build config: `pyproject.toml` (Hatch build, dependencies, metadata).
+- Main client code: `src/core.py`
 
 ## Build, Test, and Development Commands
 - Install (editable): `uv pip install -e .` or `pip install -e .`

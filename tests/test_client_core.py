@@ -13,6 +13,7 @@ from pathlib import Path
 from types import MethodType
 from typing import List
 from unittest.mock import patch
+from src.pyrox.errors import AthleteNotFound
 
 import pandas as pd
 import pytest
@@ -91,10 +92,13 @@ def test_get_athlete_in_race(client, sample_race_data):
     with patch.object(client, "get_race", return_value=sample_race_data):
         user = client.get_athlete_in_race(season=5, athlete_name='atherton', location='London')
         assert list(user['name']) == ['Alex Atherton']
-        # athlete that is not in the race
-        missing = client.get_athlete_in_race(season=5, athlete_name='missing', location='london')
-        assert len(missing) == 0
-
+        # athlete that is *not* in the race -> should raise
+        with pytest.raises(AthleteNotFound):
+            client.get_athlete_in_race(
+                season=5,
+                athlete_name="missing",
+                location="london",
+            )
 
 def test_get_race_filters_total_time_lt(client, sample_race_data):
     with patch.object(client.cache, "is_fresh", return_value=False):

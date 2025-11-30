@@ -8,17 +8,15 @@ dynamic = ["version"]
 description = "HYROX race data client – retrieve full race results via Python"
 authors = [{ name = "Vlad Matei" }]
 readme = {file="README.md", content-type = "text/markdown" }
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 dependencies = [
-    "pandas>=2.2",
+    "pandas>=2.3.3",
     "fastparquet>=2024.5.0",
     "fsspec>=2024.2.0",
     "s3fs>=2024.2.0",
-    "requests>=2.31",
     "platformdirs>=4.2.0",
     "httpx>=0.28.1",
-    "respx>=0.22.0",
-    "pyarrow>=14.0.0,<18.0.0",  #  stable versions with wheels, had issues with latest
+    "pyarrow>=22.0.0",  #  stable versions with wheels, had issues with latest
 ]
 
 classifiers = [
@@ -52,6 +50,10 @@ path = "src/pyrox/__init__.py"
 [dependency-groups]
 dev = [
     "black>=25.11.0",
+    "isort>=6.1.0",
+    "pylint>=3.3.9",
     "pytest>=8.4.2",
     "ruff>=0.14.7",
+    "respx>=0.22.0",
+    "requests>=2.31",
 ]
