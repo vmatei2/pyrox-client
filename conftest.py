@@ -29,7 +29,7 @@ def pytest_configure(config: pytest.Config) -> None:
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
     only_integration = config.getoption("--only-integration")
     if only_integration:
-        # User wants only integration tests -> skip all non-integration
+        # only integration tests -> skip all non-integration
         skip_marker = pytest.mark.skip(
             reason="only running integration tests; skipping non-integration",
         )
@@ -41,7 +41,7 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
     run_integration = config.getoption("--run-integration")
 
     if run_integration:
-        # User explicitly asked for integration tests -> do nothing
+        # asked for integration tests -> do nothing --> run all
         return
 
     skip_marker = pytest.mark.skip(

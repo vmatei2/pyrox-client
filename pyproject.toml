@@ -51,4 +51,6 @@ dev = [
     "ruff>=0.14.7",
     "respx>=0.22.0",
     "requests>=2.31",
+    "matplotlib>=3.10.7",
+    "seaborn>=0.13.2",
 ]
