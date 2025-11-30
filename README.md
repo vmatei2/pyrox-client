@@ -2,6 +2,10 @@
 
 Unofficial Python client for HYROX race results — load public results into pandas DataFrames.
 
+![Unit Tests](https://github.com/vmatei2/pyrox-client/actions/workflows/tests.yml/badge.svg)
+![Integration Tests](https://github.com/vmatei2/pyrox-client/actions/workflows/integration.yml/badge.svg)
+
+
 [![PyPI - Version](https://img.shields.io/pypi/v/pyrox-client.svg)](https://pypi.org/project/pyrox-client/)
 [![Wheel](https://img.shields.io/pypi/wheel/pyrox-client.svg)](https://pypi.org/project/pyrox-client/)
 [![Downloads](https://static.pepy.tech/badge/pyrox-client/month)](https://pepy.tech/project/pyrox-client)

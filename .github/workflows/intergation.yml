@@ -1,0 +1,25 @@
+name: integration
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+
+
+    # run everything inside the uv image
+    container:
+      image: ghcr.io/astral-sh/uv:python3.12-bookworm
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Sync dependencies with uv
+        run: uv sync --all-extras 
+
+      - name: Run integration tests
+        run: uv run pytest -vv --only-integration
