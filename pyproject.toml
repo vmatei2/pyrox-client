@@ -48,3 +48,8 @@ include = [
 
 [tool.hatch.version]
 path = "src/pyrox/__init__.py"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+]

@@ -1,4 +1,4 @@
-ye# Repository Guidelines
+# Repository Guidelines
 
 ## Project Structure & Module Organization
 - Source: `src/pyrox/` (src-layout; package name `pyrox`). Key modules: `core.py` (HTTP client), `config.py` (env/config), `manifest.py` (data shapes), `errors.py` (exceptions), `__init__.py` (package metadata).
