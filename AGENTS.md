@@ -11,8 +11,6 @@
 - Install (editable): `uv pip install -e .` or `pip install -e .`
 - Lint/format: `ruff check .` and `ruff format .` (fallback: `black .` if preferred). Configure via `pyproject.toml`.
 - Type check: `mypy src` (if installed locally).
-- Run sample script: `python main.py`
-- Run API in Docker (local test): see `NOTES.md`; e.g. build `docker build -f api/Dockerfile -t pyrox-api .` then run mapping port 8000.
 
 ## Coding Style & Naming Conventions
 - Style: PEP 8 with Ruff autofix; 4-space indentation; max line length 100 (per ruff/black defaults unless overridden).
@@ -22,6 +20,7 @@
 ## Testing Guidelines
 - Framework: pytest (recommended). Place tests under `tests/` mirroring `src/pyrox/` paths.
 - Naming: test files `test_*.py`; functions `test_*`.
+- Source the virutal environment located in .venv folder
 - Run: `pytest -q`; coverage (optional) `pytest --cov=pyrox`.
 - Aim for coverage of public functions in `core.py` and error paths in `errors.py`.
 

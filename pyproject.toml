@@ -51,5 +51,7 @@ path = "src/pyrox/__init__.py"
 
 [dependency-groups]
 dev = [
+    "black>=25.11.0",
     "pytest>=8.4.2",
+    "ruff>=0.14.7",
 ]
