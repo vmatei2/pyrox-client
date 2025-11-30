@@ -515,13 +515,3 @@ def mmss_to_minutes(s: pd.Series) -> pd.Series:
     # if it's MM:SS, promote to 0:MM:SS so pandas parses it
     s = s.where(s.str.count(":") == 2, "0:" + s)
     return pd.to_timedelta(s, errors="coerce").dt.total_seconds() / 60.0
-
-
-if __name__ == "__main__":
-    client = PyroxClient()
-
-    s6 = client.get_season(6, use_cache=False)
-    s7 = client.get_season(7, use_cache=False)
-    s8 = client.get_season(8, use_cache=False)
-
-    breakhere = 0

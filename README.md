@@ -106,6 +106,34 @@ get_season(
 ) -> pd.DataFrame
 ```
 - returns a combinded Dataframe for a whole season (or a set of locations passed in)
+
+```
+get_athlete_in_race(
+    season: int,
+    location: str,
+    athlete_name: str,
+    year: Optional[int] = None,
+    gender: Optional[str] = None,
+    division: Optional[str] = None,
+    use_cache: bool = True,
+)
+```
+- returns a pd Dataframe filtered down to the matching athlete
+- matching is case-insensitive
+- if more than one row matches, all rows are returned
+- names are in the format shown on 'results.hyrox' i.e. (LastName, FirstName)
+
+```ccommandline
+df = client.get_athlete_in_race(
+    season=7,
+    location="London",
+    year=2023,
+    gender="male",
+    division="open",
+    athlete_name="LastName, FirstName",
+)
+```
+
 ```commandline
 clear_cache(pattern: str = "*") -> None
 ```

@@ -1,9 +1,8 @@
 """
-Minimal tests for the pyrox client library.
+Simple set of unit tests
+for the core PyroxClient functionality.
 
-These tests are intentionally simple and heavily commented so you can follow
-what is being checked. They avoid real network calls by focusing on module
-structure and basic function contracts.
+Using sample_race_data fixutre to avoid hitting live data/CDN.
 """
 import importlib
 import tempfile
@@ -18,21 +17,7 @@ from src.pyrox.errors import AthleteNotFound
 import pandas as pd
 import pytest
 
-try:  # pragma: no cover - exercised only when respx missing locally
-    import respx
-except ModuleNotFoundError:
-    class _RespxStub:
-        @staticmethod
-        def mock(func=None, **_):
-            if func is None:
-                def decorator(inner):
-                    return inner
 
-                return decorator
-            return func
-
-
-    respx = _RespxStub()
 from pandas.testing import assert_frame_equal
 
 from src.pyrox import PyroxClient
@@ -139,7 +124,6 @@ def test_cdn_url_from_manifest(client):
         assert (path_liverpool == client._join_cdn("some_s3_path_liverpool"))
 
 
-@respx.mock
 def test_list_races(client):
     manifest_rows = [
         {"season": 7, "location": "Liverpool", "path": "some_s3_path"},
