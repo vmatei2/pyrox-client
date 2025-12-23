@@ -6,6 +6,7 @@ Unofficial Python client for HYROX race results — load public results into pan
 ![Integration Tests](https://github.com/vmatei2/pyrox-client/actions/workflows/integration.yml/badge.svg)
 
 
+[![Docs](https://img.shields.io/badge/docs-mkdocs-0b5d4a)](https://vmatei2.github.io/pyrox-client/)
 [![PyPI - Version](https://img.shields.io/pypi/v/pyrox-client.svg)](https://pypi.org/project/pyrox-client/)
 [![Wheel](https://img.shields.io/pypi/wheel/pyrox-client.svg)](https://pypi.org/project/pyrox-client/)
 [![Downloads](https://static.pepy.tech/badge/pyrox-client/month)](https://pepy.tech/project/pyrox-client)
@@ -13,6 +14,11 @@ Unofficial Python client for HYROX race results — load public results into pan
 > Load HYROX race results into pandas in a few lines. Built for people who love fitness *and* data.
 
 Unofficial Python client for HYROX race results — load public results into pandas DataFrames in a few lines. Built for people who love fitness and data: analyse performance trends, understand HYROX’s unique demands, and open up new research avenues. 
+
+## Documentation
+
+- Live docs: https://vmatei2.github.io/pyrox-client/
+- Local preview: `mkdocs serve`
 
 ## Install
 

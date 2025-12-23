@@ -1,0 +1,31 @@
+site_name: pyrox-client
+site_description: Unofficial Python client for HYROX race results.
+site_url: https://vmatei2.github.io/pyrox-client/
+
+theme:
+  name: mkdocs
+
+nav:
+  - Home: index.md
+  - Getting Started: quickstart.md
+  - User Guide:
+      - Filtering: filters.md
+      - Caching: caching.md
+      - Data Model: data-model.md
+      - Analytics: analytics.md
+      - Reproducible Research: reproducible-research.md
+
+  - API Reference:
+      - Client API: api.md
+      - Errors: errors.md
+  - FAQ: faq.md
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - tables
+  - codehilite
+
+extra_css:
+  - assets/styles.css

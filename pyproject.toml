@@ -55,4 +55,5 @@ dev = [
     "matplotlib>=3.10.7",
     "seaborn>=0.13.2",
     "ipykernel>=7.1.0",
+    "mkdocs>=1.6.1",
 ]
