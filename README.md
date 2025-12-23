@@ -95,7 +95,7 @@ get_race(
     location: str,
     year: int | None = None,
     gender: str | None = None,      # "male" | "female" | "mixed"
-    division: str | None = None,    # "open" | "pro" (case-insensitive contains)
+    division: str | None = None,    # "open" | "pro" | "pro_doubles" (case-insensitive contains)
     total_time: float | tuple[float | None, float | None] | None = None,
     use_cache: bool = True,
 ) -> pd.DataFrame

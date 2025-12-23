@@ -11,7 +11,7 @@ race = client.get_race(
     season=7,
     location="london",
     gender="male",      # "male" | "female" | "mixed"
-    division="open",   # "open" | "pro"
+    division="open",   # "open" | "pro" | "pro_doubles"
 )
 ```
 

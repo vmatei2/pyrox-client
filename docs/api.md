@@ -32,6 +32,8 @@ Key behaviors:
 - Converts time columns into minutes.
 - Supports strict time windows using `total_time`.
 
+Division values seen in the dataset include `open`, `pro`, and `pro_doubles`.
+
 ### `get_athlete_in_race(...)`
 
 ```commandline
