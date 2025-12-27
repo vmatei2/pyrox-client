@@ -37,3 +37,14 @@ def test_get_athlete_smoke():
 
     with pytest.raises(AthleteNotFound):
         df = client.get_athlete_in_race(season=7, location="Barcelona", athlete_name="NonExistentAthlete123")
+
+@pytest.mark.integration
+def test_list_races_smoke():
+    """
+    Very simple list races end-to-end smoke test against the live cdn
+    """
+
+    client = PyroxClient()
+    s8_races = client.list_races(season=8)
+    assert len(s8_races) > 10
+    assert {'season', 'location', 'file_last_modified'}.issubset(s8_races.columns)
