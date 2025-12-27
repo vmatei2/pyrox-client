@@ -195,12 +195,16 @@ class PyroxClient:
         if season is not None:
             df = df[df["season"] == int(season)]
 
-        return (
-            df[["season", "location"]]
-            .drop_duplicates()
-            .sort_values(["season", "location"])
-            .reset_index(drop=True)
-        )
+        if "file_last_modified" in df.columns:
+            races = (
+                df[["season", "location", "file_last_modified"]]
+                .groupby(["season", "location"], as_index=False)["file_last_modified"]
+                .max()
+            )
+        else:
+            races = df[["season", "location"]].drop_duplicates()
+
+        return races.sort_values(["season", "location"]).reset_index(drop=True)
 
     def _manifest_row(
         self, season: int, location: str, year: Optional[int] = None
@@ -250,6 +254,15 @@ class PyroxClient:
         division: Optional[str] = None,
     ) -> pd.DataFrame:
         url = self._cdn_url_from_manifest(season, location, year)
+        return self._get_race_from_url(url, gender, division)
+
+        
+    def _get_race_from_url(
+        self,
+        url: str,
+        gender: Optional[str] = None,
+        division: Optional[str] = None,
+    ) -> pd.DataFrame:
         filters = self._filters_for_race(gender, division)
         try:
             with fsspec.open(url, "rb") as f:
@@ -263,6 +276,7 @@ class PyroxClient:
             raise
         except Exception as e:
             raise FileNotFoundError(f"CDN read failed for {url}: {e}") from e
+
 
     def get_race(
         self,

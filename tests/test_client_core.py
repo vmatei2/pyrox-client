@@ -126,15 +126,44 @@ def test_cdn_url_from_manifest(client):
 
 def test_list_races(client):
     manifest_rows = [
-        {"season": 7, "location": "Liverpool", "path": "some_s3_path"},
-        {"season": 7, "location": "London", "path": "some_s3_path_2024", "year": 2024},
-        {"season": 7, "location": "London", "path": "some_s3_path", "year": 2025},
-        {"season": 7, "location": "Manchester", "path": "some_s3_path"},
-        {"season": 6, "location": "Cardiff", "path": "some_s3_path"}
+        {
+            "season": 7,
+            "location": "Liverpool",
+            "path": "some_s3_path",
+            "file_last_modified": "2025-02-01",
+        },
+        {
+            "season": 7,
+            "location": "London",
+            "path": "some_s3_path_2024",
+            "year": 2024,
+            "file_last_modified": "2024-10-01",
+        },
+        {
+            "season": 7,
+            "location": "London",
+            "path": "some_s3_path",
+            "year": 2025,
+            "file_last_modified": "2025-01-15",
+        },
+        {
+            "season": 7,
+            "location": "Manchester",
+            "path": "some_s3_path",
+            "file_last_modified": "2025-03-10",
+        },
+        {
+            "season": 6,
+            "location": "Cardiff",
+            "path": "some_s3_path",
+            "file_last_modified": "2024-08-20",
+        },
     ]
     with patch.object(client, "_get_manifest", return_value=pd.DataFrame(manifest_rows)):
         df = client.list_races(season=6)
-        expected = pd.DataFrame({"season": [6], "location": ["Cardiff"]})
+        expected = pd.DataFrame(
+            {"season": [6], "location": ["Cardiff"], "file_last_modified": ["2024-08-20"]}
+        )
         #  assert the manifest has been filtered to only return the specified season
         assert_frame_equal(df, expected)
 
