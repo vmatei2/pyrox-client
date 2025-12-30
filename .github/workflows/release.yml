@@ -6,7 +6,11 @@ on:
       - "v*"
 
 jobs:
+  tests:
+    uses: ./.github/workflows/tests.yml
+
   publish:
+    needs: tests
     runs-on: ubuntu-latest
     permissions:
       contents: read

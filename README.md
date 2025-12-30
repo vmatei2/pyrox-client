@@ -207,6 +207,14 @@ stations_cmp = pd.DataFrame({
 
 ![](https://raw.githubusercontent.com/vmatei2/pyrox-client/refs/heads/main/img_1.png)
 
+## Release
+
+For releasing, we have a script inside the `scripts` folder.
+
+Simply run `client % ./scripts/release.sh version_number (i.e. 0.2.3)` and then this will tag and commit the new version bump.
+
+Then, you will be prompted to run `Next: git push origin main --tags` - which will trigger the release.yml job, which is configured to push into pypi.
+
 ### Disclaimer
 
 Pyrox is an independent project and is not affiliated with, endorsed or sponsored by the official Hyrox business and event organisers.
