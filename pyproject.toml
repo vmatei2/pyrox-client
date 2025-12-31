@@ -19,6 +19,7 @@ dependencies = [
     "pyarrow>=22.0.0",  #  stable versions with wheels, had issues with latest
     "statsmodels>=0.14.6",
     "twine>=6.2.0",
+    "duckdb>=1.4.3",
 ]
 
 classifiers = [
