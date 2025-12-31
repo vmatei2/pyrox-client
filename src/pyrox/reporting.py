@@ -25,7 +25,7 @@ def build_athlete_options(
 
     Example:
         >>> import pandas as pd
-        >>> from pyrox.reporting import build_athlete_options
+        >>> from pyrox.repor=ting import build_athlete_options
         >>> df = pd.DataFrame({"name": ["Alex", "Alex", "Blake"]})
         >>> build_athlete_options(df)
         [{'value': 'Alex', 'label': 'Alex', 'count': 2}, {'value': 'Blake', 'label': 'Blake', 'count': 1}]
