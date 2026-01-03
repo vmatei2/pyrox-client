@@ -4,6 +4,7 @@ Reporting helpers for PyroxClient with DuckDB integration.
 
 from __future__ import annotations
 
+import re
 from typing import Iterable, Optional
 
 import duckdb
@@ -11,6 +12,8 @@ import pandas as pd
 
 from .core import PyroxClient
 from .errors import AthleteNotFound
+
+
 
 
 class ReportingClient:
@@ -56,6 +59,7 @@ class ReportingClient:
         *,
         match: str = "best",
         gender: Optional[str] = None,
+        division: Optional[str] = None,
         nationality: Optional[str] = None,
         require_unique: bool = True,
     ) -> pd.DataFrame:
@@ -68,28 +72,52 @@ class ReportingClient:
             gender: Optional gender filter for athlete disambiguation.
             nationality: Optional nationality filter for athlete disambiguation.
             require_unique: Raise if multiple athletes match the search.
+
+        Notes:
+            Matching is token-based, so punctuation and name order are ignored.
         """
         if athlete_name is None or str(athlete_name).strip() == "":
             raise ValueError("athlete_name must be a non-empty string.")
 
-        name_lc = str(athlete_name).strip().lower()
+        def normalise_tokens(value: str) -> list[str]:
+            cleaned = re.sub(r"[^\w]+", " ", value.casefold())
+            return [token for token in cleaned.split() if token]
+
+        def split_partners(value: str) -> list[str]:
+            raw = value.strip()
+            if not raw:
+                return []
+            parts = re.split(r"\s*(?:/|&|\+|\band\b|\bx\b|\|)\s*", raw)
+            parts = [part.strip() for part in parts if part.strip()]
+            if len(parts) > 1:
+                return parts
+            if "," in raw:
+                comma_parts = [part.strip() for part in raw.split(",") if part.strip()]
+                if len(comma_parts) > 1:
+                    counts = [len(normalise_tokens(part)) for part in comma_parts]
+                    if counts and all(count >= 2 for count in counts):
+                        return comma_parts
+            return [raw]
+
+        raw_name = str(athlete_name).strip()
+        tokens = normalise_tokens(raw_name)
+        if not tokens:
+            raise ValueError("athlete_name must include at least one token.")
+
+        input_signature = tuple(sorted(tokens))
+        input_token_set = set(tokens)
         match = match.lower()
         if match not in {"best", "exact", "contains"}:
             raise ValueError("match must be one of: 'best', 'exact', 'contains'.")
 
         con = self._ensure_connection()
 
-        def fetch_candidates(mode: str) -> pd.DataFrame:
+        def fetch_candidates(token_list: list[str]) -> pd.DataFrame:
             clauses = []
             params = []
-            if mode == "exact":
-                clauses.append("name_lc = ?")
-                params.append(name_lc)
-            elif mode == "contains":
+            for token in token_list:
                 clauses.append("name_lc LIKE '%' || ? || '%'")
-                params.append(name_lc)
-            else:
-                raise ValueError("Unsupported match mode.")
+                params.append(token)
 
             if gender is not None:
                 clauses.append("gender = ?")
@@ -97,22 +125,50 @@ class ReportingClient:
             if nationality is not None:
                 clauses.append("nationality = ?")
                 params.append(nationality)
+            if division is not None:
+                clauses.append("division = ?")
+                params.append(division)
 
             where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
             sql = f"""
-                SELECT athlete_id, canonical_name, gender, nationality, race_count
+                SELECT athlete_id, canonical_name, gender, nationality, division, race_count
                 FROM athlete_index
                 {where_sql}
                 ORDER BY race_count DESC, canonical_name
             """
             return con.execute(sql, params).fetchdf()
 
-        if match == "best":
-            candidates = fetch_candidates("exact")
-            if candidates.empty:
-                candidates = fetch_candidates("contains")
-        else:
-            candidates = fetch_candidates(match)
+        def segment_tokens(value: object) -> list[list[str]]:
+            if value is None:
+                return []
+            segments = split_partners(str(value))
+            tokens_list = [normalise_tokens(segment) for segment in segments]
+            return [segment for segment in tokens_list if segment]
+
+        def has_exact_match(value: object) -> bool:
+            for segment in segment_tokens(value):
+                if tuple(sorted(segment)) == input_signature:
+                    return True
+            return False
+
+        def has_contains_match(value: object) -> bool:
+            for segment in segment_tokens(value):
+                if input_token_set.issubset(set(segment)):
+                    return True
+            return False
+
+        candidates = fetch_candidates(tokens)
+        if candidates.empty:
+            raise AthleteNotFound(f"No athlete match for '{athlete_name}'.")
+
+        exact_mask = candidates["canonical_name"].apply(has_exact_match)
+        contains_mask = candidates["canonical_name"].apply(has_contains_match)
+        if match == "exact":
+            candidates = candidates[exact_mask]
+        elif match == "contains":
+            candidates = candidates[contains_mask]
+        elif match == "best":
+            candidates = candidates[exact_mask] if exact_mask.any() else candidates[contains_mask]
 
         if candidates.empty:
             raise AthleteNotFound(f"No athlete match for '{athlete_name}'.")
@@ -121,17 +177,16 @@ class ReportingClient:
             preview = candidates.head(5)
             labels = ", ".join(
                 f"{row['canonical_name']} ({row['gender'] or 'unknown'}, "
-                f"{row['nationality'] or 'unknown'})"
+                f"{row['nationality'] or 'unknown'})" 
+                f"{row['division'] or 'unknown'}"
                 for _, row in preview.iterrows()
             )
             raise ValueError(
                 "Multiple athletes matched the search. "
-                "Refine with gender/nationality or set require_unique=False. "
+                "Refine with gender/nationality/division or set require_unique=False. "
                 f"Matches: {labels}"
             )
 
-        # helpful for doubles -- if we are searching for an athlete with a name that is repeated in the db, return all entries for that name
-        # rather than just the first one
         athlete_ids = candidates["athlete_id"].dropna().unique().tolist()
         if not athlete_ids:
             raise AthleteNotFound(f"No athlete match for '{athlete_name}'.")
@@ -165,3 +220,8 @@ class ReportingClient:
         if params is None:
             return con.execute(sql).fetchdf()
         return con.execute(sql, params).fetchdf()
+
+
+
+client = ReportingClient(database="../pyrox_duckdb")
+breakhere = 0
