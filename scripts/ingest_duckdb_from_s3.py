@@ -150,8 +150,8 @@ def ingest_full_refresh() -> None:
             COUNT(*) AS race_count,
 
             -- handy "fingerprint" stats for ranking/filtering later
-            AVG(r.total_time_s) AS avg_total_time,
-            AVG(r.run_time_s / NULLIF(r.total_time_s, 0)) AS avg_run_ratio
+            AVG(r.total_time_min) AS avg_total_time,
+            AVG(r.run_time_min / NULLIF(r.total_time_min, 0)) AS avg_run_ratio
 
         FROM athletes a
         JOIN athlete_results ar ON a.athlete_id = ar.athlete_id

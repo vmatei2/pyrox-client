@@ -6,49 +6,11 @@ from __future__ import annotations
 
 from typing import Iterable, Optional
 
+import duckdb
 import pandas as pd
 
 from .core import PyroxClient
-
-import duckdb
-
-
-def build_athlete_options(
-    df: pd.DataFrame,
-    query: Optional[str] = None,
-    limit: Optional[int] = None,
-) -> list[dict[str, object]]:
-    """
-    Build a list of athlete options for UI selection.
-
-    Returns a list of dicts: {"value": name, "label": name, "count": n}.
-
-    Example:
-        >>> import pandas as pd
-        >>> from pyrox.repor=ting import build_athlete_options
-        >>> df = pd.DataFrame({"name": ["Alex", "Alex", "Blake"]})
-        >>> build_athlete_options(df)
-        [{'value': 'Alex', 'label': 'Alex', 'count': 2}, {'value': 'Blake', 'label': 'Blake', 'count': 1}]
-    """
-    if "name" not in df.columns:
-        raise KeyError("Column 'name' not found in race data.")
-
-    names = df["name"].dropna().astype(str).str.strip()
-    names = names[names != ""]
-    counts = names.value_counts()
-
-    if query:
-        mask = counts.index.str.contains(query, case=False, regex=False)
-        counts = counts[mask]
-
-    if limit is not None:
-        counts = counts.head(int(limit))
-
-    options = [
-        {"value": name, "label": name, "count": int(count)}
-        for name, count in counts.items()
-    ]
-    return options
+from .errors import AthleteNotFound
 
 
 class ReportingClient:
@@ -87,101 +49,108 @@ class ReportingClient:
             self._connection = duckdb.connect(self.database)
         return self._connection
 
-    def register_dataframe(self, name: str, df: pd.DataFrame) -> None:
-        """
-        Register a pandas DataFrame as a DuckDB table.
 
-        Example:
-            >>> import pandas as pd
-            >>> reporting = ReportingClient()
-            >>> reporting.register_dataframe("demo", pd.DataFrame({"x": [1, 2]}))
-            >>> reporting.query("SELECT SUM(x) AS total FROM demo")["total"][0]
-            3
+    def search_athlete_races(
+        self,
+        athlete_name: str,
+        *,
+        match: str = "best",
+        gender: Optional[str] = None,
+        nationality: Optional[str] = None,
+        require_unique: bool = True,
+    ) -> pd.DataFrame:
         """
+        Search the DuckDB athlete index and return a DataFrame of all race rows.
+
+        Args:
+            athlete_name: Athlete name to search for.
+            match: "best" (exact then contains), "exact", or "contains".
+            gender: Optional gender filter for athlete disambiguation.
+            nationality: Optional nationality filter for athlete disambiguation.
+            require_unique: Raise if multiple athletes match the search.
+        """
+        if athlete_name is None or str(athlete_name).strip() == "":
+            raise ValueError("athlete_name must be a non-empty string.")
+
+        name_lc = str(athlete_name).strip().lower()
+        match = match.lower()
+        if match not in {"best", "exact", "contains"}:
+            raise ValueError("match must be one of: 'best', 'exact', 'contains'.")
+
         con = self._ensure_connection()
-        con.register(name, df)
 
-    def load_race_table(
-        self,
-        season: int,
-        location: str,
-        year: Optional[int] = None,
-        gender: Optional[str] = None,
-        division: Optional[str] = None,
-        total_time: Optional[float | tuple[Optional[float], Optional[float]]] = None,
-        table_name: str = "race",
-    ) -> str:
-        """
-        Fetch a race from the CDN/cache and register it as a DuckDB table.
+        def fetch_candidates(mode: str) -> pd.DataFrame:
+            clauses = []
+            params = []
+            if mode == "exact":
+                clauses.append("name_lc = ?")
+                params.append(name_lc)
+            elif mode == "contains":
+                clauses.append("name_lc LIKE '%' || ? || '%'")
+                params.append(name_lc)
+            else:
+                raise ValueError("Unsupported match mode.")
 
-        Example:
-            >>> reporting = ReportingClient()
-            >>> reporting.load_race_table(season=8, location="London", table_name="race8")
-            'race8'
-        """
-        df = self.client.get_race(
-            season=season,
-            location=location,
-            year=year,
-            gender=gender,
-            division=division,
-            total_time=total_time,
-        )
-        self.register_dataframe(table_name, df)
-        return table_name
+            if gender is not None:
+                clauses.append("gender = ?")
+                params.append(gender)
+            if nationality is not None:
+                clauses.append("nationality = ?")
+                params.append(nationality)
 
-    def load_season_table(
-        self,
-        season: int,
-        locations: Optional[Iterable[str]] = None,
-        gender: Optional[str] = None,
-        division: Optional[str] = None,
-        table_name: str = "season",
-    ) -> str:
-        """
-        Fetch a season across locations and register it as a DuckDB table.
+            where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+            sql = f"""
+                SELECT athlete_id, canonical_name, gender, nationality, race_count
+                FROM athlete_index
+                {where_sql}
+                ORDER BY race_count DESC, canonical_name
+            """
+            return con.execute(sql, params).fetchdf()
 
-        Example:
-            >>> reporting = ReportingClient()
-            >>> reporting.load_season_table(season=8, table_name="season8")
-            'season8'
-        """
-        df = self.client.get_season(
-            season=season,
-            locations=locations,
-            gender=gender,
-            division=division,
-        )
-        self.register_dataframe(table_name, df)
-        return table_name
+        if match == "best":
+            candidates = fetch_candidates("exact")
+            if candidates.empty:
+                candidates = fetch_candidates("contains")
+        else:
+            candidates = fetch_candidates(match)
 
-    def list_athletes(
-        self,
-        season: int,
-        location: str,
-        year: Optional[int] = None,
-        gender: Optional[str] = None,
-        division: Optional[str] = None,
-        query: Optional[str] = None,
-        limit: Optional[int] = None,
-    ) -> list[dict[str, object]]:
-        """
-        Return UI-friendly athlete options for a race.
+        if candidates.empty:
+            raise AthleteNotFound(f"No athlete match for '{athlete_name}'.")
 
-        Example:
-            >>> reporting = ReportingClient()
-            >>> options = reporting.list_athletes(season=8, location="London", query="ali", limit=5)
-            >>> isinstance(options, list)
-            True
-        """
-        df = self.client.get_race(
-            season=season,
-            location=location,
-            year=year,
-            gender=gender,
-            division=division,
-        )
-        return build_athlete_options(df, query=query, limit=limit)
+        if require_unique and len(candidates) > 1:
+            preview = candidates.head(5)
+            labels = ", ".join(
+                f"{row['canonical_name']} ({row['gender'] or 'unknown'}, "
+                f"{row['nationality'] or 'unknown'})"
+                for _, row in preview.iterrows()
+            )
+            raise ValueError(
+                "Multiple athletes matched the search. "
+                "Refine with gender/nationality or set require_unique=False. "
+                f"Matches: {labels}"
+            )
+
+        # helpful for doubles -- if we are searching for an athlete with a name that is repeated in the db, return all entries for that name
+        # rather than just the first one
+        athlete_ids = candidates["athlete_id"].dropna().unique().tolist()
+        if not athlete_ids:
+            raise AthleteNotFound(f"No athlete match for '{athlete_name}'.")
+
+        placeholders = ", ".join(["?"] * len(athlete_ids))
+        results = con.execute(
+            f"""
+            SELECT r.*
+            FROM race_results r
+            JOIN athlete_results ar ON ar.result_id = r.result_id
+            WHERE ar.athlete_id IN ({placeholders})
+            ORDER BY r.season, r.year, r.location, r.event_id
+            """,
+            athlete_ids,
+        ).fetchdf()
+
+        if results.empty:
+            raise AthleteNotFound(f"No races found for '{athlete_name}'.")
+        return results.reset_index(drop=True)
 
     def query(self, sql: str, params: Optional[Iterable[object]] = None) -> pd.DataFrame:
         """
