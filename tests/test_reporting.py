@@ -7,7 +7,7 @@ from src.pyrox.reporting import ReportingClient
 
 @pytest.fixture
 def reporting_client_with_db():
-    reporting = ReportingClient(database=":memory:")
+    reporting = ReportingClient(client=object(), database=":memory:")
     con = reporting._ensure_connection()
 
     con.execute(
@@ -230,3 +230,110 @@ def test_search_athlete_races_filters_by_division(reporting_client_with_db):
     )
     assert len(pro_races) == 1
     assert pro_races["division"].iloc[0] == "pro"
+
+
+@pytest.fixture
+def reporting_client_with_report_tables():
+    reporting = ReportingClient(client=object(), database=":memory:")
+    con = reporting._ensure_connection()
+    con.execute(
+        """
+        CREATE TABLE race_results (
+            result_id VARCHAR,
+            event_id VARCHAR,
+            season INTEGER,
+            location VARCHAR,
+            year INTEGER,
+            division VARCHAR,
+            gender VARCHAR,
+            age_group VARCHAR,
+            name VARCHAR,
+            total_time_min DOUBLE
+        );
+        """
+    )
+    con.execute(
+        """
+        CREATE TABLE race_rankings (
+            result_id VARCHAR,
+            event_rank INTEGER,
+            event_size INTEGER,
+            event_percentile DOUBLE,
+            season_rank INTEGER,
+            season_size INTEGER,
+            season_percentile DOUBLE,
+            overall_rank INTEGER,
+            overall_size INTEGER,
+            overall_percentile DOUBLE
+        );
+        """
+    )
+    con.execute(
+        """
+        CREATE TABLE split_percentiles (
+            result_id VARCHAR,
+            event_id VARCHAR,
+            division VARCHAR,
+            gender VARCHAR,
+            age_group VARCHAR,
+            split_name VARCHAR,
+            split_time_min DOUBLE,
+            split_rank INTEGER,
+            split_size INTEGER,
+            split_percentile DOUBLE
+        );
+        """
+    )
+    con.executemany(
+        "INSERT INTO race_results VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+            ("r1", "event_1", 8, "london", 2024, "open", "M", "30-34", "A One", 60.0),
+            ("r2", "event_1", 8, "london", 2024, "open", "M", "30-34", "B Two", 70.0),
+            ("r3", "event_1", 8, "london", 2024, "pro", "M", "30-34", "C Three", 65.0),
+        ],
+    )
+    con.executemany(
+        "INSERT INTO race_rankings VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+            ("r1", 1, 2, 1.0, 1, 3, 1.0, 1, 3, 1.0),
+            ("r2", 2, 2, 0.0, 3, 3, 0.0, 3, 3, 0.0),
+            ("r3", 1, 1, 1.0, 2, 3, 0.5, 2, 3, 0.5),
+        ],
+    )
+    con.executemany(
+        "INSERT INTO split_percentiles VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+            ("r1", "event_1", "open", "M", "30-34", "run_1", 5.0, 1, 2, 1.0),
+            ("r1", "event_1", "open", "M", "30-34", "ski_erg", 3.0, 1, 2, 1.0),
+            ("r2", "event_1", "open", "M", "30-34", "run_1", 6.0, 2, 2, 0.0),
+            ("r2", "event_1", "open", "M", "30-34", "ski_erg", 4.0, 2, 2, 0.0),
+            ("r3", "event_1", "pro", "M", "30-34", "run_1", 5.5, 1, 1, 1.0),
+        ],
+    )
+    return reporting
+
+
+def test_race_report_returns_expected_data(reporting_client_with_report_tables):
+    report = reporting_client_with_report_tables.race_report("r1")
+
+    race = report["race"]
+    assert len(race) == 1
+    assert race.iloc[0]["result_id"] == "r1"
+    assert race.iloc[0]["event_percentile"] == pytest.approx(1.0)
+
+    cohort = report["cohort"]
+    assert set(cohort["result_id"]) == {"r1", "r2"}
+    assert cohort["event_id"].unique().tolist() == ["event_1"]
+
+    splits = report["splits"]
+    assert splits["split_name"].tolist() == ["run_1", "ski_erg"]
+    assert splits["split_percentile"].tolist() == pytest.approx([1.0, 1.0])
+
+    cohort_splits = report["cohort_splits"]
+    assert set(cohort_splits["result_id"]) == {"r1", "r2"}
+    assert set(cohort_splits["split_name"]) == {"run_1", "ski_erg"}
+
+
+def test_race_report_missing_result_id_raises(reporting_client_with_report_tables):
+    with pytest.raises(ValueError):
+        reporting_client_with_report_tables.race_report("missing")

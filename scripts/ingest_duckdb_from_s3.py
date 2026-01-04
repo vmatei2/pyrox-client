@@ -6,7 +6,13 @@ load_dotenv()
 import os
 import duckdb
 import logging
-from sql_queries import MACRO, CREATE_RACE_RESULTS
+from sql_queries import (
+    CREATE_ATHLETE_HISTORY,
+    CREATE_RACE_RANKINGS,
+    CREATE_RACE_RESULTS,
+    CREATE_SPLIT_PERCENTILES,
+    MACRO,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -161,6 +167,13 @@ def ingest_full_refresh() -> None:
         GROUP BY 1,2,3,4,5;
         """
     )
+
+    # 5) reporting tables for rankings and split percentiles
+    con.execute(CREATE_RACE_RANKINGS)
+    con.execute(CREATE_SPLIT_PERCENTILES)
+
+    # 6) athlete history enriched with standings
+    con.execute(CREATE_ATHLETE_HISTORY)
 
     con.execute("COMMIT;")
     con.close()

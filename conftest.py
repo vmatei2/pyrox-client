@@ -1,6 +1,12 @@
-import pytest 
+from __future__ import annotations
 
-def pytest_addoption(parser: pytest.Parser) -> None:
+import pytest 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from _pytest.config import Parser
+
+def pytest_addoption(parser: "Parser") -> None:
     """Add custom command line options to pytest."""
 
     group = parser.getgroup("pyrox")

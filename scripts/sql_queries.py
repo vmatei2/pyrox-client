@@ -60,11 +60,12 @@ WITH src AS (
 
         trim(CAST(work_time AS VARCHAR)) AS work_time_str
 
-    FROM read_parquet(
-        's3://hyrox-results/processed/parquet/season=8/location=*/year=*/*.parquet',
-        hive_partitioning=true,
-        union_by_name=true
-    )
+      FROM read_parquet(
+          's3://hyrox-results/processed/parquet/season=*/location=*/year=*/*.parquet',
+          hive_partitioning=true,
+          union_by_name=true
+      )
+      WHERE try_cast(season AS INTEGER) IN (7, 8)
 )
 SELECT
     -- deterministic row id for linking
@@ -151,4 +152,221 @@ WHERE
     try_cast(year AS INTEGER) IS NOT NULL
     AND lower(location) NOT IN ('season-8', 'none', '');
 
+"""
+
+# Reporting: race_rankings
+# Goal: pre-compute race/season/overall standings for fast percentile lookups.
+# What: ranks every result by total_time_min across key cohorts.
+# Why: UI needs instant "relative to competition" metrics without recomputing windows.
+CREATE_RACE_RANKINGS = """
+CREATE OR REPLACE TABLE race_rankings AS
+WITH base AS (
+    SELECT
+        result_id,
+        event_id,
+        season,
+        location,
+        year,
+        division,
+        gender,
+        age_group,
+        total_time_min
+    FROM race_results
+    WHERE total_time_min IS NOT NULL
+)
+SELECT
+    *,
+    row_number() OVER (
+        PARTITION BY event_id, division, gender, age_group
+        ORDER BY total_time_min
+    ) AS event_rank,
+    count(*) OVER (
+        PARTITION BY event_id, division, gender, age_group
+    ) AS event_size,
+    1.0 - percent_rank() OVER (
+        PARTITION BY event_id, division, gender, age_group
+        ORDER BY total_time_min
+    ) AS event_percentile,
+    row_number() OVER (
+        PARTITION BY season, division, gender, age_group
+        ORDER BY total_time_min
+    ) AS season_rank,
+    count(*) OVER (
+        PARTITION BY season, division, gender, age_group
+    ) AS season_size,
+    1.0 - percent_rank() OVER (
+        PARTITION BY season, division, gender, age_group
+        ORDER BY total_time_min
+    ) AS season_percentile,
+    row_number() OVER (
+        PARTITION BY division, gender, age_group
+        ORDER BY total_time_min
+    ) AS overall_rank,
+    count(*) OVER (
+        PARTITION BY division, gender, age_group
+    ) AS overall_size,
+    1.0 - percent_rank() OVER (
+        PARTITION BY division, gender, age_group
+        ORDER BY total_time_min
+    ) AS overall_percentile
+FROM base;
+"""
+
+# Reporting: split_percentiles
+# Goal: provide per-split percentile performance inside a race cohort.
+# What: unpivots split columns into rows and ranks each split by event cohort.
+# Why: enables UI to highlight strengths/weaknesses per run/station segment.
+CREATE_SPLIT_PERCENTILES = """
+CREATE OR REPLACE TABLE split_percentiles AS
+WITH base AS (
+    SELECT
+        result_id,
+        event_id,
+        season,
+        location,
+        year,
+        division,
+        gender,
+        age_group,
+        'run_1' AS split_name,
+        run1_time_min AS split_time_min
+    FROM race_results
+    WHERE run1_time_min IS NOT NULL
+    UNION ALL
+    SELECT result_id, event_id, season, location, year, division, gender, age_group,
+        'run_2', run2_time_min
+    FROM race_results
+    WHERE run2_time_min IS NOT NULL
+    UNION ALL
+    SELECT result_id, event_id, season, location, year, division, gender, age_group,
+        'run_3', run3_time_min
+    FROM race_results
+    WHERE run3_time_min IS NOT NULL
+    UNION ALL
+    SELECT result_id, event_id, season, location, year, division, gender, age_group,
+        'run_4', run4_time_min
+    FROM race_results
+    WHERE run4_time_min IS NOT NULL
+    UNION ALL
+    SELECT result_id, event_id, season, location, year, division, gender, age_group,
+        'run_5', run5_time_min
+    FROM race_results
+    WHERE run5_time_min IS NOT NULL
+    UNION ALL
+    SELECT result_id, event_id, season, location, year, division, gender, age_group,
+        'run_6', run6_time_min
+    FROM race_results
+    WHERE run6_time_min IS NOT NULL
+    UNION ALL
+    SELECT result_id, event_id, season, location, year, division, gender, age_group,
+        'run_7', run7_time_min
+    FROM race_results
+    WHERE run7_time_min IS NOT NULL
+    UNION ALL
+    SELECT result_id, event_id, season, location, year, division, gender, age_group,
+        'run_8', run8_time_min
+    FROM race_results
+    WHERE run8_time_min IS NOT NULL
+    UNION ALL
+    SELECT result_id, event_id, season, location, year, division, gender, age_group,
+        'ski_erg', skiErg_time_min
+    FROM race_results
+    WHERE skiErg_time_min IS NOT NULL
+    UNION ALL
+    SELECT result_id, event_id, season, location, year, division, gender, age_group,
+        'sled_push', sledPush_time_min
+    FROM race_results
+    WHERE sledPush_time_min IS NOT NULL
+    UNION ALL
+    SELECT result_id, event_id, season, location, year, division, gender, age_group,
+        'sled_pull', sledPull_time_min
+    FROM race_results
+    WHERE sledPull_time_min IS NOT NULL
+    UNION ALL
+    SELECT result_id, event_id, season, location, year, division, gender, age_group,
+        'burpee_broad_jump', burpeeBroadJump_time_min
+    FROM race_results
+    WHERE burpeeBroadJump_time_min IS NOT NULL
+    UNION ALL
+    SELECT result_id, event_id, season, location, year, division, gender, age_group,
+        'row_erg', rowErg_time_min
+    FROM race_results
+    WHERE rowErg_time_min IS NOT NULL
+    UNION ALL
+    SELECT result_id, event_id, season, location, year, division, gender, age_group,
+        'farmers_carry', farmersCarry_time_min
+    FROM race_results
+    WHERE farmersCarry_time_min IS NOT NULL
+    UNION ALL
+    SELECT result_id, event_id, season, location, year, division, gender, age_group,
+        'sandbag_lunges', sandbagLunges_time_min
+    FROM race_results
+    WHERE sandbagLunges_time_min IS NOT NULL
+    UNION ALL
+    SELECT result_id, event_id, season, location, year, division, gender, age_group,
+        'wall_balls', wallBalls_time_min
+    FROM race_results
+    WHERE wallBalls_time_min IS NOT NULL
+    UNION ALL
+    SELECT result_id, event_id, season, location, year, division, gender, age_group,
+        'roxzone', roxzone_time_min
+    FROM race_results
+    WHERE roxzone_time_min IS NOT NULL
+    UNION ALL
+    SELECT result_id, event_id, season, location, year, division, gender, age_group,
+        'run_total', run_time_min
+    FROM race_results
+    WHERE run_time_min IS NOT NULL
+    UNION ALL
+    SELECT result_id, event_id, season, location, year, division, gender, age_group,
+        'work_total', work_time_min
+    FROM race_results
+    WHERE work_time_min IS NOT NULL
+)
+SELECT
+    *,
+    row_number() OVER (
+        PARTITION BY event_id, division, gender, age_group, split_name
+        ORDER BY split_time_min
+    ) AS split_rank,
+    count(*) OVER (
+        PARTITION BY event_id, division, gender, age_group, split_name
+    ) AS split_size,
+    1.0 - percent_rank() OVER (
+        PARTITION BY event_id, division, gender, age_group, split_name
+        ORDER BY split_time_min
+    ) AS split_percentile
+FROM base;
+"""
+
+# Reporting: athlete_history
+# Goal: provide a per-athlete race history enriched with percentile standings.
+# What: joins athlete_results to race_results and race_rankings.
+# Why: allows UI to fetch a full report without composing multiple joins.
+CREATE_ATHLETE_HISTORY = """
+CREATE OR REPLACE TABLE athlete_history AS
+SELECT
+    ar.athlete_id,
+    r.result_id,
+    r.event_id,
+    r.season,
+    r.location,
+    r.year,
+    r.division,
+    r.gender,
+    r.age_group,
+    r.name,
+    r.total_time_min,
+    rr.event_rank,
+    rr.event_size,
+    rr.event_percentile,
+    rr.season_rank,
+    rr.season_size,
+    rr.season_percentile,
+    rr.overall_rank,
+    rr.overall_size,
+    rr.overall_percentile
+FROM athlete_results ar
+JOIN race_results r ON r.result_id = ar.result_id
+LEFT JOIN race_rankings rr ON rr.result_id = r.result_id;
 """

@@ -215,6 +215,104 @@ class ReportingClient:
             raise AthleteNotFound(f"No races found for '{athlete_name}'.")
         return results.reset_index(drop=True)
 
+    def race_report(self, result_id: str) -> dict[str, pd.DataFrame]:
+        """
+        Build a race report bundle for a single result_id.
+
+        Returns:
+            dict with keys:
+              - race: single-row race_results + race_rankings fields
+              - cohort: all results in the same event/division/gender/age_group
+              - splits: split_percentiles rows for the athlete result
+              - cohort_splits: split_percentiles rows for the cohort
+        """
+        if result_id is None or str(result_id).strip() == "":
+            raise ValueError("result_id must be a non-empty string.")
+
+        con = self._ensure_connection()
+        race = con.execute(
+            """
+            SELECT
+                r.*,
+                rr.event_rank,
+                rr.event_size,
+                rr.event_percentile,
+                rr.season_rank,
+                rr.season_size,
+                rr.season_percentile,
+                rr.overall_rank,
+                rr.overall_size,
+                rr.overall_percentile
+            FROM race_results r
+            LEFT JOIN race_rankings rr ON rr.result_id = r.result_id
+            WHERE r.result_id = ?
+            """,
+            [result_id],
+        ).fetchdf()
+
+        if race.empty:
+            raise ValueError(f"result_id not found: {result_id}")
+
+        cohort = con.execute(
+            """
+            WITH picked AS (
+                SELECT event_id, division, gender, age_group
+                FROM race_results
+                WHERE result_id = ?
+            )
+            SELECT
+                r.*,
+                rr.event_rank,
+                rr.event_size,
+                rr.event_percentile
+            FROM race_results r
+            LEFT JOIN race_rankings rr ON rr.result_id = r.result_id
+            JOIN picked p
+              ON r.event_id = p.event_id
+             AND r.division IS NOT DISTINCT FROM p.division
+             AND r.gender IS NOT DISTINCT FROM p.gender
+             AND r.age_group IS NOT DISTINCT FROM p.age_group
+            ORDER BY r.total_time_min
+            """,
+            [result_id],
+        ).fetchdf()
+
+        splits = con.execute(
+            """
+            SELECT split_name, split_time_min, split_rank, split_size, split_percentile
+            FROM split_percentiles
+            WHERE result_id = ?
+            ORDER BY split_name
+            """,
+            [result_id],
+        ).fetchdf()
+
+        cohort_splits = con.execute(
+            """
+            WITH picked AS (
+                SELECT event_id, division, gender, age_group
+                FROM race_results
+                WHERE result_id = ?
+            )
+            SELECT sp.*
+            FROM split_percentiles sp
+            JOIN picked p
+              ON sp.event_id = p.event_id
+             AND sp.division IS NOT DISTINCT FROM p.division
+             AND sp.gender IS NOT DISTINCT FROM p.gender
+             AND sp.age_group IS NOT DISTINCT FROM p.age_group
+            ORDER BY sp.split_name, sp.split_time_min
+            """,
+            [result_id],
+        ).fetchdf()
+
+        return {
+            "race": race.reset_index(drop=True),
+            "cohort": cohort.reset_index(drop=True),
+            "splits": splits.reset_index(drop=True),
+            "cohort_splits": cohort_splits.reset_index(drop=True),
+        }
+
     def query(self, sql: str, params: Optional[Iterable[object]] = None) -> pd.DataFrame:
         """
         Run a DuckDB query and return the result as a DataFrame.
@@ -228,6 +326,5 @@ class ReportingClient:
         if params is None:
             return con.execute(sql).fetchdf()
         return con.execute(sql, params).fetchdf()
-
 
 
