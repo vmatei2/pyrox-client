@@ -158,6 +158,7 @@ WHERE
 # Goal: pre-compute race/season/overall standings for fast percentile lookups.
 # What: ranks every result by total_time_min across key cohorts.
 # Why: UI needs instant "relative to competition" metrics without recomputing windows.
+# Note: event_* fields are location-level cohorts to handle multi-day event IDs.
 CREATE_RACE_RANKINGS = """
 CREATE OR REPLACE TABLE race_rankings AS
 WITH base AS (
@@ -177,14 +178,14 @@ WITH base AS (
 SELECT
     *,
     row_number() OVER (
-        PARTITION BY event_id, division, gender, age_group
+        PARTITION BY location, division, gender, age_group
         ORDER BY total_time_min
     ) AS event_rank,
     count(*) OVER (
-        PARTITION BY event_id, division, gender, age_group
+        PARTITION BY location, division, gender, age_group
     ) AS event_size,
     1.0 - percent_rank() OVER (
-        PARTITION BY event_id, division, gender, age_group
+        PARTITION BY location, division, gender, age_group
         ORDER BY total_time_min
     ) AS event_percentile,
     row_number() OVER (
@@ -214,8 +215,9 @@ FROM base;
 
 # Reporting: split_percentiles
 # Goal: provide per-split percentile performance inside a race cohort.
-# What: unpivots split columns into rows and ranks each split by event cohort.
+# What: unpivots split columns into rows and ranks each split by location cohort.
 # Why: enables UI to highlight strengths/weaknesses per run/station segment.
+# Note: split_* fields are location-level cohorts to handle multi-day event IDs.
 CREATE_SPLIT_PERCENTILES = """
 CREATE OR REPLACE TABLE split_percentiles AS
 WITH base AS (
@@ -326,14 +328,14 @@ WITH base AS (
 SELECT
     *,
     row_number() OVER (
-        PARTITION BY event_id, division, gender, age_group, split_name
+        PARTITION BY location, division, gender, age_group, split_name
         ORDER BY split_time_min
     ) AS split_rank,
     count(*) OVER (
-        PARTITION BY event_id, division, gender, age_group, split_name
+        PARTITION BY location, division, gender, age_group, split_name
     ) AS split_size,
     1.0 - percent_rank() OVER (
-        PARTITION BY event_id, division, gender, age_group, split_name
+        PARTITION BY location, division, gender, age_group, split_name
         ORDER BY split_time_min
     ) AS split_percentile
 FROM base;

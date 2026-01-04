@@ -273,6 +273,7 @@ def reporting_client_with_report_tables():
         CREATE TABLE split_percentiles (
             result_id VARCHAR,
             event_id VARCHAR,
+            location VARCHAR,
             division VARCHAR,
             gender VARCHAR,
             age_group VARCHAR,
@@ -290,6 +291,7 @@ def reporting_client_with_report_tables():
             ("r1", "event_1", 8, "london", 2024, "open", "M", "30-34", "A One", 60.0),
             ("r2", "event_1", 8, "london", 2024, "open", "M", "30-34", "B Two", 70.0),
             ("r3", "event_1", 8, "london", 2024, "pro", "M", "30-34", "C Three", 65.0),
+            ("r4", "event_2", 8, "london", 2024, "open", "M", "30-34", "D Four", 66.0),
         ],
     )
     con.executemany(
@@ -298,16 +300,18 @@ def reporting_client_with_report_tables():
             ("r1", 1, 2, 1.0, 1, 3, 1.0, 1, 3, 1.0),
             ("r2", 2, 2, 0.0, 3, 3, 0.0, 3, 3, 0.0),
             ("r3", 1, 1, 1.0, 2, 3, 0.5, 2, 3, 0.5),
+            ("r4", 1, 1, 1.0, 2, 4, 0.5, 2, 4, 0.5),
         ],
     )
     con.executemany(
-        "INSERT INTO split_percentiles VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO split_percentiles VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
-            ("r1", "event_1", "open", "M", "30-34", "run_1", 5.0, 1, 2, 1.0),
-            ("r1", "event_1", "open", "M", "30-34", "ski_erg", 3.0, 1, 2, 1.0),
-            ("r2", "event_1", "open", "M", "30-34", "run_1", 6.0, 2, 2, 0.0),
-            ("r2", "event_1", "open", "M", "30-34", "ski_erg", 4.0, 2, 2, 0.0),
-            ("r3", "event_1", "pro", "M", "30-34", "run_1", 5.5, 1, 1, 1.0),
+            ("r1", "event_1", "london", "open", "M", "30-34", "run_1", 5.0, 1, 2, 1.0),
+            ("r1", "event_1", "london", "open", "M", "30-34", "ski_erg", 3.0, 1, 2, 1.0),
+            ("r2", "event_1", "london", "open", "M", "30-34", "run_1", 6.0, 2, 2, 0.0),
+            ("r2", "event_1", "london", "open", "M", "30-34", "ski_erg", 4.0, 2, 2, 0.0),
+            ("r3", "event_1", "london", "pro", "M", "30-34", "run_1", 5.5, 1, 1, 1.0),
+            ("r4", "event_2", "london", "open", "M", "30-34", "run_1", 5.2, 1, 3, 0.8),
         ],
     )
     return reporting
@@ -322,15 +326,15 @@ def test_race_report_returns_expected_data(reporting_client_with_report_tables):
     assert race.iloc[0]["event_percentile"] == pytest.approx(1.0)
 
     cohort = report["cohort"]
-    assert set(cohort["result_id"]) == {"r1", "r2"}
-    assert cohort["event_id"].unique().tolist() == ["event_1"]
+    assert set(cohort["result_id"]) == {"r1", "r2", "r4"}
+    assert set(cohort["event_id"]) == {"event_1", "event_2"}
 
     splits = report["splits"]
     assert splits["split_name"].tolist() == ["run_1", "ski_erg"]
     assert splits["split_percentile"].tolist() == pytest.approx([1.0, 1.0])
 
     cohort_splits = report["cohort_splits"]
-    assert set(cohort_splits["result_id"]) == {"r1", "r2"}
+    assert set(cohort_splits["result_id"]) == {"r1", "r2", "r4"}
     assert set(cohort_splits["split_name"]) == {"run_1", "ski_erg"}
 
 

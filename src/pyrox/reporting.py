@@ -222,9 +222,9 @@ class ReportingClient:
         Returns:
             dict with keys:
               - race: single-row race_results + race_rankings fields
-              - cohort: all results in the same event/division/gender/age_group
+              - cohort: all results in the same location/division/gender/age_group
               - splits: split_percentiles rows for the athlete result
-              - cohort_splits: split_percentiles rows for the cohort
+              - cohort_splits: split_percentiles rows for the cohort (location-level)
         """
         if result_id is None or str(result_id).strip() == "":
             raise ValueError("result_id must be a non-empty string.")
@@ -256,7 +256,7 @@ class ReportingClient:
         cohort = con.execute(
             """
             WITH picked AS (
-                SELECT event_id, division, gender, age_group
+                SELECT location, division, gender, age_group
                 FROM race_results
                 WHERE result_id = ?
             )
@@ -268,7 +268,7 @@ class ReportingClient:
             FROM race_results r
             LEFT JOIN race_rankings rr ON rr.result_id = r.result_id
             JOIN picked p
-              ON r.event_id = p.event_id
+              ON r.location IS NOT DISTINCT FROM p.location
              AND r.division IS NOT DISTINCT FROM p.division
              AND r.gender IS NOT DISTINCT FROM p.gender
              AND r.age_group IS NOT DISTINCT FROM p.age_group
@@ -290,14 +290,14 @@ class ReportingClient:
         cohort_splits = con.execute(
             """
             WITH picked AS (
-                SELECT event_id, division, gender, age_group
+                SELECT location, division, gender, age_group
                 FROM race_results
                 WHERE result_id = ?
             )
             SELECT sp.*
             FROM split_percentiles sp
             JOIN picked p
-              ON sp.event_id = p.event_id
+              ON sp.location IS NOT DISTINCT FROM p.location
              AND sp.division IS NOT DISTINCT FROM p.division
              AND sp.gender IS NOT DISTINCT FROM p.gender
              AND sp.age_group IS NOT DISTINCT FROM p.age_group
@@ -326,5 +326,3 @@ class ReportingClient:
         if params is None:
             return con.execute(sql).fetchdf()
         return con.execute(sql, params).fetchdf()
-
-
