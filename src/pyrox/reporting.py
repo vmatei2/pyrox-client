@@ -71,6 +71,7 @@ class ReportingClient:
             match: "best" (exact then contains), "exact", or "contains".
             gender: Optional gender filter for athlete disambiguation.
             nationality: Optional nationality filter for athlete disambiguation.
+            division: Optional division filter applied to race results.
             require_unique: Raise if multiple athletes match the search.
 
         Notes:
@@ -110,6 +111,12 @@ class ReportingClient:
         if match not in {"best", "exact", "contains"}:
             raise ValueError("match must be one of: 'best', 'exact', 'contains'.")
 
+        if division is not None:
+            division = str(division).strip()
+            if division == "":
+                raise ValueError("division must be a non-empty string when provided.")
+            division = division.casefold()
+
         con = self._ensure_connection()
 
         def fetch_candidates(token_list: list[str]) -> pd.DataFrame:
@@ -125,13 +132,10 @@ class ReportingClient:
             if nationality is not None:
                 clauses.append("nationality = ?")
                 params.append(nationality)
-            if division is not None:
-                clauses.append("division = ?")
-                params.append(division)
 
             where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
             sql = f"""
-                SELECT athlete_id, canonical_name, gender, nationality, division, race_count
+                SELECT athlete_id, canonical_name, gender, nationality, race_count
                 FROM athlete_index
                 {where_sql}
                 ORDER BY race_count DESC, canonical_name
@@ -177,8 +181,7 @@ class ReportingClient:
             preview = candidates.head(5)
             labels = ", ".join(
                 f"{row['canonical_name']} ({row['gender'] or 'unknown'}, "
-                f"{row['nationality'] or 'unknown'})" 
-                f"{row['division'] or 'unknown'}"
+                f"{row['nationality'] or 'unknown'})"
                 for _, row in preview.iterrows()
             )
             raise ValueError(
@@ -192,15 +195,20 @@ class ReportingClient:
             raise AthleteNotFound(f"No athlete match for '{athlete_name}'.")
 
         placeholders = ", ".join(["?"] * len(athlete_ids))
+        division_clause = ""
+        params = list(athlete_ids)
+        if division is not None:
+            division_clause = " AND lower(r.division) = ?"
+            params.append(division)
         results = con.execute(
             f"""
             SELECT r.*
             FROM race_results r
             JOIN athlete_results ar ON ar.result_id = r.result_id
-            WHERE ar.athlete_id IN ({placeholders})
+            WHERE ar.athlete_id IN ({placeholders}){division_clause}
             ORDER BY r.season, r.year, r.location, r.event_id
             """,
-            athlete_ids,
+            params,
         ).fetchdf()
 
         if results.empty:
@@ -223,5 +231,3 @@ class ReportingClient:
 
 
 
-client = ReportingClient(database="../pyrox_duckdb")
-breakhere = 0
