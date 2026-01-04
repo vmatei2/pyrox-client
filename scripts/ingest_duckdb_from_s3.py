@@ -133,7 +133,9 @@ def ingest_full_refresh() -> None:
         JOIN athletes a
           ON a.canonical_name = lower(trim(r.name_raw))
          AND coalesce(a.gender, '') = coalesce(r.gender, '')
-         AND coalesce(a.nationality, '') = coalesce(r.nationality, '');
+         AND coalesce(a.nationality, '') = coalesce(r.nationality, '')
+
+         ;
         """
     )
 
