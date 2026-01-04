@@ -1,9 +1,11 @@
+import matplotlib
 import pandas as pd
 import pytest
 
 from src.pyrox.errors import AthleteNotFound
 from src.pyrox.reporting import ReportingClient
 
+matplotlib.use("Agg")
 
 @pytest.fixture
 def reporting_client_with_db():
@@ -332,12 +334,82 @@ def test_race_report_returns_expected_data(reporting_client_with_report_tables):
     splits = report["splits"]
     assert splits["split_name"].tolist() == ["run_1", "ski_erg"]
     assert splits["split_percentile"].tolist() == pytest.approx([1.0, 1.0])
+    assert splits["split_percentile_time_window"].tolist() == pytest.approx([1.0, 1.0])
 
     cohort_splits = report["cohort_splits"]
     assert set(cohort_splits["result_id"]) == {"r1", "r2", "r4"}
     assert set(cohort_splits["split_name"]) == {"run_1", "ski_erg"}
 
+    time_window = report["cohort_time_window"]
+    assert set(time_window["result_id"]) == {"r1", "r3"}
+    assert set(time_window["event_id"]) == {"event_1"}
+
+    time_window_splits = report["cohort_time_window_splits"]
+    assert set(time_window_splits["result_id"]) == {"r1", "r3"}
+    assert set(time_window_splits["split_name"]) == {"run_1", "ski_erg"}
+
 
 def test_race_report_missing_result_id_raises(reporting_client_with_report_tables):
     with pytest.raises(ValueError):
         reporting_client_with_report_tables.race_report("missing")
+
+
+@pytest.fixture
+def reporting_client_with_plot_data():
+    reporting = ReportingClient(client=object(), database=":memory:")
+    con = reporting._ensure_connection()
+    con.execute(
+        """
+        CREATE TABLE race_results (
+            result_id VARCHAR,
+            season INTEGER,
+            location VARCHAR,
+            division VARCHAR,
+            gender VARCHAR,
+            age_group VARCHAR,
+            total_time_min DOUBLE,
+            run1_time_min DOUBLE,
+            sledPush_time_min DOUBLE
+        );
+        """
+    )
+    con.executemany(
+        "INSERT INTO race_results VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+            ("r1", 8, "london", "open", "M", "25-29", 60.0, 5.0, 3.0),
+            ("r2", 8, "london", "open", "M", "25-29", 64.0, 6.0, 4.0),
+            ("r3", 8, "london", "open", "M", "25-29", 70.0, 7.0, 5.0),
+            ("r4", 8, "paris", "open", "M", "25-29", 62.0, 4.5, 2.5),
+        ],
+    )
+    return reporting
+
+
+def test_plot_cohort_distribution_uses_location_cohort(reporting_client_with_plot_data):
+    fig, ax = reporting_client_with_plot_data.plot_cohort_distribution("r1", "run1")
+
+    assert "run1_time_min distribution" in ax.get_title()
+    assert len(ax.lines) == 1
+    assert list(ax.lines[0].get_xdata()) == [5.0, 5.0]
+    fig.clear()
+
+
+def test_plot_cohort_distribution_resolves_metric_alias(reporting_client_with_plot_data):
+    fig, ax = reporting_client_with_plot_data.plot_cohort_distribution("r1", "sledPush")
+
+    assert "sledPush_time_min" in ax.get_title()
+    assert list(ax.lines[0].get_xdata()) == [3.0, 3.0]
+    fig.clear()
+
+
+def test_plot_cohort_distribution_time_window(reporting_client_with_plot_data):
+    fig, ax = reporting_client_with_plot_data.plot_cohort_distribution(
+        "r1",
+        "run1",
+        cohort_mode="time_window",
+        cohort_time_window_min=5.0,
+    )
+
+    assert "season 8" in ax.get_title()
+    assert sum(patch.get_height() for patch in ax.patches) == pytest.approx(2.0)
+    fig.clear()

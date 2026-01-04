@@ -5,7 +5,7 @@ Reporting helpers for PyroxClient with DuckDB integration.
 from __future__ import annotations
 
 import re
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Tuple
 
 import duckdb
 import pandas as pd
@@ -13,6 +13,70 @@ import pandas as pd
 from .core import PyroxClient
 from .errors import AthleteNotFound
 
+
+def _normalize_metric_name(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "", value.casefold())
+
+
+_TIME_COLUMNS = (
+    "roxzone_time_min",
+    "run1_time_min",
+    "run2_time_min",
+    "run3_time_min",
+    "run4_time_min",
+    "run5_time_min",
+    "run6_time_min",
+    "run7_time_min",
+    "run8_time_min",
+    "run_time_min",
+    "total_time_min",
+    "skiErg_time_min",
+    "sledPush_time_min",
+    "sledPull_time_min",
+    "burpeeBroadJump_time_min",
+    "rowErg_time_min",
+    "farmersCarry_time_min",
+    "sandbagLunges_time_min",
+    "wallBalls_time_min",
+    "work_time_min",
+)
+
+
+def _build_time_column_aliases() -> dict[str, str]:
+    aliases: dict[str, str] = {}
+
+    def add(alias: str, column: str) -> None:
+        aliases[_normalize_metric_name(alias)] = column
+
+    for column in _TIME_COLUMNS:
+        add(column, column)
+        if column.endswith("_time_min"):
+            add(column[:-9], column)
+            add(column.replace("_time_min", "_time"), column)
+
+    add("run_total", "run_time_min")
+    add("work_total", "work_time_min")
+    add("total", "total_time_min")
+    add("total_time", "total_time_min")
+
+    return aliases
+
+
+_TIME_COLUMN_ALIASES = _build_time_column_aliases()
+
+
+def _resolve_time_column(metric: str) -> str:
+    if metric is None or str(metric).strip() == "":
+        raise ValueError("metric must be a non-empty string.")
+    normalized = _normalize_metric_name(str(metric))
+    column = _TIME_COLUMN_ALIASES.get(normalized)
+    if column is None:
+        examples = ", ".join(sorted(set(_TIME_COLUMNS))[:6])
+        raise ValueError(
+            "Unknown metric. Provide a known split or time column name, "
+            f"such as: {examples}."
+        )
+    return column
 
 
 
@@ -215,7 +279,12 @@ class ReportingClient:
             raise AthleteNotFound(f"No races found for '{athlete_name}'.")
         return results.reset_index(drop=True)
 
-    def race_report(self, result_id: str) -> dict[str, pd.DataFrame]:
+    def race_report(
+        self,
+        result_id: str,
+        *,
+        cohort_time_window_min: Optional[float] = 5.0,
+    ) -> dict[str, pd.DataFrame]:
         """
         Build a race report bundle for a single result_id.
 
@@ -223,11 +292,29 @@ class ReportingClient:
             dict with keys:
               - race: single-row race_results + race_rankings fields
               - cohort: all results in the same location/division/gender/age_group
-              - splits: split_percentiles rows for the athlete result
+              - splits: split_percentiles rows for the athlete result (includes
+                split_percentile_time_window when time-window cohort is enabled)
               - cohort_splits: split_percentiles rows for the cohort (location-level)
+              - cohort_time_window: results in the same location/season within the
+                +/- time window around the athlete total_time_min (when enabled)
+              - cohort_time_window_splits: split_percentiles rows for the
+                time-window cohort (when enabled)
+
+        Set cohort_time_window_min=None to skip building the time-window cohorts.
         """
         if result_id is None or str(result_id).strip() == "":
             raise ValueError("result_id must be a non-empty string.")
+
+        time_window_min = None
+        if cohort_time_window_min is not None:
+            try:
+                time_window_min = float(cohort_time_window_min)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    "cohort_time_window_min must be a positive number when provided."
+                ) from exc
+            if time_window_min <= 0:
+                raise ValueError("cohort_time_window_min must be a positive number when provided.")
 
         con = self._ensure_connection()
         race = con.execute(
@@ -306,12 +393,235 @@ class ReportingClient:
             [result_id],
         ).fetchdf()
 
-        return {
+        if time_window_min is not None:
+            if "total_time_min" not in race.columns:
+                raise ValueError("total_time_min is required to build the time-window cohort.")
+            if "season" not in race.columns:
+                raise ValueError("season is required to build the time-window cohort.")
+            athlete_total_time = race["total_time_min"].iloc[0]
+            if athlete_total_time is None or pd.isna(athlete_total_time):
+                raise ValueError(f"No total_time_min data for result_id: {result_id}")
+
+            athlete_location = race["location"].iloc[0]
+            athlete_season = race["season"].iloc[0]
+            if athlete_season is None or pd.isna(athlete_season):
+                raise ValueError(f"No season data for result_id: {result_id}")
+            athlete_season = int(athlete_season)
+            lower_bound = float(athlete_total_time - time_window_min)
+            upper_bound = float(athlete_total_time + time_window_min)
+
+            cohort_time_window = con.execute(
+                """
+                SELECT
+                    r.*,
+                    rr.event_rank,
+                    rr.event_size,
+                    rr.event_percentile
+                FROM race_results r
+                LEFT JOIN race_rankings rr ON rr.result_id = r.result_id
+                WHERE r.location IS NOT DISTINCT FROM ?
+                  AND r.season IS NOT DISTINCT FROM ?
+                  AND r.total_time_min IS NOT NULL
+                  AND r.total_time_min BETWEEN ? AND ?
+                ORDER BY r.total_time_min
+                """,
+                [athlete_location, athlete_season, lower_bound, upper_bound],
+            ).fetchdf()
+
+            cohort_time_window_splits = con.execute(
+                """
+                WITH cohort AS (
+                    SELECT result_id
+                    FROM race_results
+                    WHERE location IS NOT DISTINCT FROM ?
+                      AND season IS NOT DISTINCT FROM ?
+                      AND total_time_min IS NOT NULL
+                      AND total_time_min BETWEEN ? AND ?
+                )
+                SELECT sp.*
+                FROM split_percentiles sp
+                JOIN cohort c ON sp.result_id = c.result_id
+                ORDER BY sp.split_name, sp.split_time_min
+                """,
+                [athlete_location, athlete_season, lower_bound, upper_bound],
+            ).fetchdf()
+
+            if not splits.empty:
+                percentiles = []
+                for _, split_row in splits.iterrows():
+                    split_time = split_row["split_time_min"]
+                    if split_time is None or pd.isna(split_time):
+                        percentiles.append(pd.NA)
+                        continue
+                    cohort_times = cohort_time_window_splits.loc[
+                        cohort_time_window_splits["split_name"] == split_row["split_name"],
+                        "split_time_min",
+                    ].dropna()
+                    cohort_size = len(cohort_times)
+                    if cohort_size == 0:
+                        percentiles.append(pd.NA)
+                        continue
+                    if cohort_size == 1:
+                        percentiles.append(1.0)
+                        continue
+                    rank = int((cohort_times < split_time).sum()) + 1
+                    percentile = 1.0 - (rank - 1) / (cohort_size - 1)
+                    percentiles.append(float(percentile))
+                splits = splits.copy()
+                splits["split_percentile_time_window"] = percentiles
+
+        report = {
             "race": race.reset_index(drop=True),
             "cohort": cohort.reset_index(drop=True),
             "splits": splits.reset_index(drop=True),
             "cohort_splits": cohort_splits.reset_index(drop=True),
         }
+
+        if time_window_min is not None:
+            report["cohort_time_window"] = cohort_time_window.reset_index(drop=True)
+            report["cohort_time_window_splits"] = cohort_time_window_splits.reset_index(
+                drop=True
+            )
+
+        return report
+
+    def plot_cohort_distribution(
+        self,
+        result_id: str,
+        metric: str,
+        *,
+        bins: int = 30,
+        cohort_mode: str = "demographic",
+        cohort_time_window_min: float = 5.0,
+    ) -> Tuple[object, object]:
+        """
+        Plot the cohort distribution for a metric and mark the athlete value.
+
+        Cohort scope matches race_report (demographic or time-window).
+        Use cohort_mode="time_window" to compare against athletes within the
+        +/- time window of total_time_min for the same location/season.
+        """
+        if result_id is None or str(result_id).strip() == "":
+            raise ValueError("result_id must be a non-empty string.")
+
+        cohort_mode = str(cohort_mode).strip().casefold()
+        if cohort_mode not in {"demographic", "time_window"}:
+            raise ValueError("cohort_mode must be 'demographic' or 'time_window'.")
+
+        time_window_min = None
+        if cohort_mode == "time_window":
+            try:
+                time_window_min = float(cohort_time_window_min)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    "cohort_time_window_min must be a positive number when cohort_mode is"
+                    " 'time_window'."
+                ) from exc
+            if time_window_min <= 0:
+                raise ValueError(
+                    "cohort_time_window_min must be a positive number when cohort_mode is"
+                    " 'time_window'."
+                )
+
+        time_column = _resolve_time_column(metric)
+        con = self._ensure_connection()
+        athlete = con.execute(
+            f"""
+            SELECT
+                location,
+                season,
+                division,
+                gender,
+                age_group,
+                total_time_min,
+                {time_column} AS athlete_time
+            FROM race_results
+            WHERE result_id = ?
+            """,
+            [result_id],
+        ).fetchdf()
+
+        if athlete.empty:
+            raise ValueError(f"result_id not found: {result_id}")
+
+        athlete_time = athlete["athlete_time"].iloc[0]
+        if athlete_time is None or pd.isna(athlete_time):
+            raise ValueError(f"No {time_column} data for result_id: {result_id}")
+
+        athlete_location = athlete["location"].iloc[0]
+        athlete_season = athlete["season"].iloc[0]
+        if athlete_season is None or pd.isna(athlete_season):
+            raise ValueError(f"No season data for result_id: {result_id}")
+        athlete_season = int(athlete_season)
+
+        if cohort_mode == "demographic":
+            athlete_division = athlete["division"].iloc[0]
+            athlete_gender = athlete["gender"].iloc[0]
+            athlete_ag = athlete["age_group"].iloc[0]
+            cohort_times = con.execute(
+                f"""
+                SELECT {time_column} AS time_value
+                FROM race_results
+                WHERE location IS NOT DISTINCT FROM ?
+                  AND division IS NOT DISTINCT FROM ?
+                  AND gender IS NOT DISTINCT FROM ?
+                  AND age_group IS NOT DISTINCT FROM ?
+                  AND {time_column} IS NOT NULL
+                """,
+                [
+                    athlete_location,
+                    athlete_division,
+                    athlete_gender,
+                    athlete_ag,
+                ],
+            ).fetchdf()
+            cohort_label = f"{athlete_division} - {athlete_gender} - {athlete_ag}"
+        else:
+            if "total_time_min" not in athlete.columns:
+                raise ValueError("total_time_min is required to build the time-window cohort.")
+            athlete_total_time = athlete["total_time_min"].iloc[0]
+            if athlete_total_time is None or pd.isna(athlete_total_time):
+                raise ValueError(f"No total_time_min data for result_id: {result_id}")
+            lower_bound = float(athlete_total_time - time_window_min)
+            upper_bound = float(athlete_total_time + time_window_min)
+            cohort_times = con.execute(
+                f"""
+                SELECT {time_column} AS time_value
+                FROM race_results
+                WHERE location IS NOT DISTINCT FROM ?
+                  AND season IS NOT DISTINCT FROM ?
+                  AND total_time_min IS NOT NULL
+                  AND total_time_min BETWEEN ? AND ?
+                  AND {time_column} IS NOT NULL
+                """,
+                [athlete_location, athlete_season, lower_bound, upper_bound],
+            ).fetchdf()
+            window_label = f"+/-{time_window_min:g}m total_time"
+            cohort_label = f"{athlete_location} - season {athlete_season} - {window_label}"
+
+        if cohort_times.empty:
+            raise ValueError("No cohort data found for the selected race.")
+
+        from matplotlib import pyplot as plt
+        import seaborn as sns
+
+        sns.set_style("darkgrid")
+
+        fig, ax = plt.subplots()
+        ax.hist(cohort_times["time_value"], bins=bins, color="#5B8FF9", alpha=0.8)
+        ax.axvline(
+            athlete_time,
+            color="#D62728",
+            linestyle="--",
+            linewidth=2,
+            label="athlete",
+        )
+        ax.set_title(f"{time_column} distribution - {cohort_label}")
+        ax.set_xlabel(f"{time_column} (minutes)")
+        ax.set_ylabel("count")
+        ax.legend()
+
+        return fig, ax
 
     def query(self, sql: str, params: Optional[Iterable[object]] = None) -> pd.DataFrame:
         """
