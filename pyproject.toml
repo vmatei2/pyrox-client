@@ -10,6 +10,7 @@ authors = [{ name = "Vlad Matei" }]
 readme = {file="README.md", content-type = "text/markdown" }
 requires-python = ">=3.12"
 dependencies = [
+    "numpy>=1.26.4",
     "pandas>=2.3.3",
     "fastparquet>=2024.5.0",
     "fsspec>=2024.2.0",

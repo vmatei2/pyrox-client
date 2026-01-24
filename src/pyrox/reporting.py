@@ -114,7 +114,8 @@ class ReportingClient:
         """
         if self._connection is None:
             # forcing to be read only!
-            self._connection = duckdb.connect(self.database, read_only=True)
+            read_only = self.database != ":memory:"
+            self._connection = duckdb.connect(self.database, read_only=read_only)
         return self._connection
 
 
