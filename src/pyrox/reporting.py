@@ -113,7 +113,8 @@ class ReportingClient:
             1
         """
         if self._connection is None:
-            self._connection = duckdb.connect(self.database)
+            # forcing to be read only!
+            self._connection = duckdb.connect(self.database, read_only=True)
         return self._connection
 
 

@@ -23,14 +23,20 @@ dependencies = [
     "dotenv>=0.9.9",
 ]
 
-classifiers = [
-  "Programming Language :: Python :: 3.12",
-  "License :: OSI Approved :: MIT License",
-  "Operating System :: OS Independent",
+[project.optional-dependencies]
+api = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
 ]
 
-urls."Homepage" = "https://github.com/vmatei2/pyrox-client"
-urls."Issues"   = "https://github.com/vmatei2/pyrox-client/issues"
+# classifiers = [
+#   "Programming Language :: Python :: 3.12",
+#   "License :: OSI Approved :: MIT License",
+#   "Operating System :: OS Independent",
+# ]
+
+# urls."Homepage" = "https://github.com/vmatei2/pyrox-client"
+# urls."Issues"   = "https://github.com/vmatei2/pyrox-client/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyrox"]
