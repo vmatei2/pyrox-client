@@ -3,3 +3,11 @@
 /src/pyrox/__pycache__/
 
 site/
+
+.env    
+
+.vscode/
+
+.idea/
+
+docs/issues/

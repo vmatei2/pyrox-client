@@ -10,6 +10,7 @@ authors = [{ name = "Vlad Matei" }]
 readme = {file="README.md", content-type = "text/markdown" }
 requires-python = ">=3.12"
 dependencies = [
+    "numpy>=1.26.4",
     "pandas>=2.3.3",
     "fastparquet>=2024.5.0",
     "fsspec>=2024.2.0",
@@ -19,16 +20,24 @@ dependencies = [
     "pyarrow>=22.0.0",  #  stable versions with wheels, had issues with latest
     "statsmodels>=0.14.6",
     "twine>=6.2.0",
+    "duckdb>=1.4.3",
+    "dotenv>=0.9.9",
 ]
 
-classifiers = [
-  "Programming Language :: Python :: 3.12",
-  "License :: OSI Approved :: MIT License",
-  "Operating System :: OS Independent",
+[project.optional-dependencies]
+api = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
 ]
 
-urls."Homepage" = "https://github.com/vmatei2/pyrox-client"
-urls."Issues"   = "https://github.com/vmatei2/pyrox-client/issues"
+# classifiers = [
+#   "Programming Language :: Python :: 3.12",
+#   "License :: OSI Approved :: MIT License",
+#   "Operating System :: OS Independent",
+# ]
+
+# urls."Homepage" = "https://github.com/vmatei2/pyrox-client"
+# urls."Issues"   = "https://github.com/vmatei2/pyrox-client/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyrox"]

@@ -30,6 +30,33 @@ or
 pip install pyrox-client
 ```
 
+## Reporting UI (local)
+
+The repo ships with a FastAPI reporting backend and a Vite + React UI for searching athletes
+and generating HTML/PDF reports.
+
+Backend (from repo root):
+
+```commandline
+uv pip install -e ".[api]"
+export PYROX_DUCKDB_PATH=pyrox_duckdb
+uvicorn pyrox.api.app:app --reload --port 8000
+```
+
+Frontend:
+
+```commandline
+cd ui
+npm install
+VITE_API_BASE_URL=http://localhost:8000 npm run dev
+```
+
+API notes:
+- `GET /api/athletes/search` searches athlete races.
+- `GET /api/reports/{result_id}` builds report data plus distributions.
+- `GET /api/planner` powers the pre-race planner filters and distributions.
+- Run split distributions ignore values under 1.0 minute to remove obvious data issues.
+
 ## Quickstart
 Below we have added two quick examples. One of loading race data - with different data requests, and one of retrieving race data / extracting athlete information and plotting values with example outputs to show a small glimpse of the analysis possible if 
 retrieving the race data.
