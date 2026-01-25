@@ -1316,7 +1316,7 @@ export default function App() {
                   <span>Athlete name</span>
                   <input
                     type="text"
-                    placeholder="Kate Russell"
+                    placeholder="Athlete Name"
                     value={name}
                     onChange={(event) => setName(event.target.value)}
                   />
@@ -1357,7 +1357,7 @@ export default function App() {
                     <span>Gender</span>
                     <input
                       type="text"
-                      placeholder="M or F"
+                      placeholder="male or female or mixed"
                       value={filters.gender}
                       onChange={(event) =>
                         setFilters((prev) => ({ ...prev, gender: event.target.value }))
@@ -1748,7 +1748,7 @@ export default function App() {
                     <span>Athlete name</span>
                     <input
                       type="text"
-                      placeholder="Kate Russell"
+                      placeholder="Athlete Name"
                       value={baseName}
                       onChange={(event) => setBaseName(event.target.value)}
                     />
@@ -1792,7 +1792,7 @@ export default function App() {
                       <span>Gender</span>
                       <input
                         type="text"
-                        placeholder="M or F"
+                        placeholder="male or female or mixed"
                         value={baseFilters.gender}
                         onChange={(event) =>
                           setBaseFilters((prev) => ({
@@ -1957,7 +1957,7 @@ export default function App() {
                       <span>Gender</span>
                       <input
                         type="text"
-                        placeholder="M or F"
+                        placeholder="male or female or mixed"
                         value={compareFilters.gender}
                         onChange={(event) =>
                           setCompareFilters((prev) => ({

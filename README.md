@@ -57,6 +57,18 @@ API notes:
 - `GET /api/planner` powers the pre-race planner filters and distributions.
 - Run split distributions ignore values under 1.0 minute to remove obvious data issues.
 
+### Reporting API (service)
+
+Base URL is wherever the FastAPI service is hosted (local or production).
+
+Health check:
+
+```commandline
+curl https://<api-host>/api/health
+```
+
+
+
 ## Quickstart
 Below we have added two quick examples. One of loading race data - with different data requests, and one of retrieving race data / extracting athlete information and plotting values with example outputs to show a small glimpse of the analysis possible if 
 retrieving the race data.
