@@ -5,6 +5,8 @@ Reporting helpers for PyroxClient with DuckDB integration.
 from __future__ import annotations
 
 import re
+import logging
+import time
 from typing import Iterable, Optional, Tuple
 
 import duckdb
@@ -12,6 +14,8 @@ import pandas as pd
 
 from .core import PyroxClient
 from .errors import AthleteNotFound
+
+logger = logging.getLogger("pyrox.reporting")
 
 
 def _normalize_metric_name(value: str) -> str:
@@ -77,6 +81,19 @@ def _resolve_time_column(metric: str) -> str:
             f"such as: {examples}."
         )
     return column
+
+
+def _log_df_stats(name: str, df: pd.DataFrame, start: float) -> None:
+    elapsed = time.perf_counter() - start
+    rows = int(len(df))
+    mem_bytes = int(df.memory_usage(deep=True).sum()) if not df.empty else 0
+    logger.info(
+        "report %s rows=%s mem=%.2fMB elapsed=%.3fs",
+        name,
+        rows,
+        mem_bytes / (1024 * 1024),
+        elapsed,
+    )
 
 
 
@@ -319,6 +336,7 @@ class ReportingClient:
                 raise ValueError("cohort_time_window_min must be a positive number when provided.")
 
         con = self._ensure_connection()
+        start = time.perf_counter()
         race = con.execute(
             """
             SELECT
@@ -338,10 +356,12 @@ class ReportingClient:
             """,
             [result_id],
         ).fetchdf()
+        _log_df_stats("race", race, start)
 
         if race.empty:
             raise ValueError(f"result_id not found: {result_id}")
 
+        start = time.perf_counter()
         cohort = con.execute(
             """
             WITH picked AS (
@@ -365,7 +385,9 @@ class ReportingClient:
             """,
             [result_id],
         ).fetchdf()
+        _log_df_stats("cohort", cohort, start)
 
+        start = time.perf_counter()
         splits = con.execute(
             """
             SELECT split_name, split_time_min, split_rank, split_size, split_percentile
@@ -375,7 +397,9 @@ class ReportingClient:
             """,
             [result_id],
         ).fetchdf()
+        _log_df_stats("splits", splits, start)
 
+        start = time.perf_counter()
         cohort_splits = con.execute(
             """
             WITH picked AS (
@@ -394,6 +418,7 @@ class ReportingClient:
             """,
             [result_id],
         ).fetchdf()
+        _log_df_stats("cohort_splits", cohort_splits, start)
 
         if time_window_min is not None:
             if "total_time_min" not in race.columns:
@@ -412,6 +437,7 @@ class ReportingClient:
             lower_bound = float(athlete_total_time - time_window_min)
             upper_bound = float(athlete_total_time + time_window_min)
 
+            start = time.perf_counter()
             cohort_time_window = con.execute(
                 """
                 SELECT
@@ -429,7 +455,9 @@ class ReportingClient:
                 """,
                 [athlete_location, athlete_season, lower_bound, upper_bound],
             ).fetchdf()
+            _log_df_stats("cohort_time_window", cohort_time_window, start)
 
+            start = time.perf_counter()
             cohort_time_window_splits = con.execute(
                 """
                 WITH cohort AS (
@@ -447,8 +475,10 @@ class ReportingClient:
                 """,
                 [athlete_location, athlete_season, lower_bound, upper_bound],
             ).fetchdf()
+            _log_df_stats("cohort_time_window_splits", cohort_time_window_splits, start)
 
             if not splits.empty:
+                start = time.perf_counter()
                 percentiles = []
                 for _, split_row in splits.iterrows():
                     split_time = split_row["split_time_min"]
@@ -471,6 +501,11 @@ class ReportingClient:
                     percentiles.append(float(percentile))
                 splits = splits.copy()
                 splits["split_percentile_time_window"] = percentiles
+                logger.info(
+                    "report time_window_percentiles rows=%s elapsed=%.3fs",
+                    int(len(splits)),
+                    time.perf_counter() - start,
+                )
 
         report = {
             "race": race.reset_index(drop=True),

@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
+import time
 from pathlib import Path
 from typing import Optional
 
 import numpy as np
 import pandas as pd
-from fastapi import FastAPI, HTTPException, Query
+
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from ..errors import AthleteNotFound
@@ -179,6 +182,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    datefmt="%Y-%m-%dT%H:%M:%S",
+)
+logger = logging.getLogger("pyrox.api")
+
+# app.middleware is a decorator that runs this code on every incoming HTTP request!
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start = time.perf_counter()
+    logger.info("request %s %s", request.method, request.url.path)
+    response = await call_next(request)
+    elapsed = time.perf_counter() - start
+    logger.info(
+        "response %s %s -> %s (%.3fs)",
+        request.method,
+        request.url.path,
+        response.status_code,
+        elapsed,
+    )
+    return response
+
 
 @app.get("/api/health")
 def healthcheck() -> dict:
@@ -204,6 +230,7 @@ def search_athlete_races(
 ) -> dict:
     reporting = _get_reporting()
     try:
+        logger.info("Starting search of athlete races")
         races = reporting.search_athlete_races(
             athlete_name=name,
             match=match,
@@ -218,6 +245,7 @@ def search_athlete_races(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     total = int(len(races))
+    logger.info(f"Have retrieved a total of {total} races")
     records = _df_to_records(races, limit=limit)
     return {
         "query": {
@@ -245,6 +273,8 @@ def report_for_result(
     cohort_splits_limit: int = Query(500, ge=1, le=10000),
 ) -> dict:
     reporting = _get_reporting()
+    start = time.perf_counter()
+    logger.info("report start result_id=%s", result_id)
     if cohort_time_window_min is not None and cohort_time_window_min <= 0:
         cohort_time_window_min = None
     try:
@@ -254,6 +284,7 @@ def report_for_result(
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    logger.info("report data loaded in %.3fs", time.perf_counter() - start)
 
     race_rows = _df_to_records(report["race"], limit=1)
     race = race_rows[0] if race_rows else {}
@@ -279,6 +310,7 @@ def report_for_result(
                 cohort_window["total_time_min"],
                 athlete_value=athlete_total_time,
             )
+    logger.info("report histograms built in %.3fs", time.perf_counter() - start)
 
     selected_split = None
     normalized_split = None
@@ -344,6 +376,7 @@ def report_for_result(
                 ),
             },
         }
+        logger.info("report split distributions built in %.3fs", time.perf_counter() - start)
 
     payload = {
         "result_id": result_id,
@@ -386,6 +419,7 @@ def report_for_result(
                 "total": int(len(report["cohort_time_window_splits"])),
             }
 
+    logger.info("report response ready in %.3fs", time.perf_counter() - start)
     return payload
 
 
