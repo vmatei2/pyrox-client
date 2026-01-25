@@ -1289,21 +1289,21 @@ export default function App() {
           className={`mode-tab ${mode === "report" ? "is-active" : ""}`}
           onClick={() => handleModeChange("report")}
         >
-          Race report
+          Individual Race Report
         </button>
         <button
           type="button"
           className={`mode-tab ${mode === "compare" ? "is-active" : ""}`}
           onClick={() => handleModeChange("compare")}
         >
-          Race comparison
+          Race Comparison
         </button>
         <button
           type="button"
           className={`mode-tab ${mode === "planner" ? "is-active" : ""}`}
           onClick={() => handleModeChange("planner")}
         >
-          Pre-race planner
+          Overall Race Analysis
         </button>
       </div>
 
@@ -2233,7 +2233,7 @@ export default function App() {
                   <span>Gender</span>
                   <input
                     type="text"
-                    placeholder="F or M"
+                    placeholder="male or female or mixed"
                     value={plannerFilters.gender}
                     onChange={(event) =>
                       setPlannerFilters((prev) => ({ ...prev, gender: event.target.value }))
