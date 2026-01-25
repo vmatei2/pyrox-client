@@ -12,7 +12,53 @@ const MATCH_OPTIONS = [
   { value: "contains", label: "Contains" },
 ];
 
+const RUN_SEGMENTS = [
+  { key: "run1", label: "Run 1", color: "#38bdf8", column: "run1_time_min" },
+  { key: "run2", label: "Run 2", color: "#22d3ee", column: "run2_time_min" },
+  { key: "run3", label: "Run 3", color: "#0ea5e9", column: "run3_time_min" },
+  { key: "run4", label: "Run 4", color: "#60a5fa", column: "run4_time_min" },
+  { key: "run5", label: "Run 5", color: "#818cf8", column: "run5_time_min" },
+  { key: "run6", label: "Run 6", color: "#a5b4fc", column: "run6_time_min" },
+  { key: "run7", label: "Run 7", color: "#93c5fd", column: "run7_time_min" },
+  { key: "run8", label: "Run 8", color: "#7dd3fc", column: "run8_time_min" },
+  { key: "roxzone", label: "Roxzone", color: "#f97316", column: "roxzone_time_min" },
+];
+
+const STATION_SEGMENTS = [
+  { key: "skierg", label: "SkiErg", color: "#38bdf8", column: "skiErg_time_min" },
+  { key: "sledpush", label: "Sled Push", color: "#22d3ee", column: "sledPush_time_min" },
+  { key: "sledpull", label: "Sled Pull", color: "#f97316", column: "sledPull_time_min" },
+  {
+    key: "burpeebroadjump",
+    label: "Burpee Broad Jump",
+    color: "#facc15",
+    column: "burpeeBroadJump_time_min",
+  },
+  { key: "rowerg", label: "RowErg", color: "#4ade80", column: "rowErg_time_min" },
+  {
+    key: "farmerscarry",
+    label: "Farmers Carry",
+    color: "#2dd4bf",
+    column: "farmersCarry_time_min",
+  },
+  {
+    key: "sandbaglunges",
+    label: "Sandbag Lunges",
+    color: "#fb7185",
+    column: "sandbagLunges_time_min",
+  },
+  {
+    key: "wallballs",
+    label: "Wall Balls",
+    color: "#a3e635",
+    column: "wallBalls_time_min",
+  },
+];
+
 const formatMinutes = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
   const minutesValue = Number(value);
   if (!Number.isFinite(minutesValue)) {
     return "-";
@@ -25,6 +71,42 @@ const formatMinutes = (value) => {
     return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   }
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
+};
+
+const formatDurationMinutes = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+  const minutesValue = Number(value);
+  if (!Number.isFinite(minutesValue)) {
+    return "-";
+  }
+  const totalSeconds = Math.round(Math.abs(minutesValue) * 60);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  }
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+};
+
+const formatDeltaMinutes = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+  const minutesValue = Number(value);
+  if (!Number.isFinite(minutesValue)) {
+    return "-";
+  }
+  const formatted = formatDurationMinutes(minutesValue);
+  if (formatted === "-") {
+    return "-";
+  }
+  if (minutesValue === 0) {
+    return formatted;
+  }
+  return `${minutesValue > 0 ? "+" : "-"}${formatted}`;
 };
 
 const formatPercent = (value) => {
@@ -42,6 +124,77 @@ const formatLabel = (value) => {
   return String(value);
 };
 
+const toNumber = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+    if (trimmed.includes(":")) {
+      const parts = trimmed.split(":").map((part) => part.trim());
+      if (parts.some((part) => part === "")) {
+        return null;
+      }
+      const numbers = parts.map((part) => Number(part));
+      if (numbers.some((number) => !Number.isFinite(number))) {
+        return null;
+      }
+      if (numbers.length === 2) {
+        const [minutes, seconds] = numbers;
+        return minutes + seconds / 60;
+      }
+      if (numbers.length === 3) {
+        const [hours, minutes, seconds] = numbers;
+        return hours * 60 + minutes + seconds / 60;
+      }
+      return null;
+    }
+    const numberValue = Number(trimmed);
+    return Number.isFinite(numberValue) ? numberValue : null;
+  }
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : null;
+};
+
+const sumTimes = (...values) => {
+  const numbers = values.map(toNumber);
+  if (numbers.some((number) => number === null)) {
+    return null;
+  }
+  return numbers.reduce((total, number) => total + number, 0);
+};
+
+const normalizeSplitKey = (value) => {
+  if (value === null || value === undefined) {
+    return "";
+  }
+  return String(value).trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+};
+
+const buildSplitTimeMap = (splits) => {
+  const map = new Map();
+  if (!Array.isArray(splits)) {
+    return map;
+  }
+  splits.forEach((split) => {
+    const key = normalizeSplitKey(split.split_name);
+    if (!key) {
+      return;
+    }
+    map.set(key, {
+      name: split.split_name,
+      time: toNumber(split.split_time_min),
+    });
+  });
+  return map;
+};
+
 const buildReportFilename = (race) => {
   const parts = [
     race?.name,
@@ -54,6 +207,43 @@ const buildReportFilename = (race) => {
     .join("-");
   const slug = parts.replace(/[^a-z0-9]+/gi, "-").replace(/(^-|-$)/g, "").toLowerCase();
   return `pyrox-report-${slug || "race"}.pdf`;
+};
+
+const buildComparisonFilename = (baseRace, compareRace) => {
+  const baseParts = [
+    baseRace?.name,
+    baseRace?.event_name || baseRace?.event_id,
+    baseRace?.location,
+    baseRace?.season,
+    baseRace?.year,
+  ]
+    .filter(Boolean)
+    .join("-");
+  const compareParts = [
+    compareRace?.name,
+    compareRace?.event_name || compareRace?.event_id,
+    compareRace?.location,
+    compareRace?.season,
+    compareRace?.year,
+  ]
+    .filter(Boolean)
+    .join("-");
+  const combined = [baseParts, compareParts].filter(Boolean).join("-vs-");
+  const slug = combined
+    .replace(/[^a-z0-9]+/gi, "-")
+    .replace(/(^-|-$)/g, "")
+    .toLowerCase();
+  return `pyrox-compare-${slug || "races"}.pdf`;
+};
+
+const pickSegmentValue = (segment, race, splitMap) => {
+  if (splitMap?.has(segment.key)) {
+    const splitValue = splitMap.get(segment.key)?.time;
+    if (Number.isFinite(splitValue)) {
+      return splitValue;
+    }
+  }
+  return toNumber(race?.[segment.column]);
 };
 
 const parseError = async (response) => {
@@ -176,6 +366,122 @@ const HistogramChart = ({ title, subtitle, histogram, stats, emptyMessage }) => 
   );
 };
 
+const GroupedBarChart = ({
+  title,
+  subtitle,
+  segments = [],
+  baseLabel,
+  compareLabel,
+  emptyMessage,
+}) => {
+  const values = segments
+    .flatMap((segment) => [segment.baseValue, segment.compareValue])
+    .map((value) => (Number.isFinite(value) ? value : 0));
+  const maxValue = Math.max(0, ...values);
+  if (!segments.length || maxValue === 0) {
+    return (
+      <div className="chart-card compare-chart">
+        <div className="chart-head">
+          <div>
+            <h5>{title}</h5>
+            {subtitle ? <p>{subtitle}</p> : null}
+          </div>
+        </div>
+        <div className="empty">{emptyMessage || "No data available."}</div>
+      </div>
+    );
+  }
+
+  const tickCount = 4;
+  const maxScale = maxValue;
+  const step = maxScale / tickCount;
+  const ticks = Array.from({ length: tickCount + 1 }, (_, index) => maxScale - step * index);
+
+  return (
+    <div className="chart-card compare-chart">
+      <div className="chart-head">
+        <div>
+          <h5>{title}</h5>
+          {subtitle ? <p>{subtitle}</p> : null}
+        </div>
+      </div>
+      <div className="compare-legend">
+        <span className="legend-item">
+          <span className="legend-swatch is-base" />
+          {baseLabel}
+        </span>
+        <span className="legend-item">
+          <span className="legend-swatch is-compare" />
+          {compareLabel}
+        </span>
+      </div>
+      <div className="grouped-chart-wrap">
+        <div className="grouped-axis">
+          {ticks.map((tick, index) => (
+            <div key={`${tick}-${index}`} className="grouped-axis-tick">
+              {formatMinutes(tick)}
+            </div>
+          ))}
+        </div>
+        <div className="grouped-chart-area">
+          <div className="grouped-chart-inner">
+            <div className="grouped-grid">
+              {ticks.map((tick, index) => {
+                const position = (index / tickCount) * 100;
+                return (
+                  <div
+                    key={`${tick}-${index}`}
+                    className="grouped-grid-line"
+                    style={{ bottom: `${100 - position}%` }}
+                  />
+                );
+              })}
+            </div>
+            <div className="grouped-chart-bars">
+              {segments.map((segment) => {
+                const baseValue = Number.isFinite(segment.baseValue) ? segment.baseValue : 0;
+                const compareValue = Number.isFinite(segment.compareValue)
+                  ? segment.compareValue
+                  : 0;
+                const baseHeight = maxScale > 0 ? (baseValue / maxScale) * 100 : 0;
+                const compareHeight = maxScale > 0 ? (compareValue / maxScale) * 100 : 0;
+                return (
+                  <div key={segment.key} className="grouped-group">
+                    <div className="grouped-bars">
+                      <div
+                        className="grouped-bar is-base"
+                        style={{ height: `${baseHeight}%`, background: segment.color }}
+                        title={`${baseLabel} ${segment.label}: ${formatMinutes(baseValue)}`}
+                        data-value={formatMinutes(baseValue)}
+                        aria-label={`${segment.label} ${baseLabel}: ${formatMinutes(baseValue)}`}
+                      />
+                      <div
+                        className="grouped-bar is-compare"
+                        style={{ height: `${compareHeight}%`, background: segment.color }}
+                        title={`${compareLabel} ${segment.label}: ${formatMinutes(compareValue)}`}
+                        data-value={formatMinutes(compareValue)}
+                        aria-label={`${segment.label} ${compareLabel}: ${formatMinutes(compareValue)}`}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="grouped-x-axis" />
+            <div className="grouped-label-row">
+              {segments.map((segment) => (
+                <div key={`${segment.key}-label`} className="grouped-label">
+                  {segment.label}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   const [mode, setMode] = useState("report");
   const [name, setName] = useState("");
@@ -197,6 +503,38 @@ export default function App() {
   const [searchError, setSearchError] = useState("");
   const [reportError, setReportError] = useState("");
 
+  const [baseName, setBaseName] = useState("");
+  const [baseFilters, setBaseFilters] = useState({
+    match: "best",
+    gender: "",
+    division: "",
+    nationality: "",
+    requireUnique: true,
+  });
+  const [baseRaces, setBaseRaces] = useState([]);
+  const [selectedBaseRaceId, setSelectedBaseRaceId] = useState(null);
+  const [baseReport, setBaseReport] = useState(null);
+  const [baseSearchLoading, setBaseSearchLoading] = useState(false);
+  const [baseReportLoading, setBaseReportLoading] = useState(false);
+  const [baseSearchError, setBaseSearchError] = useState("");
+  const [baseReportError, setBaseReportError] = useState("");
+
+  const [compareName, setCompareName] = useState("");
+  const [compareFilters, setCompareFilters] = useState({
+    match: "best",
+    gender: "",
+    division: "",
+    nationality: "",
+    requireUnique: true,
+  });
+  const [compareRaces, setCompareRaces] = useState([]);
+  const [selectedCompareRaceId, setSelectedCompareRaceId] = useState(null);
+  const [compareReport, setCompareReport] = useState(null);
+  const [compareSearchLoading, setCompareSearchLoading] = useState(false);
+  const [compareReportLoading, setCompareReportLoading] = useState(false);
+  const [compareSearchError, setCompareSearchError] = useState("");
+  const [compareReportError, setCompareReportError] = useState("");
+
   const [plannerFilters, setPlannerFilters] = useState({
     season: "",
     location: "",
@@ -213,6 +551,14 @@ export default function App() {
   const selectedRace = useMemo(
     () => races.find((race) => race.result_id === selectedRaceId),
     [races, selectedRaceId]
+  );
+  const selectedBaseRace = useMemo(
+    () => baseRaces.find((race) => race.result_id === selectedBaseRaceId),
+    [baseRaces, selectedBaseRaceId]
+  );
+  const selectedCompareRace = useMemo(
+    () => compareRaces.find((race) => race.result_id === selectedCompareRaceId),
+    [compareRaces, selectedCompareRaceId]
   );
   const splitOptions = useMemo(() => {
     if (!report?.splits || report.splits.length === 0) {
@@ -342,6 +688,137 @@ export default function App() {
     }
   };
 
+  const handleBaseSearch = async (event) => {
+    event.preventDefault();
+    if (!baseName.trim()) {
+      setBaseSearchError("Enter an athlete name to search.");
+      return;
+    }
+    setBaseSearchLoading(true);
+    setBaseSearchError("");
+    setBaseReportError("");
+    setBaseReport(null);
+    setSelectedBaseRaceId(null);
+    try {
+      const params = new URLSearchParams({
+        name: baseName.trim(),
+        match: baseFilters.match,
+        require_unique: String(baseFilters.requireUnique),
+      });
+      if (baseFilters.gender.trim()) {
+        params.set("gender", baseFilters.gender.trim());
+      }
+      if (baseFilters.division.trim()) {
+        params.set("division", baseFilters.division.trim());
+      }
+      if (baseFilters.nationality.trim()) {
+        params.set("nationality", baseFilters.nationality.trim());
+      }
+      const response = await fetch(`${API_BASE}/api/athletes/search?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error(await parseError(response));
+      }
+      const payload = await response.json();
+      setBaseRaces(payload.races || []);
+    } catch (error) {
+      setBaseSearchError(error.message || "Search failed.");
+      setBaseRaces([]);
+    } finally {
+      setBaseSearchLoading(false);
+    }
+  };
+
+  const handleLoadBaseReport = async () => {
+    if (!selectedBaseRace) {
+      setBaseReportError("Pick a base race to compare.");
+      return;
+    }
+    setBaseReportLoading(true);
+    setBaseReportError("");
+    try {
+      const response = await fetch(`${API_BASE}/api/reports/${selectedBaseRace.result_id}`);
+      if (!response.ok) {
+        throw new Error(await parseError(response));
+      }
+      const payload = await response.json();
+      setBaseReport(payload);
+    } catch (error) {
+      setBaseReportError(error.message || "Base report failed.");
+      setBaseReport(null);
+    } finally {
+      setBaseReportLoading(false);
+    }
+  };
+
+  const handleCompareSearch = async (event) => {
+    event.preventDefault();
+    if (!compareName.trim()) {
+      setCompareSearchError("Enter an athlete name to search.");
+      return;
+    }
+    setCompareSearchLoading(true);
+    setCompareSearchError("");
+    setCompareReportError("");
+    setCompareReport(null);
+    setCompareRaces([]);
+    setSelectedCompareRaceId(null);
+    try {
+      const params = new URLSearchParams({
+        name: compareName.trim(),
+        match: compareFilters.match,
+        require_unique: String(compareFilters.requireUnique),
+      });
+      if (compareFilters.gender.trim()) {
+        params.set("gender", compareFilters.gender.trim());
+      }
+      if (compareFilters.division.trim()) {
+        params.set("division", compareFilters.division.trim());
+      }
+      if (compareFilters.nationality.trim()) {
+        params.set("nationality", compareFilters.nationality.trim());
+      }
+      const response = await fetch(`${API_BASE}/api/athletes/search?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error(await parseError(response));
+      }
+      const payload = await response.json();
+      setCompareRaces(payload.races || []);
+    } catch (error) {
+      setCompareSearchError(error.message || "Search failed.");
+      setCompareRaces([]);
+    } finally {
+      setCompareSearchLoading(false);
+    }
+  };
+
+  const handleLoadCompareReport = async () => {
+    if (!selectedCompareRace) {
+      setCompareReportError("Pick a race to compare against.");
+      return;
+    }
+    if (selectedBaseRaceId && selectedCompareRaceId === selectedBaseRaceId) {
+      setCompareReportError("Pick a different race than the base race.");
+      return;
+    }
+    setCompareReportLoading(true);
+    setCompareReportError("");
+    try {
+      const response = await fetch(
+        `${API_BASE}/api/reports/${selectedCompareRace.result_id}`
+      );
+      if (!response.ok) {
+        throw new Error(await parseError(response));
+      }
+      const payload = await response.json();
+      setCompareReport(payload);
+    } catch (error) {
+      setCompareReportError(error.message || "Comparison report failed.");
+      setCompareReport(null);
+    } finally {
+      setCompareReportLoading(false);
+    }
+  };
+
   const handlePlannerSearch = async (event) => {
     event.preventDefault();
     setPlannerLoading(true);
@@ -399,6 +876,21 @@ export default function App() {
     html2pdf().set(options).from(reportNode).save();
   };
 
+  const handleDownloadComparePdf = () => {
+    const compareNode = document.getElementById("compare-root");
+    if (!compareNode) {
+      return;
+    }
+    const options = {
+      margin: 0.35,
+      filename: buildComparisonFilename(baseReport?.race, compareReport?.race),
+      image: { type: "jpeg", quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
+    };
+    html2pdf().set(options).from(compareNode).save();
+  };
+
   const handleSplitChange = (event) => {
     const nextSplit = event.target.value;
     setSelectedSplit(nextSplit);
@@ -426,15 +918,98 @@ export default function App() {
     report?.cohort_time_window_min !== null && report?.cohort_time_window_min !== undefined
       ? ` (+/- ${report.cohort_time_window_min} min)`
       : "";
+  const comparisonRows = useMemo(() => {
+    if (!baseReport || !compareReport) {
+      return [];
+    }
+    const rows = [];
+    const mainRace = baseReport.race || {};
+    const compareRace = compareReport.race || {};
+    const addRow = (label, primaryValue, compareValue, key) => {
+      rows.push({
+        key: key || label,
+        label,
+        primaryValue,
+        compareValue,
+        delta:
+          primaryValue !== null && compareValue !== null
+            ? primaryValue - compareValue
+            : null,
+      });
+    };
+
+    addRow(
+      "Total time",
+      toNumber(mainRace.total_time_min),
+      toNumber(compareRace.total_time_min),
+      "total_time"
+    );
+    addRow(
+      "Run + Roxzone",
+      sumTimes(mainRace.run_time_min, mainRace.roxzone_time_min),
+      sumTimes(compareRace.run_time_min, compareRace.roxzone_time_min),
+      "run_roxzone"
+    );
+
+    const mainSplits = buildSplitTimeMap(baseReport.splits);
+    const compareSplits = buildSplitTimeMap(compareReport.splits);
+    const splitKeys = new Set([...mainSplits.keys(), ...compareSplits.keys()]);
+    const sortedKeys = Array.from(splitKeys).sort((left, right) => {
+      const leftName = mainSplits.get(left)?.name || compareSplits.get(left)?.name || left;
+      const rightName =
+        mainSplits.get(right)?.name || compareSplits.get(right)?.name || right;
+      return String(leftName).localeCompare(String(rightName));
+    });
+
+    sortedKeys.forEach((key) => {
+      const mainSplit = mainSplits.get(key);
+      const compareSplit = compareSplits.get(key);
+      const label = mainSplit?.name || compareSplit?.name || key;
+      addRow(label, mainSplit?.time ?? null, compareSplit?.time ?? null, `split-${key}`);
+    });
+
+    return rows;
+  }, [baseReport, compareReport]);
+
+  const comparisonCharts = useMemo(() => {
+    if (!baseReport || !compareReport) {
+      return null;
+    }
+    const baseRace = baseReport.race || {};
+    const compareRace = compareReport.race || {};
+    const baseSplits = buildSplitTimeMap(baseReport.splits);
+    const compareSplits = buildSplitTimeMap(compareReport.splits);
+
+    const runSegments = RUN_SEGMENTS.map((segment) => ({
+      key: segment.key,
+      label: segment.label,
+      color: segment.color,
+      baseValue: pickSegmentValue(segment, baseRace, baseSplits) ?? 0,
+      compareValue: pickSegmentValue(segment, compareRace, compareSplits) ?? 0,
+    }));
+
+    const stationSegments = STATION_SEGMENTS.map((segment) => ({
+      key: segment.key,
+      label: segment.label,
+      color: segment.color,
+      baseValue: pickSegmentValue(segment, baseRace, baseSplits) ?? 0,
+      compareValue: pickSegmentValue(segment, compareRace, compareSplits) ?? 0,
+    }));
+
+    return {
+      runSegments,
+      stationSegments,
+    };
+  }, [baseReport, compareReport]);
 
   return (
     <div className="app">
       <header className="hero">
-        <div className="hero-tag">Pyrox Race Report Studio</div>
-        <h1>Find an athlete, pick a race, and build a clean report fast.</h1>
+        <div className="hero-tag">Pyrox Race Analysis Studio</div>
+        <h1>Find an athlete, pick a race, and build a Pyrox race report.</h1>
         <p>
-          Search the Hyrox race database, review races, and generate a polished HTML report
-          with a PDF export in one flow.
+          Search the Hyrox race database, review races, and generate a report
+          with a PDF export for race analysis.
         </p>
       </header>
 
@@ -445,6 +1020,13 @@ export default function App() {
           onClick={() => handleModeChange("report")}
         >
           Race report
+        </button>
+        <button
+          type="button"
+          className={`mode-tab ${mode === "compare" ? "is-active" : ""}`}
+          onClick={() => handleModeChange("compare")}
+        >
+          Race comparison
         </button>
         <button
           type="button"
@@ -851,6 +1433,462 @@ export default function App() {
             )}
           </main>
         )
+      ) : mode === "compare" ? (
+        <main className="comparison-page">
+          <div className="report-toolbar">
+            <div className="toolbar-actions">
+              <button
+                className="secondary"
+                type="button"
+                onClick={handleDownloadComparePdf}
+                disabled={!baseReport || !compareReport}
+              >
+                Download PDF
+              </button>
+            </div>
+          </div>
+
+          <section className="panel">
+            <div className="comparison-grid">
+              <div className="comparison-column">
+                <div className="panel-header">
+                  <h2>Base race</h2>
+                  <p>Select the race you want to compare from.</p>
+                </div>
+                <form className="search-form" onSubmit={handleBaseSearch}>
+                  <label className="field">
+                    <span>Athlete name</span>
+                    <input
+                      type="text"
+                      placeholder="Kate Russell"
+                      value={baseName}
+                      onChange={(event) => setBaseName(event.target.value)}
+                    />
+                  </label>
+
+                  <div className="grid-2">
+                    <label className="field">
+                      <span>Match style</span>
+                      <select
+                        value={baseFilters.match}
+                        onChange={(event) =>
+                          setBaseFilters((prev) => ({ ...prev, match: event.target.value }))
+                        }
+                      >
+                        {MATCH_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="field">
+                      <span>Division</span>
+                      <input
+                        type="text"
+                        placeholder="open, pro, doubles"
+                        value={baseFilters.division}
+                        onChange={(event) =>
+                          setBaseFilters((prev) => ({
+                            ...prev,
+                            division: event.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+                  </div>
+
+                  <div className="grid-2">
+                    <label className="field">
+                      <span>Gender</span>
+                      <input
+                        type="text"
+                        placeholder="M or F"
+                        value={baseFilters.gender}
+                        onChange={(event) =>
+                          setBaseFilters((prev) => ({
+                            ...prev,
+                            gender: event.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+
+                    <label className="field">
+                      <span>Nationality</span>
+                      <input
+                        type="text"
+                        placeholder="GB, US, RO"
+                        value={baseFilters.nationality}
+                        onChange={(event) =>
+                          setBaseFilters((prev) => ({
+                            ...prev,
+                            nationality: event.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+                  </div>
+
+                  <label className="checkbox">
+                    <input
+                      type="checkbox"
+                      checked={baseFilters.requireUnique}
+                      onChange={(event) =>
+                        setBaseFilters((prev) => ({
+                          ...prev,
+                          requireUnique: event.target.checked,
+                        }))
+                      }
+                    />
+                    Require a unique athlete match
+                  </label>
+
+                  <button className="primary" type="submit" disabled={baseSearchLoading}>
+                    {baseSearchLoading ? "Searching..." : "Search races"}
+                  </button>
+                  {baseSearchError ? <p className="error">{baseSearchError}</p> : null}
+                </form>
+
+                <div className="results">
+                  <div className="results-header">
+                    <h2>Base races</h2>
+                    <span>
+                      {baseRaces.length ? `${baseRaces.length} matches` : "No results"}
+                    </span>
+                  </div>
+                  {baseRaces.length === 0 ? (
+                    <div className="empty">
+                      Search for an athlete to find a base race to compare.
+                    </div>
+                  ) : (
+                    <div className="results-grid">
+                      {baseRaces.map((race, index) => (
+                        <button
+                          key={race.result_id || `${race.event_id}-${index}`}
+                          type="button"
+                          className={`race-card ${
+                            race.result_id === selectedBaseRaceId ? "is-selected" : ""
+                          }`}
+                          style={{ animationDelay: `${index * 0.04}s` }}
+                          onClick={() => {
+                            setSelectedBaseRaceId(race.result_id);
+                            setBaseReport(null);
+                            setBaseReportError("");
+                          }}
+                        >
+                          <div className="race-card-header">
+                            <span className="race-title">
+                              {race.event_name || race.event_id || "Race"}
+                            </span>
+                            <span className="race-location">{formatLabel(race.location)}</span>
+                          </div>
+                          <div className="race-meta">
+                            <span>Season {formatLabel(race.season)}</span>
+                            <span>{formatLabel(race.year)}</span>
+                            <span>{formatLabel(race.division)}</span>
+                            <span>{formatLabel(race.gender)}</span>
+                          </div>
+                          <div className="race-time">
+                            Total: {formatMinutes(race.total_time_min)}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="report-actions">
+                    <button
+                      className="primary"
+                      type="button"
+                      onClick={handleLoadBaseReport}
+                      disabled={baseReportLoading || !selectedBaseRace}
+                    >
+                      {baseReportLoading ? "Loading base..." : "Confirm base race"}
+                    </button>
+                    {baseReportError ? <p className="error">{baseReportError}</p> : null}
+                  </div>
+                </div>
+              </div>
+
+              <div className="comparison-column">
+                <div className="panel-header">
+                  <h2>Compare against</h2>
+                  <p>Search and confirm the race you want to compare.</p>
+                </div>
+                <form className="search-form" onSubmit={handleCompareSearch}>
+                  <label className="field">
+                    <span>Athlete name</span>
+                    <input
+                      type="text"
+                      placeholder="Alex Hunter"
+                      value={compareName}
+                      onChange={(event) => setCompareName(event.target.value)}
+                    />
+                  </label>
+
+                  <div className="grid-2">
+                    <label className="field">
+                      <span>Match style</span>
+                      <select
+                        value={compareFilters.match}
+                        onChange={(event) =>
+                          setCompareFilters((prev) => ({
+                            ...prev,
+                            match: event.target.value,
+                          }))
+                        }
+                      >
+                        {MATCH_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+
+                    <label className="field">
+                      <span>Division</span>
+                      <input
+                        type="text"
+                        placeholder="open, pro, doubles"
+                        value={compareFilters.division}
+                        onChange={(event) =>
+                          setCompareFilters((prev) => ({
+                            ...prev,
+                            division: event.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+                  </div>
+
+                  <div className="grid-2">
+                    <label className="field">
+                      <span>Gender</span>
+                      <input
+                        type="text"
+                        placeholder="M or F"
+                        value={compareFilters.gender}
+                        onChange={(event) =>
+                          setCompareFilters((prev) => ({
+                            ...prev,
+                            gender: event.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+
+                    <label className="field">
+                      <span>Nationality</span>
+                      <input
+                        type="text"
+                        placeholder="GB, US, RO"
+                        value={compareFilters.nationality}
+                        onChange={(event) =>
+                          setCompareFilters((prev) => ({
+                            ...prev,
+                            nationality: event.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+                  </div>
+
+                  <label className="checkbox">
+                    <input
+                      type="checkbox"
+                      checked={compareFilters.requireUnique}
+                      onChange={(event) =>
+                        setCompareFilters((prev) => ({
+                          ...prev,
+                          requireUnique: event.target.checked,
+                        }))
+                      }
+                    />
+                    Require a unique athlete match
+                  </label>
+
+                  <button className="primary" type="submit" disabled={compareSearchLoading}>
+                    {compareSearchLoading ? "Searching..." : "Search races"}
+                  </button>
+                  {compareSearchError ? <p className="error">{compareSearchError}</p> : null}
+                </form>
+
+                <div className="results">
+                  <div className="results-header">
+                    <h2>Comparison races</h2>
+                    <span>
+                      {compareRaces.length ? `${compareRaces.length} matches` : "No results"}
+                    </span>
+                  </div>
+                  {compareRaces.length === 0 ? (
+                    <div className="empty">
+                      Search for an athlete to find a race to compare against.
+                    </div>
+                  ) : (
+                    <div className="results-grid">
+                      {compareRaces.map((race, index) => (
+                        <button
+                          key={race.result_id || `${race.event_id}-${index}`}
+                          type="button"
+                          className={`race-card ${
+                            race.result_id === selectedCompareRaceId ? "is-selected" : ""
+                          }`}
+                          style={{ animationDelay: `${index * 0.04}s` }}
+                          onClick={() => {
+                            setSelectedCompareRaceId(race.result_id);
+                            setCompareReport(null);
+                            setCompareReportError("");
+                          }}
+                        >
+                          <div className="race-card-header">
+                            <span className="race-title">
+                              {race.event_name || race.event_id || "Race"}
+                            </span>
+                            <span className="race-location">
+                              {formatLabel(race.location)}
+                            </span>
+                          </div>
+                          <div className="race-meta">
+                            <span>Season {formatLabel(race.season)}</span>
+                            <span>{formatLabel(race.year)}</span>
+                            <span>{formatLabel(race.division)}</span>
+                            <span>{formatLabel(race.gender)}</span>
+                          </div>
+                          <div className="race-time">
+                            Total: {formatMinutes(race.total_time_min)}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="report-actions">
+                    <button
+                      className="primary"
+                      type="button"
+                      onClick={handleLoadCompareReport}
+                      disabled={compareReportLoading || !selectedCompareRace}
+                    >
+                      {compareReportLoading ? "Comparing..." : "Confirm comparison"}
+                    </button>
+                    {compareReportError ? <p className="error">{compareReportError}</p> : null}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="compare-root" className="report report-full">
+            <div className="compare-hero">
+              <div className="compare-hero-card">
+                <p className="report-kicker">Base race</p>
+                <h3>
+                  {baseReport
+                    ? formatLabel(baseReport.race?.event_name || baseReport.race?.event_id)
+                    : "Select a base race"}
+                </h3>
+                <p className="report-subtitle">
+                  {baseReport
+                    ? `${formatLabel(baseReport.race?.name)} | ${formatLabel(
+                        baseReport.race?.location
+                      )} | Season ${formatLabel(baseReport.race?.season)}`
+                    : "No base race loaded yet."}
+                </p>
+                {baseReport ? (
+                  <div className="compare-hero-time">
+                    <span>Total time</span>
+                    <strong>{formatMinutes(baseReport.race?.total_time_min)}</strong>
+                  </div>
+                ) : null}
+              </div>
+              <div className="compare-hero-card">
+                <p className="report-kicker">Compare race</p>
+                <h3>
+                  {compareReport
+                    ? formatLabel(compareReport.race?.event_name || compareReport.race?.event_id)
+                    : "Select a comparison race"}
+                </h3>
+                <p className="report-subtitle">
+                  {compareReport
+                    ? `${formatLabel(compareReport.race?.name)} | ${formatLabel(
+                        compareReport.race?.location
+                      )} | Season ${formatLabel(compareReport.race?.season)}`
+                    : "No comparison race loaded yet."}
+                </p>
+                {compareReport ? (
+                  <div className="compare-hero-time">
+                    <span>Total time</span>
+                    <strong>{formatMinutes(compareReport.race?.total_time_min)}</strong>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            {!baseReport || !compareReport ? (
+              <div className="empty">
+                Load a base race and a comparison race to see the charts and split deltas.
+              </div>
+            ) : (
+              <>
+                <div className="compare-charts">
+                  <GroupedBarChart
+                    title="Runs + Roxzone"
+                    subtitle="Side-by-side run segments plus Roxzone."
+                    segments={comparisonCharts?.runSegments ?? []}
+                    baseLabel="Base"
+                    compareLabel="Compare"
+                    emptyMessage="Run/Roxzone data unavailable for one of the races."
+                  />
+                  <GroupedBarChart
+                    title="Stations"
+                    subtitle="Side-by-side station splits in order."
+                    segments={comparisonCharts?.stationSegments ?? []}
+                    baseLabel="Base"
+                    compareLabel="Compare"
+                    emptyMessage="Station split data unavailable."
+                  />
+                </div>
+
+                <div className="report-card">
+                  <h4>Split comparison</h4>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Split</th>
+                        <th>Base time</th>
+                        <th>Compare time</th>
+                        <th>Delta (base - compare)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {comparisonRows.map((row) => {
+                        const deltaClass =
+                          row.delta === null
+                            ? ""
+                            : row.delta > 0
+                              ? "delta-positive"
+                              : row.delta < 0
+                                ? "delta-negative"
+                                : "delta-even";
+                        return (
+                          <tr key={row.key}>
+                            <td>{formatLabel(row.label)}</td>
+                            <td>{formatMinutes(row.primaryValue)}</td>
+                            <td>{formatMinutes(row.compareValue)}</td>
+                            <td className={deltaClass}>{formatDeltaMinutes(row.delta)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </section>
+        </main>
       ) : (
         <main className="planner-page">
           <section className="panel">
