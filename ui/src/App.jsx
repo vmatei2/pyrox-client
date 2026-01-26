@@ -1532,19 +1532,59 @@ export default function App() {
                     <h4>Race snapshot</h4>
                     <div className="stat-grid">
                       <div>
-                        <span>Division</span>
+                        <span>
+                          Division
+                          <span
+                            className="info-tooltip"
+                            data-tooltip="Race category (open, pro, doubles)."
+                            aria-label="Race category (open, pro, doubles)."
+                            tabIndex={0}
+                          >
+                            i
+                          </span>
+                        </span>
                         <strong>{formatLabel(report.race?.division)}</strong>
                       </div>
                       <div>
-                        <span>Gender</span>
+                        <span>
+                          Gender
+                          <span
+                            className="info-tooltip"
+                            data-tooltip="Competition gender category for this result."
+                            aria-label="Competition gender category for this result."
+                            tabIndex={0}
+                          >
+                            i
+                          </span>
+                        </span>
                         <strong>{formatLabel(report.race?.gender)}</strong>
                       </div>
                       <div>
-                        <span>Age group</span>
+                        <span>
+                          Age group
+                          <span
+                            className="info-tooltip"
+                            data-tooltip="Age band used for rankings and percentiles."
+                            aria-label="Age band used for rankings and percentiles."
+                            tabIndex={0}
+                          >
+                            i
+                          </span>
+                        </span>
                         <strong>{formatLabel(report.race?.age_group)}</strong>
                       </div>
                       <div>
-                        <span>Year</span>
+                        <span>
+                          Year
+                          <span
+                            className="info-tooltip"
+                            data-tooltip="Calendar year the race took place."
+                            aria-label="Calendar year the race took place."
+                            tabIndex={0}
+                          >
+                            i
+                          </span>
+                        </span>
                         <strong>{formatLabel(report.race?.year)}</strong>
                       </div>
                     </div>
@@ -1554,25 +1594,65 @@ export default function App() {
                     <h4>Rankings</h4>
                     <div className="stat-grid">
                       <div>
-                        <span>Event rank</span>
+                        <span>
+                          Event rank
+                          <span
+                            className="info-tooltip"
+                            data-tooltip="Rank within the same location, division, gender, and age group."
+                            aria-label="Rank within the same location, division, gender, and age group."
+                            tabIndex={0}
+                          >
+                            i
+                          </span>
+                        </span>
                         <strong>
                           {formatLabel(report.race?.event_rank)} /{" "}
                           {formatLabel(report.race?.event_size)}
                         </strong>
                       </div>
                       <div>
-                        <span>Event percentile</span>
+                        <span>
+                          Event percentile
+                          <span
+                            className="info-tooltip"
+                            data-tooltip="Percentile within the same location cohort (age group/division/gender)."
+                            aria-label="Percentile within the same location cohort (age group/division/gender)."
+                            tabIndex={0}
+                          >
+                            i
+                          </span>
+                        </span>
                         <strong>{formatPercent(report.race?.event_percentile)}</strong>
                       </div>
                       <div>
-                        <span>Season rank</span>
+                        <span>
+                          Season rank
+                          <span
+                            className="info-tooltip"
+                            data-tooltip="Rank within the same season, division, gender, and age group."
+                            aria-label="Rank within the same season, division, gender, and age group."
+                            tabIndex={0}
+                          >
+                            i
+                          </span>
+                        </span>
                         <strong>
                           {formatLabel(report.race?.season_rank)} /{" "}
                           {formatLabel(report.race?.season_size)}
                         </strong>
                       </div>
                       <div>
-                        <span>Overall rank</span>
+                        <span>
+                          Overall rank
+                          <span
+                            className="info-tooltip"
+                            data-tooltip="Rank across all seasons for the same division, gender, and age group."
+                            aria-label="Rank across all seasons for the same division, gender, and age group."
+                            tabIndex={0}
+                          >
+                            i
+                          </span>
+                        </span>
                         <strong>
                           {formatLabel(report.race?.overall_rank)} /{" "}
                           {formatLabel(report.race?.overall_size)}
