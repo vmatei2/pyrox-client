@@ -697,6 +697,15 @@ button {
   gap: 20px;
 }
 
+.deepdive-page {
+  display: grid;
+  gap: 20px;
+}
+
+.deepdive-report {
+  margin-top: 24px;
+}
+
 .comparison-grid {
   display: grid;
   gap: 24px;
@@ -977,6 +986,59 @@ button {
 
 .stat-grid strong {
   font-size: 1rem;
+}
+
+.stat-bar-chart {
+  min-height: 240px;
+}
+
+.stat-bars {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  align-items: end;
+  height: 240px;
+  padding-top: 10px;
+}
+
+.stat-bar-item {
+  display: grid;
+  gap: 8px;
+  align-items: end;
+  height: 100%;
+}
+
+.stat-bar {
+  position: relative;
+  background: rgba(148, 163, 184, 0.25);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 10px 10px 6px 6px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 8px;
+  color: #f8fafc;
+  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+.stat-bar.is-accent {
+  background: linear-gradient(180deg, rgba(56, 189, 248, 0.7), rgba(14, 165, 233, 0.6));
+  border-color: rgba(56, 189, 248, 0.65);
+}
+
+.stat-bar.is-empty {
+  opacity: 0.4;
+}
+
+.stat-bar span {
+  text-shadow: 0 2px 6px rgba(15, 23, 42, 0.7);
+}
+
+.stat-bar-label {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--muted);
 }
 
 .info-tooltip {

@@ -96,6 +96,12 @@ def _log_df_stats(name: str, df: pd.DataFrame, start: float) -> None:
     )
 
 
+def _min_value_for_metric(column: str) -> Optional[float]:
+    if column.startswith("run") and column.endswith("_time_min"):
+        return 1.0
+    return None
+
+
 
 class ReportingClient:
     """
@@ -521,6 +527,165 @@ class ReportingClient:
             )
 
         return report
+
+    def deepdive_location_stats(
+        self,
+        result_id: str,
+        *,
+        season: int,
+        metric: str = "total_time_min",
+        division: Optional[str] = None,
+        gender: Optional[str] = None,
+        age_group: Optional[str] = None,
+        location: Optional[str] = None,
+    ) -> dict[str, object]:
+        """
+        Build per-location cohort stats for a selected athlete race.
+
+        Season is required. Division/gender/age_group default to the base race
+        values but can be overridden.
+        """
+        if result_id is None or str(result_id).strip() == "":
+            raise ValueError("result_id must be a non-empty string.")
+        if season is None:
+            raise ValueError("season is required for deepdive.")
+
+        metric_column = _resolve_time_column(metric)
+        min_value = _min_value_for_metric(metric_column)
+
+        con = self._ensure_connection()
+        race = con.execute(
+            f"""
+            SELECT
+                result_id,
+                name,
+                event_name,
+                event_id,
+                location,
+                season,
+                year,
+                division,
+                gender,
+                age_group,
+                {metric_column} AS metric_value
+            FROM race_results
+            WHERE result_id = ?
+            """,
+            [result_id],
+        ).fetchdf()
+        if race.empty:
+            raise ValueError(f"result_id not found: {result_id}")
+
+        athlete_value = race["metric_value"].iloc[0]
+        if athlete_value is None or pd.isna(athlete_value):
+            raise ValueError(f"No {metric_column} data for result_id: {result_id}")
+
+        def pick_override(value: Optional[str], default: object) -> Optional[str]:
+            if value is not None and str(value).strip() != "":
+                return str(value).strip()
+            if default is None or (isinstance(default, float) and pd.isna(default)):
+                return None
+            text = str(default).strip()
+            return text if text else None
+
+        use_division = pick_override(division, race["division"].iloc[0])
+        use_gender = pick_override(gender, race["gender"].iloc[0])
+        use_age_group = pick_override(age_group, race["age_group"].iloc[0])
+        use_location = pick_override(location, None)
+
+        clauses = ["season = ?", f"{metric_column} IS NOT NULL"]
+        params: list[object] = [int(season)]
+
+        if use_location is not None:
+            clauses.append("lower(location) = ?")
+            params.append(use_location.casefold())
+        if use_division is not None:
+            clauses.append("lower(division) = ?")
+            params.append(use_division.casefold())
+        if use_gender is not None:
+            normalized_gender = use_gender.casefold()
+            if normalized_gender in {"m", "male"}:
+                clauses.append("lower(gender) IN (?, ?)")
+                params.extend(["m", "male"])
+            elif normalized_gender in {"f", "female"}:
+                clauses.append("lower(gender) IN (?, ?)")
+                params.extend(["f", "female"])
+            else:
+                clauses.append("lower(gender) = ?")
+                params.append(normalized_gender)
+        if use_age_group is not None:
+            clauses.append("lower(age_group) = ?")
+            params.append(use_age_group.casefold())
+
+        where_sql = " AND ".join(clauses)
+        df = con.execute(
+            f"""
+            SELECT location, event_id, season, year, {metric_column} AS metric_value
+            FROM race_results
+            WHERE {where_sql}
+            """,
+            params,
+        ).fetchdf()
+        if df.empty:
+            raise ValueError("No cohort data found for the selected filters.")
+
+        values = pd.to_numeric(df["metric_value"], errors="coerce").dropna()
+        if min_value is not None:
+            values = values[values >= min_value]
+        if values.empty:
+            raise ValueError("No cohort data found for the selected filters.")
+
+        rows = []
+        for location_label, group in df.groupby("location", dropna=False):
+            times = pd.to_numeric(group["metric_value"], errors="coerce").dropna()
+            if min_value is not None:
+                times = times[times >= min_value]
+            if times.empty:
+                continue
+            seasons = sorted(
+                {int(value) for value in group["season"].dropna().tolist() if str(value)}
+            )
+            years = sorted({int(value) for value in group["year"].dropna().tolist() if str(value)})
+            rows.append(
+                {
+                    "location": location_label,
+                    "count": int(times.shape[0]),
+                    "event_count": int(group["event_id"].nunique(dropna=True)),
+                    "seasons": seasons,
+                    "years": years,
+                    "mean": float(times.mean()),
+                    "p05": float(times.quantile(0.05)),
+                    "p50": float(times.quantile(0.5)),
+                    "p90": float(times.quantile(0.9)),
+                }
+            )
+
+        locations = pd.DataFrame(rows)
+        if locations.empty:
+            raise ValueError("No cohort data found for the selected filters.")
+
+        return {
+            "race": race.reset_index(drop=True),
+            "locations": locations.reset_index(drop=True),
+            "total_rows": int(values.shape[0]),
+            "total_locations": int(len(locations)),
+            "athlete_value": float(athlete_value),
+            "metric": metric_column,
+            "summary": {
+                "count": int(values.shape[0]),
+                "min": float(values.min()),
+                "max": float(values.max()),
+                "mean": float(values.mean()),
+                "median": float(values.median()),
+            },
+            "filters": {
+                "season": int(season),
+                "division": use_division,
+                "gender": use_gender,
+                "age_group": use_age_group,
+                "location": use_location,
+            },
+        }
 
     def plot_cohort_distribution(
         self,
