@@ -423,6 +423,80 @@ def report_for_result(
     return payload
 
 
+@app.get("/api/deepdive/filters")
+def deepdive_filter_options(
+    season: int = Query(..., ge=1),
+    division: Optional[str] = Query(None),
+    gender: Optional[str] = Query(None),
+) -> dict:
+    reporting = _get_reporting()
+    start = time.perf_counter()
+    logger.info("deepdive filters start season=%s", season)
+    try:
+        options = reporting.deepdive_filter_options(
+            season=season,
+            division=division,
+            gender=gender,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    payload = {
+        "filters": {"season": season, "division": division, "gender": gender},
+        "locations": options.get("locations", []),
+        "age_groups": options.get("age_groups", []),
+    }
+    logger.info("deepdive filters ready in %.3fs", time.perf_counter() - start)
+    return payload
+
+
+@app.get("/api/deepdive/{result_id}")
+def deepdive_location_report(
+    result_id: str,
+    season: int = Query(..., ge=1),
+    metric: str = Query("total_time_min"),
+    bins: int = Query(22, ge=5, le=80),
+    division: Optional[str] = Query(None),
+    gender: Optional[str] = Query(None),
+    age_group: Optional[str] = Query(None),
+    location: Optional[str] = Query(None),
+) -> dict:
+    reporting = _get_reporting()
+    start = time.perf_counter()
+    logger.info("deepdive start result_id=%s", result_id)
+    try:
+        report = reporting.deepdive_location_stats(
+            result_id,
+            season=season,
+            metric=metric,
+            bins=bins,
+            division=division,
+            gender=gender,
+            age_group=age_group,
+            location=location,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    race_rows = _df_to_records(report["race"], limit=1)
+    race = race_rows[0] if race_rows else {}
+    locations = _df_to_records(report["locations"])
+    payload = {
+        "result_id": result_id,
+        "race": race,
+        "athlete_value": report["athlete_value"],
+        "metric": report["metric"],
+        "summary": report["summary"],
+        "group_summary": report.get("group_summary"),
+        "distribution": report.get("distribution"),
+        "group_distribution": report.get("group_distribution"),
+        "filters": report["filters"],
+        "total_rows": report["total_rows"],
+        "total_locations": report["total_locations"],
+        "locations": locations,
+    }
+    logger.info("deepdive response ready in %.3fs", time.perf_counter() - start)
+    return payload
+
+
 @app.get("/api/planner")
 def planner_summary(
     season: Optional[int] = Query(None),

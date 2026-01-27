@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import html2pdf from "html2pdf.js";
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000").replace(
@@ -6,10 +6,10 @@ const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000").
   ""
 );
 
-const MATCH_OPTIONS = [
-  { value: "best", label: "Best match" },
-  { value: "exact", label: "Exact match" },
-  { value: "contains", label: "Contains" },
+const DEEPDIVE_STAT_OPTIONS = [
+  { value: "p05", label: "Top 5%" },
+  { value: "mean", label: "Mean" },
+  { value: "p90", label: "Bottom 10%" },
 ];
 
 const RUN_SEGMENTS = [
@@ -53,6 +53,21 @@ const STATION_SEGMENTS = [
     color: "#a3e635",
     column: "wallBalls_time_min",
   },
+];
+
+const DEEPDIVE_METRIC_OPTIONS = [
+  { value: "total_time_min", label: "Total time" },
+  { value: "work_time_min", label: "Total work" },
+  { value: "run_time_min", label: "Total runs" },
+  { value: "roxzone_time_min", label: "Roxzone" },
+  ...RUN_SEGMENTS.filter((segment) => segment.key !== "roxzone").map((segment) => ({
+    value: segment.column,
+    label: segment.label,
+  })),
+  ...STATION_SEGMENTS.map((segment) => ({
+    value: segment.column,
+    label: segment.label,
+  })),
 ];
 
 const RUN_PERCENTILE_SEGMENTS = RUN_SEGMENTS.map(({ key, label }) => ({ key, label }));
@@ -261,13 +276,20 @@ const parseError = async (response) => {
   }
 };
 
-const HistogramChart = ({ title, subtitle, histogram, stats, emptyMessage }) => {
+const HistogramChart = ({ title, subtitle, histogram, stats, emptyMessage, infoTooltip }) => {
   if (!histogram || !Array.isArray(histogram.bins) || histogram.bins.length === 0) {
     return (
       <div className="chart-card">
         <div className="chart-head">
           <div>
-            <h5>{title}</h5>
+            <h5>
+              {title}
+              {infoTooltip ? (
+                <span className="info-tooltip" data-tooltip={infoTooltip} aria-label={title}>
+                  i
+                </span>
+              ) : null}
+            </h5>
             {subtitle ? <p>{subtitle}</p> : null}
           </div>
         </div>
@@ -314,7 +336,14 @@ const HistogramChart = ({ title, subtitle, histogram, stats, emptyMessage }) => 
     <div className="chart-card">
       <div className="chart-head">
         <div>
-          <h5>{title}</h5>
+          <h5>
+            {title}
+            {infoTooltip ? (
+              <span className="info-tooltip" data-tooltip={infoTooltip} aria-label={title}>
+                i
+              </span>
+            ) : null}
+          </h5>
           {subtitle ? <p>{subtitle}</p> : null}
         </div>
         <div className="chart-stat">n={formatLabel(histogram.count)}</div>
@@ -328,9 +357,15 @@ const HistogramChart = ({ title, subtitle, histogram, stats, emptyMessage }) => 
         >
           {histogram.bins.map((bin, index) => {
             const percent = totalCount ? ((bin.count / totalCount) * 100).toFixed(1) : "0.0";
+            const locations = Array.isArray(bin.locations) ? bin.locations : [];
+            const locationLabel = locations.length
+              ? ` | Locations: ${
+                  locations.slice(0, 4).join(", ")
+                }${locations.length > 4 ? ` +${locations.length - 4} more` : ""}`
+              : "";
             const label = `${formatMinutes(bin.start)} - ${formatMinutes(bin.end)} | ${
               bin.count
-            } (${percent}%)`;
+            } (${percent}%)${locationLabel}`;
             return (
               <div
                 key={`${bin.start}-${index}`}
@@ -483,6 +518,70 @@ const GroupedBarChart = ({
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+};
+
+const StatBarChart = ({ title, subtitle, items = [], emptyMessage, infoTooltip }) => {
+  const hasValues = items.some((item) => Number.isFinite(item.value));
+  if (!items.length || !hasValues) {
+    return (
+      <div className="chart-card">
+        <div className="chart-head">
+          <div>
+            <h5>
+              {title}
+              {infoTooltip ? (
+                <span className="info-tooltip" data-tooltip={infoTooltip} aria-label={title}>
+                  i
+                </span>
+              ) : null}
+            </h5>
+            {subtitle ? <p>{subtitle}</p> : null}
+          </div>
+        </div>
+        <div className="empty">{emptyMessage || "No data available."}</div>
+      </div>
+    );
+  }
+
+  const values = items.map((item) => (Number.isFinite(item.value) ? item.value : 0));
+  const maxValue = Math.max(0, ...values);
+
+  return (
+    <div className="chart-card stat-bar-chart">
+      <div className="chart-head">
+        <div>
+          <h5>
+            {title}
+            {infoTooltip ? (
+              <span className="info-tooltip" data-tooltip={infoTooltip} aria-label={title}>
+                i
+              </span>
+            ) : null}
+          </h5>
+          {subtitle ? <p>{subtitle}</p> : null}
+        </div>
+      </div>
+      <div className="stat-bars">
+        {items.map((item) => {
+          const value = Number.isFinite(item.value) ? item.value : 0;
+          const height = maxValue > 0 ? (value / maxValue) * 100 : 0;
+          return (
+            <div key={item.label} className="stat-bar-item">
+              <div
+                className={`stat-bar${item.accent ? " is-accent" : ""}${
+                  Number.isFinite(item.value) ? "" : " is-empty"
+                }`}
+                style={{ height: `${height}%` }}
+              >
+                <span>{formatMinutes(item.value)}</span>
+              </div>
+              <div className="stat-bar-label">{item.label}</div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -724,7 +823,7 @@ export default function App() {
     gender: "",
     division: "",
     nationality: "",
-    requireUnique: true,
+    requireUnique: false,
     timeWindow: "5",
   });
   const [races, setRaces] = useState([]);
@@ -743,7 +842,7 @@ export default function App() {
     gender: "",
     division: "",
     nationality: "",
-    requireUnique: true,
+    requireUnique: false,
   });
   const [baseRaces, setBaseRaces] = useState([]);
   const [selectedBaseRaceId, setSelectedBaseRaceId] = useState(null);
@@ -759,7 +858,7 @@ export default function App() {
     gender: "",
     division: "",
     nationality: "",
-    requireUnique: true,
+    requireUnique: false,
   });
   const [compareRaces, setCompareRaces] = useState([]);
   const [selectedCompareRaceId, setSelectedCompareRaceId] = useState(null);
@@ -768,6 +867,36 @@ export default function App() {
   const [compareReportLoading, setCompareReportLoading] = useState(false);
   const [compareSearchError, setCompareSearchError] = useState("");
   const [compareReportError, setCompareReportError] = useState("");
+
+  const [deepdiveName, setDeepdiveName] = useState("");
+  const [deepdiveFilters, setDeepdiveFilters] = useState({
+    match: "best",
+    division: "",
+    gender: "",
+    nationality: "",
+    requireUnique: false,
+  });
+  const [deepdiveRaces, setDeepdiveRaces] = useState([]);
+  const [selectedDeepdiveRaceId, setSelectedDeepdiveRaceId] = useState(null);
+  const [deepdiveData, setDeepdiveData] = useState(null);
+  const [deepdiveSearchLoading, setDeepdiveSearchLoading] = useState(false);
+  const [deepdiveLoading, setDeepdiveLoading] = useState(false);
+  const [deepdiveSearchError, setDeepdiveSearchError] = useState("");
+  const [deepdiveError, setDeepdiveError] = useState("");
+  const [deepdiveOptions, setDeepdiveOptions] = useState({
+    locations: [],
+    ageGroups: [],
+  });
+  const [deepdiveOptionsLoading, setDeepdiveOptionsLoading] = useState(false);
+  const [deepdiveParams, setDeepdiveParams] = useState({
+    season: "",
+    division: "",
+    gender: "",
+    ageGroup: "",
+    location: "",
+    metric: "total_time_min",
+    stat: "p05",
+  });
 
   const [plannerFilters, setPlannerFilters] = useState({
     season: "",
@@ -793,6 +922,10 @@ export default function App() {
   const selectedCompareRace = useMemo(
     () => compareRaces.find((race) => race.result_id === selectedCompareRaceId),
     [compareRaces, selectedCompareRaceId]
+  );
+  const selectedDeepdiveRace = useMemo(
+    () => deepdiveRaces.find((race) => race.result_id === selectedDeepdiveRaceId),
+    [deepdiveRaces, selectedDeepdiveRaceId]
   );
   const splitOptions = useMemo(() => {
     if (!report?.splits || report.splits.length === 0) {
@@ -1053,6 +1186,94 @@ export default function App() {
     }
   };
 
+  const handleDeepdiveSearch = async (event) => {
+    event.preventDefault();
+    if (!deepdiveName.trim()) {
+      setDeepdiveSearchError("Enter an athlete name to search.");
+      return;
+    }
+    setDeepdiveSearchLoading(true);
+    setDeepdiveSearchError("");
+    setDeepdiveError("");
+    setDeepdiveData(null);
+    setDeepdiveRaces([]);
+    setSelectedDeepdiveRaceId(null);
+    try {
+      const params = new URLSearchParams({
+        name: deepdiveName.trim(),
+        match: deepdiveFilters.match,
+        require_unique: String(deepdiveFilters.requireUnique),
+      });
+      if (deepdiveFilters.gender.trim()) {
+        params.set("gender", deepdiveFilters.gender.trim());
+      }
+      if (deepdiveFilters.division.trim()) {
+        params.set("division", deepdiveFilters.division.trim());
+      }
+      if (deepdiveFilters.nationality.trim()) {
+        params.set("nationality", deepdiveFilters.nationality.trim());
+      }
+      const response = await fetch(`${API_BASE}/api/athletes/search?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error(await parseError(response));
+      }
+      const payload = await response.json();
+      setDeepdiveRaces(payload.races || []);
+    } catch (error) {
+      setDeepdiveSearchError(error.message || "Search failed.");
+      setDeepdiveRaces([]);
+    } finally {
+      setDeepdiveSearchLoading(false);
+    }
+  };
+
+  const handleRunDeepdive = async () => {
+    if (!selectedDeepdiveRace) {
+      setDeepdiveError("Pick a base race for the deepdive.");
+      return;
+    }
+    if (!deepdiveParams.season.trim()) {
+      setDeepdiveError("Season is required for deepdive analysis.");
+      return;
+    }
+    setDeepdiveLoading(true);
+    setDeepdiveError("");
+    try {
+      const params = new URLSearchParams({
+        season: deepdiveParams.season.trim(),
+      });
+      if (deepdiveParams.metric.trim()) {
+        params.set("metric", deepdiveParams.metric.trim());
+      }
+      if (deepdiveParams.division.trim()) {
+        params.set("division", deepdiveParams.division.trim());
+      }
+      if (deepdiveParams.gender.trim()) {
+        params.set("gender", deepdiveParams.gender.trim());
+      }
+      if (deepdiveParams.ageGroup.trim()) {
+        params.set("age_group", deepdiveParams.ageGroup.trim());
+      }
+      if (deepdiveParams.location.trim()) {
+        params.set("location", deepdiveParams.location.trim());
+      }
+      const response = await fetch(
+        `${API_BASE}/api/deepdive/${selectedDeepdiveRace.result_id}?${params.toString()}`
+      );
+      if (!response.ok) {
+        throw new Error(await parseError(response));
+      }
+      const payload = await response.json();
+      setDeepdiveData(payload);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error) {
+      setDeepdiveError(error.message || "Deepdive analysis failed.");
+      setDeepdiveData(null);
+    } finally {
+      setDeepdiveLoading(false);
+    }
+  };
+
   const handlePlannerSearch = async (event) => {
     event.preventDefault();
     setPlannerLoading(true);
@@ -1236,6 +1457,119 @@ export default function App() {
     };
   }, [baseReport, compareReport]);
 
+  const deepdiveStatLabel = useMemo(() => {
+    const match = DEEPDIVE_STAT_OPTIONS.find((option) => option.value === deepdiveParams.stat);
+    return match ? match.label : "Top 5%";
+  }, [deepdiveParams.stat]);
+
+  const deepdiveMetricLabel = useMemo(() => {
+    const metricKey = deepdiveData?.metric || deepdiveParams.metric;
+    const match = DEEPDIVE_METRIC_OPTIONS.find((option) => option.value === metricKey);
+    return match ? match.label : "Total time";
+  }, [deepdiveData, deepdiveParams.metric]);
+
+  const deepdiveGroupSummary = useMemo(() => {
+    const groupSummary = deepdiveData?.group_summary || {};
+    if (deepdiveParams.stat === "mean") {
+      return deepdiveData?.summary || null;
+    }
+    return groupSummary[deepdiveParams.stat] || null;
+  }, [deepdiveData, deepdiveParams.stat]);
+
+  const deepdiveDistribution = useMemo(() => {
+    const groupDistribution = deepdiveData?.group_distribution || {};
+    return groupDistribution[deepdiveParams.stat] || deepdiveData?.distribution || null;
+  }, [deepdiveData, deepdiveParams.stat]);
+
+  const deepdiveRows = useMemo(() => {
+    if (!deepdiveData?.locations || !Array.isArray(deepdiveData.locations)) {
+      return [];
+    }
+    const athleteTime = toNumber(
+      deepdiveData.athlete_value ?? deepdiveData.athlete_time
+    );
+    const statKey = deepdiveParams.stat;
+    const rows = deepdiveData.locations.map((row) => {
+      const statValue = toNumber(row?.[statKey]);
+      const delta =
+        athleteTime !== null && statValue !== null ? athleteTime - statValue : null;
+      const fastestValue = toNumber(row?.fastest);
+      const deltaFastest =
+        athleteTime !== null && fastestValue !== null
+          ? athleteTime - fastestValue
+          : null;
+      return {
+        location: row?.location,
+        count: row?.count,
+        seasons: row?.seasons,
+        years: row?.years,
+        statValue,
+        delta,
+        fastestValue,
+        deltaFastest,
+      };
+    });
+    return rows.sort((left, right) => {
+      if (left.delta === null && right.delta === null) {
+        return 0;
+      }
+      if (left.delta === null) {
+        return 1;
+      }
+      if (right.delta === null) {
+        return -1;
+      }
+      return left.delta - right.delta;
+    });
+  }, [deepdiveData, deepdiveParams.stat]);
+
+  useEffect(() => {
+    const season = deepdiveParams.season.trim();
+    if (!season) {
+      setDeepdiveOptions({ locations: [], ageGroups: [] });
+      return;
+    }
+    const controller = new AbortController();
+    const loadOptions = async () => {
+      setDeepdiveOptionsLoading(true);
+      try {
+        const params = new URLSearchParams({ season });
+        if (deepdiveParams.division.trim()) {
+          params.set("division", deepdiveParams.division.trim());
+        }
+        if (deepdiveParams.gender.trim()) {
+          params.set("gender", deepdiveParams.gender.trim());
+        }
+        const response = await fetch(
+          `${API_BASE}/api/deepdive/filters?${params.toString()}`,
+          { signal: controller.signal }
+        );
+        if (!response.ok) {
+          throw new Error(await parseError(response));
+        }
+        const payload = await response.json();
+        const locations = Array.isArray(payload.locations) ? payload.locations : [];
+        const ageGroups = Array.isArray(payload.age_groups) ? payload.age_groups : [];
+        setDeepdiveOptions({ locations, ageGroups });
+        setDeepdiveParams((prev) => ({
+          ...prev,
+          location:
+            prev.location && !locations.includes(prev.location) ? "" : prev.location,
+          ageGroup:
+            prev.ageGroup && !ageGroups.includes(prev.ageGroup) ? "" : prev.ageGroup,
+        }));
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          setDeepdiveOptions({ locations: [], ageGroups: [] });
+        }
+      } finally {
+        setDeepdiveOptionsLoading(false);
+      }
+    };
+    loadOptions();
+    return () => controller.abort();
+  }, [deepdiveParams.season, deepdiveParams.division, deepdiveParams.gender]);
+
   const percentileSeries = useMemo(() => {
     if (!report?.splits || report.splits.length === 0) {
       return { runs: [], stations: [] };
@@ -1300,6 +1634,13 @@ export default function App() {
         </button>
         <button
           type="button"
+          className={`mode-tab ${mode === "deepdive" ? "is-active" : ""}`}
+          onClick={() => handleModeChange("deepdive")}
+        >
+          Race Deepdive
+        </button>
+        <button
+          type="button"
           className={`mode-tab ${mode === "planner" ? "is-active" : ""}`}
           onClick={() => handleModeChange("planner")}
         >
@@ -1324,22 +1665,6 @@ export default function App() {
 
                 <div className="grid-2">
                   <label className="field">
-                    <span>Match style</span>
-                    <select
-                      value={filters.match}
-                      onChange={(event) =>
-                        setFilters((prev) => ({ ...prev, match: event.target.value }))
-                      }
-                    >
-                      {MATCH_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="field">
                     <span>Division</span>
                     <input
                       type="text"
@@ -1350,9 +1675,7 @@ export default function App() {
                       }
                     />
                   </label>
-                </div>
 
-                <div className="grid-2">
                   <label className="field">
                     <span>Gender</span>
                     <input
@@ -1364,29 +1687,18 @@ export default function App() {
                       }
                     />
                   </label>
-
-                  <label className="field">
-                    <span>Nationality</span>
-                    <input
-                      type="text"
-                      placeholder="GB, US, RO"
-                      value={filters.nationality}
-                      onChange={(event) =>
-                        setFilters((prev) => ({ ...prev, nationality: event.target.value }))
-                      }
-                    />
-                  </label>
                 </div>
 
-                <label className="checkbox">
+                <label className="field">
+                  <span>Nationality</span>
                   <input
-                    type="checkbox"
-                    checked={filters.requireUnique}
+                    type="text"
+                    placeholder="GBR"
+                    value={filters.nationality}
                     onChange={(event) =>
-                      setFilters((prev) => ({ ...prev, requireUnique: event.target.checked }))
+                      setFilters((prev) => ({ ...prev, nationality: event.target.value }))
                     }
                   />
-                  Require a unique athlete match
                 </label>
 
                 <button className="primary" type="submit" disabled={searchLoading}>
@@ -1532,19 +1844,59 @@ export default function App() {
                     <h4>Race snapshot</h4>
                     <div className="stat-grid">
                       <div>
-                        <span>Division</span>
+                        <span>
+                          Division
+                          <span
+                            className="info-tooltip"
+                            data-tooltip="Race category (open, pro, doubles)."
+                            aria-label="Race category (open, pro, doubles)."
+                            tabIndex={0}
+                          >
+                            i
+                          </span>
+                        </span>
                         <strong>{formatLabel(report.race?.division)}</strong>
                       </div>
                       <div>
-                        <span>Gender</span>
+                        <span>
+                          Gender
+                          <span
+                            className="info-tooltip"
+                            data-tooltip="Competition gender category for this result."
+                            aria-label="Competition gender category for this result."
+                            tabIndex={0}
+                          >
+                            i
+                          </span>
+                        </span>
                         <strong>{formatLabel(report.race?.gender)}</strong>
                       </div>
                       <div>
-                        <span>Age group</span>
+                        <span>
+                          Age group
+                          <span
+                            className="info-tooltip"
+                            data-tooltip="Age band used for rankings and percentiles."
+                            aria-label="Age band used for rankings and percentiles."
+                            tabIndex={0}
+                          >
+                            i
+                          </span>
+                        </span>
                         <strong>{formatLabel(report.race?.age_group)}</strong>
                       </div>
                       <div>
-                        <span>Year</span>
+                        <span>
+                          Year
+                          <span
+                            className="info-tooltip"
+                            data-tooltip="Calendar year the race took place."
+                            aria-label="Calendar year the race took place."
+                            tabIndex={0}
+                          >
+                            i
+                          </span>
+                        </span>
                         <strong>{formatLabel(report.race?.year)}</strong>
                       </div>
                     </div>
@@ -1554,25 +1906,65 @@ export default function App() {
                     <h4>Rankings</h4>
                     <div className="stat-grid">
                       <div>
-                        <span>Event rank</span>
+                        <span>
+                          Event rank
+                          <span
+                            className="info-tooltip"
+                            data-tooltip="Rank within the same location, division, gender, and age group."
+                            aria-label="Rank within the same location, division, gender, and age group."
+                            tabIndex={0}
+                          >
+                            i
+                          </span>
+                        </span>
                         <strong>
                           {formatLabel(report.race?.event_rank)} /{" "}
                           {formatLabel(report.race?.event_size)}
                         </strong>
                       </div>
                       <div>
-                        <span>Event percentile</span>
+                        <span>
+                          Event percentile
+                          <span
+                            className="info-tooltip"
+                            data-tooltip="Percentile within the same location cohort (age group/division/gender)."
+                            aria-label="Percentile within the same location cohort (age group/division/gender)."
+                            tabIndex={0}
+                          >
+                            i
+                          </span>
+                        </span>
                         <strong>{formatPercent(report.race?.event_percentile)}</strong>
                       </div>
                       <div>
-                        <span>Season rank</span>
+                        <span>
+                          Season rank
+                          <span
+                            className="info-tooltip"
+                            data-tooltip="Rank within the same season, division, gender, and age group."
+                            aria-label="Rank within the same season, division, gender, and age group."
+                            tabIndex={0}
+                          >
+                            i
+                          </span>
+                        </span>
                         <strong>
                           {formatLabel(report.race?.season_rank)} /{" "}
                           {formatLabel(report.race?.season_size)}
                         </strong>
                       </div>
                       <div>
-                        <span>Overall rank</span>
+                        <span>
+                          Overall rank
+                          <span
+                            className="info-tooltip"
+                            data-tooltip="Rank across all seasons for the same division, gender, and age group."
+                            aria-label="Rank across all seasons for the same division, gender, and age group."
+                            tabIndex={0}
+                          >
+                            i
+                          </span>
+                        </span>
                         <strong>
                           {formatLabel(report.race?.overall_rank)} /{" "}
                           {formatLabel(report.race?.overall_size)}
@@ -1756,22 +2148,6 @@ export default function App() {
 
                   <div className="grid-2">
                     <label className="field">
-                      <span>Match style</span>
-                      <select
-                        value={baseFilters.match}
-                        onChange={(event) =>
-                          setBaseFilters((prev) => ({ ...prev, match: event.target.value }))
-                        }
-                      >
-                        {MATCH_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label className="field">
                       <span>Division</span>
                       <input
                         type="text"
@@ -1785,9 +2161,7 @@ export default function App() {
                         }
                       />
                     </label>
-                  </div>
 
-                  <div className="grid-2">
                     <label className="field">
                       <span>Gender</span>
                       <input
@@ -1802,35 +2176,21 @@ export default function App() {
                         }
                       />
                     </label>
-
-                    <label className="field">
-                      <span>Nationality</span>
-                      <input
-                        type="text"
-                        placeholder="GB, US, RO"
-                        value={baseFilters.nationality}
-                        onChange={(event) =>
-                          setBaseFilters((prev) => ({
-                            ...prev,
-                            nationality: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
                   </div>
 
-                  <label className="checkbox">
+                  <label className="field">
+                    <span>Nationality</span>
                     <input
-                      type="checkbox"
-                      checked={baseFilters.requireUnique}
+                      type="text"
+                      placeholder="GBR"
+                      value={baseFilters.nationality}
                       onChange={(event) =>
                         setBaseFilters((prev) => ({
                           ...prev,
-                          requireUnique: event.target.checked,
+                          nationality: event.target.value,
                         }))
                       }
                     />
-                    Require a unique athlete match
                   </label>
 
                   <button className="primary" type="submit" disabled={baseSearchLoading}>
@@ -1918,25 +2278,6 @@ export default function App() {
 
                   <div className="grid-2">
                     <label className="field">
-                      <span>Match style</span>
-                      <select
-                        value={compareFilters.match}
-                        onChange={(event) =>
-                          setCompareFilters((prev) => ({
-                            ...prev,
-                            match: event.target.value,
-                          }))
-                        }
-                      >
-                        {MATCH_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label className="field">
                       <span>Division</span>
                       <input
                         type="text"
@@ -1950,9 +2291,7 @@ export default function App() {
                         }
                       />
                     </label>
-                  </div>
 
-                  <div className="grid-2">
                     <label className="field">
                       <span>Gender</span>
                       <input
@@ -1967,35 +2306,21 @@ export default function App() {
                         }
                       />
                     </label>
-
-                    <label className="field">
-                      <span>Nationality</span>
-                      <input
-                        type="text"
-                        placeholder="GB, US, RO"
-                        value={compareFilters.nationality}
-                        onChange={(event) =>
-                          setCompareFilters((prev) => ({
-                            ...prev,
-                            nationality: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
                   </div>
 
-                  <label className="checkbox">
+                  <label className="field">
+                    <span>Nationality</span>
                     <input
-                      type="checkbox"
-                      checked={compareFilters.requireUnique}
+                      type="text"
+                      placeholder="GBR"
+                      value={compareFilters.nationality}
                       onChange={(event) =>
                         setCompareFilters((prev) => ({
                           ...prev,
-                          requireUnique: event.target.checked,
+                          nationality: event.target.value,
                         }))
                       }
                     />
-                    Require a unique athlete match
                   </label>
 
                   <button className="primary" type="submit" disabled={compareSearchLoading}>
@@ -2175,6 +2500,472 @@ export default function App() {
                 </div>
               </>
             )}
+          </section>
+        </main>
+      ) : mode === "deepdive" ? (
+        <main className="deepdive-page">
+          <section className="panel">
+            <div className="comparison-grid">
+              <div className="comparison-column">
+                <div className="panel-header">
+                  <h2>Base race</h2>
+                  <p>Select the race you want to deepdive.</p>
+                </div>
+                <form className="search-form" onSubmit={handleDeepdiveSearch}>
+                  <label className="field">
+                    <span>Athlete name</span>
+                    <input
+                      type="text"
+                      placeholder="Athlete Name"
+                      value={deepdiveName}
+                      onChange={(event) => setDeepdiveName(event.target.value)}
+                    />
+                  </label>
+
+                  <div className="grid-2">
+                    <label className="field">
+                      <span>Division</span>
+                      <input
+                        type="text"
+                        placeholder="open, pro, doubles"
+                        value={deepdiveFilters.division}
+                        onChange={(event) =>
+                          setDeepdiveFilters((prev) => ({
+                            ...prev,
+                            division: event.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+
+                    <label className="field">
+                      <span>Gender</span>
+                      <input
+                        type="text"
+                        placeholder="male or female or mixed"
+                        value={deepdiveFilters.gender}
+                        onChange={(event) =>
+                          setDeepdiveFilters((prev) => ({
+                            ...prev,
+                            gender: event.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+                  </div>
+
+                  <label className="field">
+                    <span>Nationality</span>
+                    <input
+                      type="text"
+                      placeholder="GBR"
+                      value={deepdiveFilters.nationality}
+                      onChange={(event) =>
+                        setDeepdiveFilters((prev) => ({
+                          ...prev,
+                          nationality: event.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+
+                  <button className="primary" type="submit" disabled={deepdiveSearchLoading}>
+                    {deepdiveSearchLoading ? "Searching..." : "Search races"}
+                  </button>
+                  {deepdiveSearchError ? <p className="error">{deepdiveSearchError}</p> : null}
+                </form>
+
+                <div className="results">
+                  <div className="results-header">
+                    <h2>Base races</h2>
+                    <span>
+                      {deepdiveRaces.length
+                        ? `${deepdiveRaces.length} matches`
+                        : "No results"}
+                    </span>
+                  </div>
+                  {deepdiveRaces.length === 0 ? (
+                    <div className="empty">
+                      Search for an athlete to find a base race to deepdive.
+                    </div>
+                  ) : (
+                    <div className="results-grid">
+                      {deepdiveRaces.map((race, index) => (
+                        <button
+                          key={race.result_id || `${race.event_id}-${index}`}
+                          type="button"
+                          className={`race-card ${
+                            race.result_id === selectedDeepdiveRaceId ? "is-selected" : ""
+                          }`}
+                          style={{ animationDelay: `${index * 0.04}s` }}
+                          onClick={() => {
+                            setSelectedDeepdiveRaceId(race.result_id);
+                            setDeepdiveData(null);
+                            setDeepdiveError("");
+                            setDeepdiveParams((prev) => ({
+                              ...prev,
+                              season:
+                                race.season !== null && race.season !== undefined
+                                  ? String(race.season)
+                                  : prev.season,
+                              division: race.division ? String(race.division) : prev.division,
+                              gender: race.gender ? String(race.gender) : prev.gender,
+                              ageGroup: race.age_group
+                                ? String(race.age_group)
+                                : prev.ageGroup,
+                            }));
+                          }}
+                        >
+                          <div className="race-card-header">
+                            <span className="race-title">
+                              {race.event_name || race.event_id || "Race"}
+                            </span>
+                            <span className="race-location">
+                              {formatLabel(race.location)}
+                            </span>
+                          </div>
+                          <div className="race-meta">
+                            <span>Season {formatLabel(race.season)}</span>
+                            <span>{formatLabel(race.year)}</span>
+                            <span>{formatLabel(race.division)}</span>
+                            <span>{formatLabel(race.gender)}</span>
+                          </div>
+                          <div className="race-time">
+                            Total: {formatMinutes(race.total_time_min)}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="comparison-column">
+                <div className="panel-header">
+                  <h2>Deepdive filters</h2>
+                  <p>Compare your time against the season-wide field.</p>
+                </div>
+                <form
+                  className="search-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    handleRunDeepdive();
+                  }}
+                >
+                  <div className="grid-3">
+                    <label className="field">
+                      <span>Season *</span>
+                      <input
+                        type="number"
+                        placeholder="8"
+                        value={deepdiveParams.season}
+                        onChange={(event) =>
+                          setDeepdiveParams((prev) => ({
+                            ...prev,
+                            season: event.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+                    <label className="field">
+                      <span>Division</span>
+                      <input
+                        type="text"
+                        placeholder="open, pro, doubles"
+                        value={deepdiveParams.division}
+                        onChange={(event) =>
+                          setDeepdiveParams((prev) => ({
+                            ...prev,
+                            division: event.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+                    <label className="field">
+                      <span>Gender</span>
+                      <input
+                        type="text"
+                        placeholder="male or female or mixed"
+                        value={deepdiveParams.gender}
+                        onChange={(event) =>
+                          setDeepdiveParams((prev) => ({
+                            ...prev,
+                            gender: event.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+                  </div>
+
+                  <div className="grid-3">
+                    <label className="field">
+                      <span>Age group</span>
+                      <select
+                        value={deepdiveParams.ageGroup}
+                        onChange={(event) =>
+                          setDeepdiveParams((prev) => ({
+                            ...prev,
+                            ageGroup: event.target.value,
+                          }))
+                        }
+                        disabled={!deepdiveParams.season.trim() || deepdiveOptionsLoading}
+                      >
+                        <option value="">
+                          {deepdiveOptionsLoading ? "Loading age groups..." : "Any age group"}
+                        </option>
+                        {deepdiveOptions.ageGroups.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="field">
+                      <span>Metric</span>
+                      <select
+                        value={deepdiveParams.metric}
+                        onChange={(event) =>
+                          setDeepdiveParams((prev) => ({
+                            ...prev,
+                            metric: event.target.value,
+                          }))
+                        }
+                      >
+                        {DEEPDIVE_METRIC_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="field">
+                      <span>Stat focus</span>
+                      <select
+                        value={deepdiveParams.stat}
+                        onChange={(event) =>
+                          setDeepdiveParams((prev) => ({
+                            ...prev,
+                            stat: event.target.value,
+                          }))
+                        }
+                      >
+                        {DEEPDIVE_STAT_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
+                  <label className="field">
+                    <span>Location (optional)</span>
+                    <select
+                      value={deepdiveParams.location}
+                      onChange={(event) =>
+                        setDeepdiveParams((prev) => ({
+                          ...prev,
+                          location: event.target.value,
+                        }))
+                      }
+                      disabled={!deepdiveParams.season.trim() || deepdiveOptionsLoading}
+                    >
+                      <option value="">
+                        {deepdiveOptionsLoading ? "Loading locations..." : "Any location"}
+                      </option>
+                      {deepdiveOptions.locations.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <div className="report-actions">
+                    <button
+                      className="primary"
+                      type="submit"
+                      disabled={deepdiveLoading || !selectedDeepdiveRace}
+                    >
+                      {deepdiveLoading ? "Running deepdive..." : "Run deepdive"}
+                    </button>
+                    {deepdiveError ? <p className="error">{deepdiveError}</p> : null}
+                  </div>
+                </form>
+
+              </div>
+            </div>
+
+            <div className="deepdive-report">
+              {deepdiveData ? (
+                <div className="planner-results">
+                  <div className="report-card">
+                    <h4>Deepdive summary</h4>
+                    <div className="stat-grid">
+                      <div>
+                        <span>Total locations</span>
+                        <strong>{formatLabel(deepdiveData.total_locations)}</strong>
+                      </div>
+                      <div>
+                        <span>Total results</span>
+                        <strong>{formatLabel(deepdiveData.total_rows)}</strong>
+                      </div>
+                      <div>
+                        <span>Athlete time</span>
+                        <strong>
+                          {formatMinutes(
+                            deepdiveData.athlete_value ?? deepdiveData.athlete_time
+                          )}
+                        </strong>
+                      </div>
+                      <div>
+                        <span>Metric</span>
+                        <strong>{deepdiveMetricLabel}</strong>
+                      </div>
+                      <div>
+                        <span>Stat focus</span>
+                        <strong>{deepdiveStatLabel}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <HistogramChart
+                    title="Metric distribution"
+                    subtitle={`Filtered cohort distribution for ${deepdiveMetricLabel}`}
+                    histogram={deepdiveDistribution}
+                    stats={deepdiveGroupSummary}
+                    infoTooltip="Histogram uses equal-width bins from the selected cohort group. For Top 5%, bins include locations for the times in that bin."
+                    emptyMessage="No distribution data available for these filters."
+                  />
+
+                  <StatBarChart
+                    title="Metric comparison"
+                    subtitle={`Athlete vs ${deepdiveStatLabel} group (${deepdiveMetricLabel})`}
+                    infoTooltip="Compares the athlete’s selected metric against the selected cohort group (Top 5%, Bottom 10%, or Mean). The bars show mean, median, fastest, and slowest within that group."
+                    items={[
+                      {
+                        label: "Athlete",
+                        value: toNumber(
+                          deepdiveData.athlete_value ?? deepdiveData.athlete_time
+                        ),
+                        accent: true,
+                      },
+                      { label: "Mean", value: toNumber(deepdiveGroupSummary?.mean) },
+                      { label: "Median", value: toNumber(deepdiveGroupSummary?.median) },
+                      { label: "Fastest", value: toNumber(deepdiveGroupSummary?.min) },
+                      { label: "Slowest", value: toNumber(deepdiveGroupSummary?.max) },
+                    ]}
+                  />
+
+                  <div className="report-card">
+                    <h4>Locations included</h4>
+                    {deepdiveRows.length ? (
+                      <div className="filter-tags">
+                        {deepdiveRows.map((row, index) => (
+                          <span
+                            key={row.location ? row.location : `loc-${index}`}
+                            className="filter-tag"
+                          >
+                            {formatLabel(row.location)}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="empty">No locations available for these filters.</p>
+                    )}
+                  </div>
+
+                  <div className="report-card">
+                    <h4>Location targets ({deepdiveStatLabel})</h4>
+                    {deepdiveRows.length ? (
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Location</th>
+                            <th>N</th>
+                            <th>
+                              {deepdiveStatLabel} time
+                              {deepdiveParams.stat === "p05" ? (
+                                <span
+                                  className="info-tooltip"
+                                  data-tooltip="Top 5% time is the 5th percentile of the cohort (interpolated for small groups)."
+                                  aria-label="Top 5% time definition"
+                                >
+                                  i
+                                </span>
+                              ) : deepdiveParams.stat === "p90" ? (
+                                <span
+                                  className="info-tooltip"
+                                  data-tooltip="Bottom 10% time is the 90th percentile of the cohort (interpolated for small groups)."
+                                  aria-label="Bottom 10% time definition"
+                                >
+                                  i
+                                </span>
+                              ) : deepdiveParams.stat === "mean" ? (
+                                <span
+                                  className="info-tooltip"
+                                  data-tooltip="Mean time is the average across the cohort for the selected filters."
+                                  aria-label="Mean time definition"
+                                >
+                                  i
+                                </span>
+                              ) : null}
+                            </th>
+                            <th>Fastest time</th>
+                            <th>Athlete time</th>
+                            <th>Delta (athlete - target)</th>
+                            <th>Delta (athlete - fastest)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {deepdiveRows.map((row, index) => {
+                            const deltaClass =
+                              row.delta === null
+                                ? ""
+                                : row.delta > 0
+                                  ? "delta-positive"
+                                  : row.delta < 0
+                                    ? "delta-negative"
+                                    : "delta-even";
+                            const fastestDeltaClass =
+                              row.deltaFastest === null
+                                ? ""
+                                : row.deltaFastest > 0
+                                  ? "delta-positive"
+                                  : row.deltaFastest < 0
+                                    ? "delta-negative"
+                                    : "delta-even";
+                            return (
+                              <tr key={`${row.location || "loc"}-${index}`}>
+                                <td>{formatLabel(row.location)}</td>
+                                <td>{formatLabel(row.count)}</td>
+                                <td>{formatMinutes(row.statValue)}</td>
+                                <td>{formatMinutes(row.fastestValue)}</td>
+                                <td>
+                                  {formatMinutes(
+                                    deepdiveData.athlete_value ?? deepdiveData.athlete_time
+                                  )}
+                                </td>
+                                <td className={deltaClass}>
+                                  {formatDeltaMinutes(row.delta)}
+                                </td>
+                                <td className={fastestDeltaClass}>
+                                  {formatDeltaMinutes(row.deltaFastest)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <p className="empty">Run a deepdive to compare locations.</p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="empty">Run a deepdive to see location comparisons.</div>
+              )}
+            </div>
           </section>
         </main>
       ) : (

@@ -11,6 +11,7 @@ from typing import Iterable, Optional, Tuple
 
 import duckdb
 import pandas as pd
+import numpy as np
 
 from .core import PyroxClient
 from .errors import AthleteNotFound
@@ -94,6 +95,131 @@ def _log_df_stats(name: str, df: pd.DataFrame, start: float) -> None:
         mem_bytes / (1024 * 1024),
         elapsed,
     )
+
+
+def _min_value_for_metric(column: str) -> Optional[float]:
+    if column.startswith("run") and column.endswith("_time_min"):
+        return 1.0
+    return None
+
+
+def _build_histogram(
+    values: pd.Series,
+    *,
+    bins: int = 22,
+    athlete_value: Optional[float] = None,
+    min_value: Optional[float] = None,
+) -> Optional[dict]:
+    clean = pd.to_numeric(values, errors="coerce").dropna()
+    if min_value is not None:
+        clean = clean[clean >= min_value]
+    if clean.empty:
+        return None
+    athlete_percentile = None
+    if athlete_value is not None:
+        try:
+            athlete_value = float(athlete_value)
+        except (TypeError, ValueError):
+            athlete_value = None
+    if min_value is not None and athlete_value is not None and athlete_value < min_value:
+        athlete_value = None
+    if athlete_value is not None:
+        if clean.shape[0] == 1:
+            athlete_percentile = 1.0
+        else:
+            rank = int((clean < athlete_value).sum()) + 1
+            athlete_percentile = 1.0 - (rank - 1) / (clean.shape[0] - 1)
+    min_val = float(clean.min())
+    max_val = float(clean.max())
+    if min_val == max_val:
+        max_val = min_val + 1.0
+    counts, edges = np.histogram(clean.to_numpy(), bins=bins, range=(min_val, max_val))
+    buckets = [
+        {
+            "start": float(edges[index]),
+            "end": float(edges[index + 1]),
+            "count": int(counts[index]),
+        }
+        for index in range(len(counts))
+    ]
+    return {
+        "bins": buckets,
+        "min": min_val,
+        "max": max_val,
+        "count": int(clean.shape[0]),
+        "athlete_value": athlete_value,
+        "athlete_percentile": athlete_percentile,
+    }
+
+
+def _build_histogram_with_locations(
+    values: pd.Series,
+    locations: pd.Series,
+    *,
+    bins: int = 22,
+    athlete_value: Optional[float] = None,
+    min_value: Optional[float] = None,
+) -> Optional[dict]:
+    df = pd.DataFrame({"value": values, "location": locations})
+    df["value"] = pd.to_numeric(df["value"], errors="coerce")
+    df = df.dropna(subset=["value"])
+    if min_value is not None:
+        df = df[df["value"] >= min_value]
+    if df.empty:
+        return None
+    clean_values = df["value"]
+    athlete_percentile = None
+    if athlete_value is not None:
+        try:
+            athlete_value = float(athlete_value)
+        except (TypeError, ValueError):
+            athlete_value = None
+    if min_value is not None and athlete_value is not None and athlete_value < min_value:
+        athlete_value = None
+    if athlete_value is not None:
+        if clean_values.shape[0] == 1:
+            athlete_percentile = 1.0
+        else:
+            rank = int((clean_values < athlete_value).sum()) + 1
+            athlete_percentile = 1.0 - (rank - 1) / (clean_values.shape[0] - 1)
+    min_val = float(clean_values.min())
+    max_val = float(clean_values.max())
+    if min_val == max_val:
+        max_val = min_val + 1.0
+    counts, edges = np.histogram(
+        clean_values.to_numpy(), bins=bins, range=(min_val, max_val)
+    )
+    bin_index = np.searchsorted(edges, clean_values.to_numpy(), side="right") - 1
+    bin_index = np.clip(bin_index, 0, len(edges) - 2)
+    df = df.assign(bin_index=bin_index)
+    location_map = (
+        df.groupby("bin_index")["location"]
+        .apply(
+            lambda series: sorted(
+                {str(value).strip() for value in series.dropna() if str(value).strip()},
+                key=lambda value: value.casefold(),
+            )
+        )
+        .to_dict()
+    )
+    buckets = []
+    for index in range(len(counts)):
+        buckets.append(
+            {
+                "start": float(edges[index]),
+                "end": float(edges[index + 1]),
+                "count": int(counts[index]),
+                "locations": location_map.get(index, []),
+            }
+        )
+    return {
+        "bins": buckets,
+        "min": min_val,
+        "max": max_val,
+        "count": int(clean_values.shape[0]),
+        "athlete_value": athlete_value,
+        "athlete_percentile": athlete_percentile,
+    }
 
 
 
@@ -521,6 +647,289 @@ class ReportingClient:
             )
 
         return report
+
+    def deepdive_location_stats(
+        self,
+        result_id: str,
+        *,
+        season: int,
+        metric: str = "total_time_min",
+        bins: int = 22,
+        division: Optional[str] = None,
+        gender: Optional[str] = None,
+        age_group: Optional[str] = None,
+        location: Optional[str] = None,
+    ) -> dict[str, object]:
+        """
+        Build per-location cohort stats for a selected athlete race.
+
+        Season is required. Division/gender/age_group default to the base race
+        values but can be overridden.
+        """
+        if result_id is None or str(result_id).strip() == "":
+            raise ValueError("result_id must be a non-empty string.")
+        if season is None:
+            raise ValueError("season is required for deepdive.")
+
+        metric_column = _resolve_time_column(metric)
+        min_value = _min_value_for_metric(metric_column)
+
+        con = self._ensure_connection()
+        race = con.execute(
+            f"""
+            SELECT
+                result_id,
+                name,
+                event_name,
+                event_id,
+                location,
+                season,
+                year,
+                division,
+                gender,
+                age_group,
+                {metric_column} AS metric_value
+            FROM race_results
+            WHERE result_id = ?
+            """,
+            [result_id],
+        ).fetchdf()
+        if race.empty:
+            raise ValueError(f"result_id not found: {result_id}")
+
+        athlete_value = race["metric_value"].iloc[0]
+        if athlete_value is None or pd.isna(athlete_value):
+            raise ValueError(f"No {metric_column} data for result_id: {result_id}")
+
+        def pick_override(value: Optional[str], default: object) -> Optional[str]:
+            if value is not None and str(value).strip() != "":
+                return str(value).strip()
+            if default is None or (isinstance(default, float) and pd.isna(default)):
+                return None
+            text = str(default).strip()
+            return text if text else None
+
+        use_division = pick_override(division, race["division"].iloc[0])
+        use_gender = pick_override(gender, race["gender"].iloc[0])
+        use_age_group = pick_override(age_group, race["age_group"].iloc[0])
+        use_location = pick_override(location, None)
+
+        clauses = ["season = ?", f"{metric_column} IS NOT NULL"]
+        params: list[object] = [int(season)]
+
+        if use_location is not None:
+            clauses.append("lower(location) = ?")
+            params.append(use_location.casefold())
+        if use_division is not None:
+            clauses.append("lower(division) = ?")
+            params.append(use_division.casefold())
+        if use_gender is not None:
+            normalized_gender = use_gender.casefold()
+            if normalized_gender in {"m", "male"}:
+                clauses.append("lower(gender) IN (?, ?)")
+                params.extend(["m", "male"])
+            elif normalized_gender in {"f", "female"}:
+                clauses.append("lower(gender) IN (?, ?)")
+                params.extend(["f", "female"])
+            else:
+                clauses.append("lower(gender) = ?")
+                params.append(normalized_gender)
+        if use_age_group is not None:
+            clauses.append("lower(age_group) = ?")
+            params.append(use_age_group.casefold())
+
+        where_sql = " AND ".join(clauses)
+        df = con.execute(
+            f"""
+            SELECT location, event_id, season, year, {metric_column} AS metric_value
+            FROM race_results
+            WHERE {where_sql}
+            """,
+            params,
+        ).fetchdf()
+        if df.empty:
+            raise ValueError("No cohort data found for the selected filters.")
+
+        values = pd.to_numeric(df["metric_value"], errors="coerce").dropna()
+        if min_value is not None:
+            values = values[values >= min_value]
+        if values.empty:
+            raise ValueError("No cohort data found for the selected filters.")
+
+        def describe(values_series: pd.Series) -> dict[str, float]:
+            return {
+                "count": int(values_series.shape[0]),
+                "min": float(values_series.min()),
+                "max": float(values_series.max()),
+                "mean": float(values_series.mean()),
+                "median": float(values_series.median()),
+            }
+
+        summary_all = describe(values)
+        p05_value = float(values.quantile(0.05))
+        p90_value = float(values.quantile(0.9))
+        top_group = values[values <= p05_value]
+        bottom_group = values[values >= p90_value]
+        summary_top = describe(top_group) if not top_group.empty else summary_all
+        summary_bottom = describe(bottom_group) if not bottom_group.empty else summary_all
+
+        histogram_all = _build_histogram(
+            values,
+            bins=bins,
+            athlete_value=athlete_value,
+            min_value=min_value,
+        )
+        top_athlete = None
+        if not top_group.empty:
+            top_min = float(top_group.min())
+            top_max = float(top_group.max())
+            if top_min <= athlete_value <= top_max:
+                top_athlete = athlete_value
+        histogram_top = (
+            _build_histogram_with_locations(
+                df.loc[df["metric_value"] <= p05_value, "metric_value"],
+                df.loc[df["metric_value"] <= p05_value, "location"],
+                bins=bins,
+                athlete_value=top_athlete,
+                min_value=min_value,
+            )
+            if not top_group.empty
+            else None
+        )
+        bottom_athlete = None
+        if not bottom_group.empty:
+            bottom_min = float(bottom_group.min())
+            bottom_max = float(bottom_group.max())
+            if bottom_min <= athlete_value <= bottom_max:
+                bottom_athlete = athlete_value
+        histogram_bottom = _build_histogram(
+            bottom_group,
+            bins=bins,
+            athlete_value=bottom_athlete,
+            min_value=min_value,
+        ) if not bottom_group.empty else None
+
+        rows = []
+        for location_label, group in df.groupby("location", dropna=False):
+            times = pd.to_numeric(group["metric_value"], errors="coerce").dropna()
+            if min_value is not None:
+                times = times[times >= min_value]
+            if times.empty:
+                continue
+            seasons = sorted(
+                {int(value) for value in group["season"].dropna().tolist() if str(value)}
+            )
+            years = sorted({int(value) for value in group["year"].dropna().tolist() if str(value)})
+            rows.append(
+                {
+                    "location": location_label,
+                    "count": int(times.shape[0]),
+                    "seasons": seasons,
+                    "years": years,
+                    "fastest": float(times.min()),
+                    "mean": float(times.mean()),
+                    "p05": float(times.quantile(0.05)),
+                    "p50": float(times.quantile(0.5)),
+                    "p90": float(times.quantile(0.9)),
+                }
+            )
+
+        locations = pd.DataFrame(rows)
+        if locations.empty:
+            raise ValueError("No cohort data found for the selected filters.")
+
+        return {
+            "race": race.reset_index(drop=True),
+            "locations": locations.reset_index(drop=True),
+            "total_rows": int(values.shape[0]),
+            "total_locations": int(len(locations)),
+            "athlete_value": float(athlete_value),
+            "metric": metric_column,
+            "summary": {
+                **summary_all,
+                "p05": p05_value,
+                "p90": p90_value,
+            },
+            "group_summary": {
+                "mean": summary_all,
+                "p05": summary_top,
+                "p90": summary_bottom,
+            },
+            "distribution": histogram_all,
+            "group_distribution": {
+                "mean": histogram_all,
+                "p05": histogram_top,
+                "p90": histogram_bottom,
+            },
+            "filters": {
+                "season": int(season),
+                "division": use_division,
+                "gender": use_gender,
+                "age_group": use_age_group,
+                "location": use_location,
+            },
+        }
+
+    def deepdive_filter_options(
+        self,
+        *,
+        season: int,
+        division: Optional[str] = None,
+        gender: Optional[str] = None,
+    ) -> dict[str, list[str]]:
+        """
+        Return distinct location and age_group values for deepdive dropdowns.
+        """
+        if season is None:
+            raise ValueError("season is required for deepdive filters.")
+
+        clauses = ["season = ?"]
+        params: list[object] = [int(season)]
+
+        if division is not None and str(division).strip() != "":
+            clauses.append("lower(division) = ?")
+            params.append(str(division).strip().casefold())
+        if gender is not None and str(gender).strip() != "":
+            normalized_gender = str(gender).strip().casefold()
+            if normalized_gender in {"m", "male"}:
+                clauses.append("lower(gender) IN (?, ?)")
+                params.extend(["m", "male"])
+            elif normalized_gender in {"f", "female"}:
+                clauses.append("lower(gender) IN (?, ?)")
+                params.extend(["f", "female"])
+            else:
+                clauses.append("lower(gender) = ?")
+                params.append(normalized_gender)
+
+        where_sql = " AND ".join(clauses)
+        con = self._ensure_connection()
+        locations = con.execute(
+            f"SELECT DISTINCT location FROM race_results WHERE {where_sql}",
+            params,
+        ).fetchdf()
+        age_groups = con.execute(
+            f"SELECT DISTINCT age_group FROM race_results WHERE {where_sql}",
+            params,
+        ).fetchdf()
+
+        def clean_values(df: pd.DataFrame, column: str) -> list[str]:
+            if df.empty or column not in df.columns:
+                return []
+            values = (
+                df[column]
+                .dropna()
+                .astype(str)
+                .map(str.strip)
+                .loc[lambda s: s != ""]
+                .unique()
+                .tolist()
+            )
+            return sorted(values, key=lambda value: value.casefold())
+
+        return {
+            "locations": clean_values(locations, "location"),
+            "age_groups": clean_values(age_groups, "age_group"),
+        }
 
     def plot_cohort_distribution(
         self,
