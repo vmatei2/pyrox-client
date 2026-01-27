@@ -491,7 +491,9 @@ button {
   padding: 4px 6px;
   border-radius: 8px;
   border: 1px solid var(--border);
-  white-space: nowrap;
+  white-space: normal;
+  max-width: 260px;
+  text-align: center;
   opacity: 0;
   pointer-events: none;
   z-index: 2;
@@ -702,8 +704,14 @@ button {
   gap: 20px;
 }
 
+.deepdive-page .grid-3 {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
 .deepdive-report {
-  margin-top: 24px;
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
 }
 
 .comparison-grid {
@@ -1039,6 +1047,16 @@ button {
   text-align: center;
   font-size: 0.8rem;
   color: var(--muted);
+}
+
+.deepdive-page .results {
+  min-height: 360px;
+}
+
+.deepdive-page .results-grid {
+  max-height: 360px;
+  overflow: auto;
+  padding-right: 4px;
 }
 
 .info-tooltip {

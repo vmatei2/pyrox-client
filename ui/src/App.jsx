@@ -1,16 +1,10 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import html2pdf from "html2pdf.js";
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000").replace(
   /\/$/,
   ""
 );
-
-const MATCH_OPTIONS = [
-  { value: "best", label: "Best match" },
-  { value: "exact", label: "Exact match" },
-  { value: "contains", label: "Contains" },
-];
 
 const DEEPDIVE_STAT_OPTIONS = [
   { value: "p05", label: "Top 5%" },
@@ -282,13 +276,20 @@ const parseError = async (response) => {
   }
 };
 
-const HistogramChart = ({ title, subtitle, histogram, stats, emptyMessage }) => {
+const HistogramChart = ({ title, subtitle, histogram, stats, emptyMessage, infoTooltip }) => {
   if (!histogram || !Array.isArray(histogram.bins) || histogram.bins.length === 0) {
     return (
       <div className="chart-card">
         <div className="chart-head">
           <div>
-            <h5>{title}</h5>
+            <h5>
+              {title}
+              {infoTooltip ? (
+                <span className="info-tooltip" data-tooltip={infoTooltip} aria-label={title}>
+                  i
+                </span>
+              ) : null}
+            </h5>
             {subtitle ? <p>{subtitle}</p> : null}
           </div>
         </div>
@@ -335,7 +336,14 @@ const HistogramChart = ({ title, subtitle, histogram, stats, emptyMessage }) => 
     <div className="chart-card">
       <div className="chart-head">
         <div>
-          <h5>{title}</h5>
+          <h5>
+            {title}
+            {infoTooltip ? (
+              <span className="info-tooltip" data-tooltip={infoTooltip} aria-label={title}>
+                i
+              </span>
+            ) : null}
+          </h5>
           {subtitle ? <p>{subtitle}</p> : null}
         </div>
         <div className="chart-stat">n={formatLabel(histogram.count)}</div>
@@ -349,9 +357,15 @@ const HistogramChart = ({ title, subtitle, histogram, stats, emptyMessage }) => 
         >
           {histogram.bins.map((bin, index) => {
             const percent = totalCount ? ((bin.count / totalCount) * 100).toFixed(1) : "0.0";
+            const locations = Array.isArray(bin.locations) ? bin.locations : [];
+            const locationLabel = locations.length
+              ? ` | Locations: ${
+                  locations.slice(0, 4).join(", ")
+                }${locations.length > 4 ? ` +${locations.length - 4} more` : ""}`
+              : "";
             const label = `${formatMinutes(bin.start)} - ${formatMinutes(bin.end)} | ${
               bin.count
-            } (${percent}%)`;
+            } (${percent}%)${locationLabel}`;
             return (
               <div
                 key={`${bin.start}-${index}`}
@@ -509,14 +523,21 @@ const GroupedBarChart = ({
   );
 };
 
-const StatBarChart = ({ title, subtitle, items = [], emptyMessage }) => {
+const StatBarChart = ({ title, subtitle, items = [], emptyMessage, infoTooltip }) => {
   const hasValues = items.some((item) => Number.isFinite(item.value));
   if (!items.length || !hasValues) {
     return (
       <div className="chart-card">
         <div className="chart-head">
           <div>
-            <h5>{title}</h5>
+            <h5>
+              {title}
+              {infoTooltip ? (
+                <span className="info-tooltip" data-tooltip={infoTooltip} aria-label={title}>
+                  i
+                </span>
+              ) : null}
+            </h5>
             {subtitle ? <p>{subtitle}</p> : null}
           </div>
         </div>
@@ -532,7 +553,14 @@ const StatBarChart = ({ title, subtitle, items = [], emptyMessage }) => {
     <div className="chart-card stat-bar-chart">
       <div className="chart-head">
         <div>
-          <h5>{title}</h5>
+          <h5>
+            {title}
+            {infoTooltip ? (
+              <span className="info-tooltip" data-tooltip={infoTooltip} aria-label={title}>
+                i
+              </span>
+            ) : null}
+          </h5>
           {subtitle ? <p>{subtitle}</p> : null}
         </div>
       </div>
@@ -795,7 +823,7 @@ export default function App() {
     gender: "",
     division: "",
     nationality: "",
-    requireUnique: true,
+    requireUnique: false,
     timeWindow: "5",
   });
   const [races, setRaces] = useState([]);
@@ -814,7 +842,7 @@ export default function App() {
     gender: "",
     division: "",
     nationality: "",
-    requireUnique: true,
+    requireUnique: false,
   });
   const [baseRaces, setBaseRaces] = useState([]);
   const [selectedBaseRaceId, setSelectedBaseRaceId] = useState(null);
@@ -830,7 +858,7 @@ export default function App() {
     gender: "",
     division: "",
     nationality: "",
-    requireUnique: true,
+    requireUnique: false,
   });
   const [compareRaces, setCompareRaces] = useState([]);
   const [selectedCompareRaceId, setSelectedCompareRaceId] = useState(null);
@@ -846,7 +874,7 @@ export default function App() {
     division: "",
     gender: "",
     nationality: "",
-    requireUnique: true,
+    requireUnique: false,
   });
   const [deepdiveRaces, setDeepdiveRaces] = useState([]);
   const [selectedDeepdiveRaceId, setSelectedDeepdiveRaceId] = useState(null);
@@ -855,6 +883,11 @@ export default function App() {
   const [deepdiveLoading, setDeepdiveLoading] = useState(false);
   const [deepdiveSearchError, setDeepdiveSearchError] = useState("");
   const [deepdiveError, setDeepdiveError] = useState("");
+  const [deepdiveOptions, setDeepdiveOptions] = useState({
+    locations: [],
+    ageGroups: [],
+  });
+  const [deepdiveOptionsLoading, setDeepdiveOptionsLoading] = useState(false);
   const [deepdiveParams, setDeepdiveParams] = useState({
     season: "",
     division: "",
@@ -1435,6 +1468,19 @@ export default function App() {
     return match ? match.label : "Total time";
   }, [deepdiveData, deepdiveParams.metric]);
 
+  const deepdiveGroupSummary = useMemo(() => {
+    const groupSummary = deepdiveData?.group_summary || {};
+    if (deepdiveParams.stat === "mean") {
+      return deepdiveData?.summary || null;
+    }
+    return groupSummary[deepdiveParams.stat] || null;
+  }, [deepdiveData, deepdiveParams.stat]);
+
+  const deepdiveDistribution = useMemo(() => {
+    const groupDistribution = deepdiveData?.group_distribution || {};
+    return groupDistribution[deepdiveParams.stat] || deepdiveData?.distribution || null;
+  }, [deepdiveData, deepdiveParams.stat]);
+
   const deepdiveRows = useMemo(() => {
     if (!deepdiveData?.locations || !Array.isArray(deepdiveData.locations)) {
       return [];
@@ -1447,14 +1493,20 @@ export default function App() {
       const statValue = toNumber(row?.[statKey]);
       const delta =
         athleteTime !== null && statValue !== null ? athleteTime - statValue : null;
+      const fastestValue = toNumber(row?.fastest);
+      const deltaFastest =
+        athleteTime !== null && fastestValue !== null
+          ? athleteTime - fastestValue
+          : null;
       return {
         location: row?.location,
         count: row?.count,
-        eventCount: row?.event_count,
         seasons: row?.seasons,
         years: row?.years,
         statValue,
         delta,
+        fastestValue,
+        deltaFastest,
       };
     });
     return rows.sort((left, right) => {
@@ -1470,6 +1522,53 @@ export default function App() {
       return left.delta - right.delta;
     });
   }, [deepdiveData, deepdiveParams.stat]);
+
+  useEffect(() => {
+    const season = deepdiveParams.season.trim();
+    if (!season) {
+      setDeepdiveOptions({ locations: [], ageGroups: [] });
+      return;
+    }
+    const controller = new AbortController();
+    const loadOptions = async () => {
+      setDeepdiveOptionsLoading(true);
+      try {
+        const params = new URLSearchParams({ season });
+        if (deepdiveParams.division.trim()) {
+          params.set("division", deepdiveParams.division.trim());
+        }
+        if (deepdiveParams.gender.trim()) {
+          params.set("gender", deepdiveParams.gender.trim());
+        }
+        const response = await fetch(
+          `${API_BASE}/api/deepdive/filters?${params.toString()}`,
+          { signal: controller.signal }
+        );
+        if (!response.ok) {
+          throw new Error(await parseError(response));
+        }
+        const payload = await response.json();
+        const locations = Array.isArray(payload.locations) ? payload.locations : [];
+        const ageGroups = Array.isArray(payload.age_groups) ? payload.age_groups : [];
+        setDeepdiveOptions({ locations, ageGroups });
+        setDeepdiveParams((prev) => ({
+          ...prev,
+          location:
+            prev.location && !locations.includes(prev.location) ? "" : prev.location,
+          ageGroup:
+            prev.ageGroup && !ageGroups.includes(prev.ageGroup) ? "" : prev.ageGroup,
+        }));
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          setDeepdiveOptions({ locations: [], ageGroups: [] });
+        }
+      } finally {
+        setDeepdiveOptionsLoading(false);
+      }
+    };
+    loadOptions();
+    return () => controller.abort();
+  }, [deepdiveParams.season, deepdiveParams.division, deepdiveParams.gender]);
 
   const percentileSeries = useMemo(() => {
     if (!report?.splits || report.splits.length === 0) {
@@ -1566,22 +1665,6 @@ export default function App() {
 
                 <div className="grid-2">
                   <label className="field">
-                    <span>Match style</span>
-                    <select
-                      value={filters.match}
-                      onChange={(event) =>
-                        setFilters((prev) => ({ ...prev, match: event.target.value }))
-                      }
-                    >
-                      {MATCH_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="field">
                     <span>Division</span>
                     <input
                       type="text"
@@ -1592,9 +1675,7 @@ export default function App() {
                       }
                     />
                   </label>
-                </div>
 
-                <div className="grid-2">
                   <label className="field">
                     <span>Gender</span>
                     <input
@@ -1606,29 +1687,18 @@ export default function App() {
                       }
                     />
                   </label>
-
-                  <label className="field">
-                    <span>Nationality</span>
-                    <input
-                      type="text"
-                      placeholder="GB, US, RO"
-                      value={filters.nationality}
-                      onChange={(event) =>
-                        setFilters((prev) => ({ ...prev, nationality: event.target.value }))
-                      }
-                    />
-                  </label>
                 </div>
 
-                <label className="checkbox">
+                <label className="field">
+                  <span>Nationality</span>
                   <input
-                    type="checkbox"
-                    checked={filters.requireUnique}
+                    type="text"
+                    placeholder="GBR"
+                    value={filters.nationality}
                     onChange={(event) =>
-                      setFilters((prev) => ({ ...prev, requireUnique: event.target.checked }))
+                      setFilters((prev) => ({ ...prev, nationality: event.target.value }))
                     }
                   />
-                  Require a unique athlete match
                 </label>
 
                 <button className="primary" type="submit" disabled={searchLoading}>
@@ -2078,22 +2148,6 @@ export default function App() {
 
                   <div className="grid-2">
                     <label className="field">
-                      <span>Match style</span>
-                      <select
-                        value={baseFilters.match}
-                        onChange={(event) =>
-                          setBaseFilters((prev) => ({ ...prev, match: event.target.value }))
-                        }
-                      >
-                        {MATCH_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label className="field">
                       <span>Division</span>
                       <input
                         type="text"
@@ -2107,9 +2161,7 @@ export default function App() {
                         }
                       />
                     </label>
-                  </div>
 
-                  <div className="grid-2">
                     <label className="field">
                       <span>Gender</span>
                       <input
@@ -2124,35 +2176,21 @@ export default function App() {
                         }
                       />
                     </label>
-
-                    <label className="field">
-                      <span>Nationality</span>
-                      <input
-                        type="text"
-                        placeholder="GB, US, RO"
-                        value={baseFilters.nationality}
-                        onChange={(event) =>
-                          setBaseFilters((prev) => ({
-                            ...prev,
-                            nationality: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
                   </div>
 
-                  <label className="checkbox">
+                  <label className="field">
+                    <span>Nationality</span>
                     <input
-                      type="checkbox"
-                      checked={baseFilters.requireUnique}
+                      type="text"
+                      placeholder="GBR"
+                      value={baseFilters.nationality}
                       onChange={(event) =>
                         setBaseFilters((prev) => ({
                           ...prev,
-                          requireUnique: event.target.checked,
+                          nationality: event.target.value,
                         }))
                       }
                     />
-                    Require a unique athlete match
                   </label>
 
                   <button className="primary" type="submit" disabled={baseSearchLoading}>
@@ -2240,25 +2278,6 @@ export default function App() {
 
                   <div className="grid-2">
                     <label className="field">
-                      <span>Match style</span>
-                      <select
-                        value={compareFilters.match}
-                        onChange={(event) =>
-                          setCompareFilters((prev) => ({
-                            ...prev,
-                            match: event.target.value,
-                          }))
-                        }
-                      >
-                        {MATCH_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label className="field">
                       <span>Division</span>
                       <input
                         type="text"
@@ -2272,9 +2291,7 @@ export default function App() {
                         }
                       />
                     </label>
-                  </div>
 
-                  <div className="grid-2">
                     <label className="field">
                       <span>Gender</span>
                       <input
@@ -2289,35 +2306,21 @@ export default function App() {
                         }
                       />
                     </label>
-
-                    <label className="field">
-                      <span>Nationality</span>
-                      <input
-                        type="text"
-                        placeholder="GB, US, RO"
-                        value={compareFilters.nationality}
-                        onChange={(event) =>
-                          setCompareFilters((prev) => ({
-                            ...prev,
-                            nationality: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
                   </div>
 
-                  <label className="checkbox">
+                  <label className="field">
+                    <span>Nationality</span>
                     <input
-                      type="checkbox"
-                      checked={compareFilters.requireUnique}
+                      type="text"
+                      placeholder="GBR"
+                      value={compareFilters.nationality}
                       onChange={(event) =>
                         setCompareFilters((prev) => ({
                           ...prev,
-                          requireUnique: event.target.checked,
+                          nationality: event.target.value,
                         }))
                       }
                     />
-                    Require a unique athlete match
                   </label>
 
                   <button className="primary" type="submit" disabled={compareSearchLoading}>
@@ -2521,25 +2524,6 @@ export default function App() {
 
                   <div className="grid-2">
                     <label className="field">
-                      <span>Match style</span>
-                      <select
-                        value={deepdiveFilters.match}
-                        onChange={(event) =>
-                          setDeepdiveFilters((prev) => ({
-                            ...prev,
-                            match: event.target.value,
-                          }))
-                        }
-                      >
-                        {MATCH_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label className="field">
                       <span>Division</span>
                       <input
                         type="text"
@@ -2553,9 +2537,7 @@ export default function App() {
                         }
                       />
                     </label>
-                  </div>
 
-                  <div className="grid-2">
                     <label className="field">
                       <span>Gender</span>
                       <input
@@ -2570,35 +2552,21 @@ export default function App() {
                         }
                       />
                     </label>
-
-                    <label className="field">
-                      <span>Nationality</span>
-                      <input
-                        type="text"
-                        placeholder="GB, US, RO"
-                        value={deepdiveFilters.nationality}
-                        onChange={(event) =>
-                          setDeepdiveFilters((prev) => ({
-                            ...prev,
-                            nationality: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
                   </div>
 
-                  <label className="checkbox">
+                  <label className="field">
+                    <span>Nationality</span>
                     <input
-                      type="checkbox"
-                      checked={deepdiveFilters.requireUnique}
+                      type="text"
+                      placeholder="GBR"
+                      value={deepdiveFilters.nationality}
                       onChange={(event) =>
                         setDeepdiveFilters((prev) => ({
                           ...prev,
-                          requireUnique: event.target.checked,
+                          nationality: event.target.value,
                         }))
                       }
                     />
-                    Require a unique athlete match
                   </label>
 
                   <button className="primary" type="submit" disabled={deepdiveSearchLoading}>
@@ -2732,9 +2700,7 @@ export default function App() {
                   <div className="grid-3">
                     <label className="field">
                       <span>Age group</span>
-                      <input
-                        type="text"
-                        placeholder="30-34"
+                      <select
                         value={deepdiveParams.ageGroup}
                         onChange={(event) =>
                           setDeepdiveParams((prev) => ({
@@ -2742,7 +2708,17 @@ export default function App() {
                             ageGroup: event.target.value,
                           }))
                         }
-                      />
+                        disabled={!deepdiveParams.season.trim() || deepdiveOptionsLoading}
+                      >
+                        <option value="">
+                          {deepdiveOptionsLoading ? "Loading age groups..." : "Any age group"}
+                        </option>
+                        {deepdiveOptions.ageGroups.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
                     </label>
                     <label className="field">
                       <span>Metric</span>
@@ -2784,9 +2760,7 @@ export default function App() {
 
                   <label className="field">
                     <span>Location (optional)</span>
-                    <input
-                      type="text"
-                      placeholder="london"
+                    <select
                       value={deepdiveParams.location}
                       onChange={(event) =>
                         setDeepdiveParams((prev) => ({
@@ -2794,7 +2768,17 @@ export default function App() {
                           location: event.target.value,
                         }))
                       }
-                    />
+                      disabled={!deepdiveParams.season.trim() || deepdiveOptionsLoading}
+                    >
+                      <option value="">
+                        {deepdiveOptionsLoading ? "Loading locations..." : "Any location"}
+                      </option>
+                      {deepdiveOptions.locations.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
                   </label>
 
                   <div className="report-actions">
@@ -2845,9 +2829,19 @@ export default function App() {
                     </div>
                   </div>
 
+                  <HistogramChart
+                    title="Metric distribution"
+                    subtitle={`Filtered cohort distribution for ${deepdiveMetricLabel}`}
+                    histogram={deepdiveDistribution}
+                    stats={deepdiveGroupSummary}
+                    infoTooltip="Histogram uses equal-width bins from the selected cohort group. For Top 5%, bins include locations for the times in that bin."
+                    emptyMessage="No distribution data available for these filters."
+                  />
+
                   <StatBarChart
                     title="Metric comparison"
-                    subtitle={`Athlete vs field (${deepdiveMetricLabel})`}
+                    subtitle={`Athlete vs ${deepdiveStatLabel} group (${deepdiveMetricLabel})`}
+                    infoTooltip="Compares the athlete’s selected metric against the selected cohort group (Top 5%, Bottom 10%, or Mean). The bars show mean, median, fastest, and slowest within that group."
                     items={[
                       {
                         label: "Athlete",
@@ -2856,10 +2850,10 @@ export default function App() {
                         ),
                         accent: true,
                       },
-                      { label: "Mean", value: toNumber(deepdiveData.summary?.mean) },
-                      { label: "Median", value: toNumber(deepdiveData.summary?.median) },
-                      { label: "Fastest", value: toNumber(deepdiveData.summary?.min) },
-                      { label: "Slowest", value: toNumber(deepdiveData.summary?.max) },
+                      { label: "Mean", value: toNumber(deepdiveGroupSummary?.mean) },
+                      { label: "Median", value: toNumber(deepdiveGroupSummary?.median) },
+                      { label: "Fastest", value: toNumber(deepdiveGroupSummary?.min) },
+                      { label: "Slowest", value: toNumber(deepdiveGroupSummary?.max) },
                     ]}
                   />
 
@@ -2888,11 +2882,39 @@ export default function App() {
                         <thead>
                           <tr>
                             <th>Location</th>
-                            <th>Events</th>
                             <th>N</th>
-                            <th>{deepdiveStatLabel} time</th>
+                            <th>
+                              {deepdiveStatLabel} time
+                              {deepdiveParams.stat === "p05" ? (
+                                <span
+                                  className="info-tooltip"
+                                  data-tooltip="Top 5% time is the 5th percentile of the cohort (interpolated for small groups)."
+                                  aria-label="Top 5% time definition"
+                                >
+                                  i
+                                </span>
+                              ) : deepdiveParams.stat === "p90" ? (
+                                <span
+                                  className="info-tooltip"
+                                  data-tooltip="Bottom 10% time is the 90th percentile of the cohort (interpolated for small groups)."
+                                  aria-label="Bottom 10% time definition"
+                                >
+                                  i
+                                </span>
+                              ) : deepdiveParams.stat === "mean" ? (
+                                <span
+                                  className="info-tooltip"
+                                  data-tooltip="Mean time is the average across the cohort for the selected filters."
+                                  aria-label="Mean time definition"
+                                >
+                                  i
+                                </span>
+                              ) : null}
+                            </th>
+                            <th>Fastest time</th>
                             <th>Athlete time</th>
                             <th>Delta (athlete - target)</th>
+                            <th>Delta (athlete - fastest)</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -2905,12 +2927,20 @@ export default function App() {
                                   : row.delta < 0
                                     ? "delta-negative"
                                     : "delta-even";
+                            const fastestDeltaClass =
+                              row.deltaFastest === null
+                                ? ""
+                                : row.deltaFastest > 0
+                                  ? "delta-positive"
+                                  : row.deltaFastest < 0
+                                    ? "delta-negative"
+                                    : "delta-even";
                             return (
                               <tr key={`${row.location || "loc"}-${index}`}>
                                 <td>{formatLabel(row.location)}</td>
-                                <td>{formatLabel(row.eventCount)}</td>
                                 <td>{formatLabel(row.count)}</td>
                                 <td>{formatMinutes(row.statValue)}</td>
+                                <td>{formatMinutes(row.fastestValue)}</td>
                                 <td>
                                   {formatMinutes(
                                     deepdiveData.athlete_value ?? deepdiveData.athlete_time
@@ -2918,6 +2948,9 @@ export default function App() {
                                 </td>
                                 <td className={deltaClass}>
                                   {formatDeltaMinutes(row.delta)}
+                                </td>
+                                <td className={fastestDeltaClass}>
+                                  {formatDeltaMinutes(row.deltaFastest)}
                                 </td>
                               </tr>
                             );
