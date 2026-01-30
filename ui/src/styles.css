@@ -83,6 +83,11 @@ button {
   font-weight: 600;
   font-size: clamp(2.2rem, 3vw, 3.2rem);
   margin: 18px 0 12px;
+  color: var(--ink);
+  background-image: linear-gradient(120deg, var(--ink) 0%, #e2e8f0 40%, var(--accent) 75%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .hero p {
