@@ -17,7 +17,7 @@ from ..errors import AthleteNotFound
 from ..reporting import ReportingClient
 
 DEFAULT_DB_PATH = "pyrox_duckdb"
-DEFAULT_ORIGINS = "http://localhost:5173"
+DEFAULT_ORIGINS = "http://localhost:5173,capacitor://localhost,http://localhost"
 SEGMENT_CONFIG = [
     {"key": "total_time_min", "label": "Total time", "group": "overall"},
     {"key": "run1_time_min", "label": "Run 1", "group": "runs"},

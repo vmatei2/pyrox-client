@@ -51,6 +51,25 @@ npm install
 VITE_API_BASE_URL=http://localhost:8000 npm run dev
 ```
 
+### iOS (Capacitor)
+
+Prereqs: Xcode + CocoaPods (`sudo gem install cocoapods`).
+
+From `ui/`:
+
+```commandline
+npm install
+npm run build
+npx cap add ios    # first time only
+npm run build:cap
+npx cap open ios
+```
+
+Notes:
+- `npm run build:cap` uses `ui/.env.capacitor`, which defaults to `http://127.0.0.1:8000` for iOS Simulator.
+- Physical devices must use your LAN IP, e.g. `VITE_API_BASE_URL=http://192.168.1.50:8000 npm run build:cap`.
+- If you hit HTTP blocking on device, add an App Transport Security exception in Xcode for local dev.
+
 API notes:
 - `GET /api/athletes/search` searches athlete races.
 - `GET /api/reports/{result_id}` builds report data plus distributions.

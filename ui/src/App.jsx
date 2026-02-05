@@ -1,10 +1,37 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Capacitor } from "@capacitor/core";
 import html2pdf from "html2pdf.js";
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000").replace(
-  /\/$/,
-  ""
-);
+const resolveApiBase = () => {
+  const normalize = (value) => {
+    if (!value || typeof value !== "string") {
+      return "";
+    }
+    return value.trim().replace(/\/$/, "");
+  };
+
+  const configured = import.meta.env.VITE_API_BASE_URL;
+  const normalizedConfigured = normalize(configured);
+  if (normalizedConfigured) {
+    return normalizedConfigured;
+  }
+
+  const platform = Capacitor.getPlatform ? Capacitor.getPlatform() : "web";
+  if (platform === "android") {
+    return "http://10.0.2.2:8000";
+  }
+  if (platform === "ios") {
+    // iOS simulator can reach the host machine on loopback.
+    return "http://127.0.0.1:8000";
+  }
+
+  if (typeof window !== "undefined" && window.location?.hostname) {
+    return `http://${window.location.hostname}:8000`;
+  }
+  return "http://localhost:8000";
+};
+
+const API_BASE = resolveApiBase();
 
 const DEEPDIVE_STAT_OPTIONS = [
   { value: "p05", label: "Top 5%" },
@@ -816,6 +843,11 @@ const PercentileLineChart = ({ title, subtitle, series, emptyMessage }) => {
 };
 
 export default function App() {
+  const isNativeApp = Capacitor.isNativePlatform
+    ? Capacitor.isNativePlatform()
+    : Capacitor.getPlatform
+      ? Capacitor.getPlatform() !== "web"
+      : false;
   const [mode, setMode] = useState("report");
   const [name, setName] = useState("");
   const [filters, setFilters] = useState({
@@ -1612,8 +1644,8 @@ export default function App() {
         <div className="hero-tag">Pyrox Race Analysis Studio</div>
         <h1>Find an athlete, pick a race, and build a Pyrox race report.</h1>
         <p>
-          Search the Hyrox race database, review races, and generate a report
-          with a PDF export for race analysis.
+          Search the Hyrox race database, review races, and generate a report.
+          {!isNativeApp ? " PDF export is available on desktop." : null}
         </p>
       </header>
 
@@ -1623,28 +1655,28 @@ export default function App() {
           className={`mode-tab ${mode === "report" ? "is-active" : ""}`}
           onClick={() => handleModeChange("report")}
         >
-          Individual Race Report
+          Race Report
         </button>
         <button
           type="button"
           className={`mode-tab ${mode === "compare" ? "is-active" : ""}`}
           onClick={() => handleModeChange("compare")}
         >
-          Race Comparison
+          Compare
         </button>
         <button
           type="button"
           className={`mode-tab ${mode === "deepdive" ? "is-active" : ""}`}
           onClick={() => handleModeChange("deepdive")}
         >
-          Race Deepdive
+          Deep Dive
         </button>
         <button
           type="button"
           className={`mode-tab ${mode === "planner" ? "is-active" : ""}`}
           onClick={() => handleModeChange("planner")}
         >
-          Overall Race Analysis
+          Race Planner
         </button>
       </div>
 
@@ -1813,9 +1845,11 @@ export default function App() {
                 >
                   {reportLoading ? "Updating report..." : "Update report"}
                 </button>
-                <button className="secondary" type="button" onClick={handleDownloadPdf}>
-                  Download PDF
-                </button>
+                {!isNativeApp ? (
+                  <button className="secondary" type="button" onClick={handleDownloadPdf}>
+                    Download PDF
+                  </button>
+                ) : null}
               </div>
             </div>
             {reportError ? <p className="error">{reportError}</p> : null}
@@ -2117,14 +2151,16 @@ export default function App() {
         <main className="comparison-page">
           <div className="report-toolbar">
             <div className="toolbar-actions">
-              <button
-                className="secondary"
-                type="button"
-                onClick={handleDownloadComparePdf}
-                disabled={!baseReport || !compareReport}
-              >
-                Download PDF
-              </button>
+              {!isNativeApp ? (
+                <button
+                  className="secondary"
+                  type="button"
+                  onClick={handleDownloadComparePdf}
+                  disabled={!baseReport || !compareReport}
+                >
+                  Download PDF
+                </button>
+              ) : null}
             </div>
           </div>
 
