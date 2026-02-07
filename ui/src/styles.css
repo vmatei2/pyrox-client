@@ -83,6 +83,11 @@ button {
   font-weight: 600;
   font-size: clamp(2.2rem, 3vw, 3.2rem);
   margin: 18px 0 12px;
+  color: var(--ink);
+  background-image: linear-gradient(120deg, var(--ink) 0%, #e2e8f0 40%, var(--accent) 75%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .hero p {
@@ -1180,11 +1185,40 @@ table th {
   .compare-charts {
     grid-template-columns: 1fr;
   }
+
+  .report-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbar-actions {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .toolbar-actions > * {
+    flex: 1 1 auto;
+  }
+
+  .report-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 @media (max-width: 640px) {
   .app {
     padding: 32px 18px 64px;
+  }
+
+  .mode-tabs {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .mode-tab {
+    flex: 1 1 160px;
+    text-align: center;
   }
 
   .grid-2 {
@@ -1193,5 +1227,502 @@ table th {
 
   .report-time {
     text-align: left;
+  }
+
+  .panel {
+    padding: 20px;
+  }
+
+  .report {
+    padding: 18px;
+  }
+
+  table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+@supports (padding: env(safe-area-inset-top)) {
+  .app {
+    padding-top: calc(48px + env(safe-area-inset-top));
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
+  }
+}
+
+/* Mobile-first refresh focused on touch-first iPhone layouts. */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+input,
+select,
+button,
+textarea {
+  font-size: 16px;
+}
+
+.app {
+  max-width: 760px;
+  padding: calc(16px + var(--safe-top)) 14px calc(28px + var(--safe-bottom));
+}
+
+.hero {
+  margin-bottom: 20px;
+}
+
+.hero-tag {
+  font-size: 0.66rem;
+}
+
+.hero h1 {
+  font-size: clamp(1.55rem, 7.5vw, 2rem);
+  line-height: 1.2;
+  margin: 12px 0 10px;
+}
+
+.hero p {
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.mode-tabs {
+  position: sticky;
+  top: calc(var(--safe-top) + 6px);
+  z-index: 25;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  width: 100%;
+  gap: 8px;
+  margin-bottom: 18px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+}
+
+.mode-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.mode-tab {
+  flex: 0 0 auto;
+  min-width: 126px;
+  min-height: 42px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.layout,
+.grid-2,
+.grid-3,
+.report-grid,
+.chart-grid,
+.stat-grid,
+.comparison-grid,
+.compare-hero,
+.compare-charts {
+  grid-template-columns: 1fr;
+}
+
+.panel {
+  padding: 16px;
+  border-radius: 16px;
+}
+
+.search-form {
+  gap: 12px;
+}
+
+.field span {
+  font-size: 0.82rem;
+}
+
+.field input,
+.field select {
+  min-height: 46px;
+  padding: 11px 12px;
+}
+
+.primary,
+.secondary {
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.results {
+  margin-top: 16px;
+}
+
+.results-header {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.race-card {
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.race-card-header {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.race-title {
+  font-size: 0.95rem;
+  line-height: 1.3;
+}
+
+.race-location {
+  font-size: 0.82rem;
+}
+
+.race-meta {
+  font-size: 0.78rem;
+  gap: 6px 10px;
+}
+
+.report-actions {
+  display: grid;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.report-actions .field {
+  width: 100%;
+}
+
+.report-page,
+.comparison-page,
+.deepdive-page,
+.planner-page {
+  gap: 14px;
+}
+
+.report-toolbar {
+  display: grid;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.toolbar-actions {
+  display: grid;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.toolbar-actions > * {
+  width: 100%;
+}
+
+.report {
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.report-full {
+  max-width: none;
+}
+
+.report-hero h3 {
+  font-size: 1.2rem;
+}
+
+.report-subtitle {
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.report-time {
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+  padding: 12px 14px;
+}
+
+.report-card {
+  border-radius: 14px;
+  padding: 14px;
+  overflow-x: auto;
+}
+
+.chart-card {
+  padding: 12px;
+}
+
+.chart-head {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.chart-body {
+  height: 154px;
+  padding-top: 12px;
+}
+
+.chart-axis,
+.chart-foot {
+  font-size: 0.74rem;
+}
+
+.percentile-svg {
+  height: 212px;
+}
+
+.grouped-chart-wrap {
+  grid-template-columns: 40px 1fr;
+  gap: 8px;
+  height: 282px;
+  --label-row-height: 52px;
+}
+
+.grouped-axis {
+  min-width: 40px;
+  font-size: 0.62rem;
+  padding-right: 2px;
+}
+
+.grouped-chart-bars {
+  gap: 10px;
+  padding: 6px 6px 0;
+}
+
+.grouped-group {
+  min-width: 88px;
+}
+
+.grouped-label {
+  min-width: 88px;
+  max-width: 88px;
+  font-size: 0.64rem;
+}
+
+.grouped-bar {
+  width: 17px;
+}
+
+.deepdive-page .results {
+  min-height: 0;
+}
+
+.deepdive-page .results-grid {
+  max-height: 280px;
+}
+
+.deepdive-report {
+  margin-top: 18px;
+  padding-top: 16px;
+}
+
+.info-tooltip {
+  width: 18px;
+  height: 18px;
+  margin-right: 0;
+  font-size: 0.68rem;
+}
+
+.info-tooltip::after {
+  left: auto;
+  right: 0;
+  transform: translateY(-4px);
+  min-width: 160px;
+  max-width: 220px;
+}
+
+.info-tooltip:hover::after,
+.info-tooltip:focus-visible::after {
+  transform: translateY(0);
+}
+
+table {
+  display: table;
+  min-width: 680px;
+  font-size: 0.82rem;
+}
+
+table th,
+table td {
+  padding: 8px 8px;
+}
+
+.empty {
+  font-size: 0.88rem;
+  padding: 12px 13px;
+}
+
+@media (min-width: 700px) {
+  .app {
+    max-width: 920px;
+    padding: calc(26px + var(--safe-top)) 20px calc(56px + var(--safe-bottom));
+  }
+
+  .mode-tab {
+    min-width: 146px;
+  }
+
+  .primary,
+  .secondary {
+    width: auto;
+  }
+
+  .results-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .report-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+
+  .report-actions .field {
+    flex: 1;
+    min-width: 220px;
+  }
+
+  .report-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+
+  .toolbar-actions > * {
+    width: auto;
+    flex: 1 1 220px;
+  }
+
+  .chart-body {
+    height: 170px;
+  }
+
+  .deepdive-page .results-grid {
+    max-height: 340px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app {
+    max-width: 1240px;
+    padding: 48px 24px 80px;
+  }
+
+  .mode-tabs {
+    position: static;
+    display: inline-flex;
+    width: auto;
+    overflow: visible;
+    border-radius: 999px;
+    margin-bottom: 24px;
+    backdrop-filter: none;
+  }
+
+  .mode-tab {
+    min-width: 0;
+    min-height: 0;
+    padding: 8px 18px;
+    font-size: 0.95rem;
+  }
+
+  .layout {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr);
+  }
+
+  .grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .report-grid,
+  .chart-grid,
+  .stat-grid,
+  .comparison-grid,
+  .compare-hero,
+  .compare-charts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .panel {
+    padding: 28px;
+    border-radius: var(--radius);
+  }
+
+  .report {
+    border-radius: 18px;
+    padding: 24px;
+  }
+
+  .report-time {
+    width: auto;
+    min-width: 160px;
+    text-align: right;
+  }
+
+  .grouped-chart-wrap {
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    height: 360px;
+    --label-row-height: 44px;
+  }
+
+  .grouped-axis {
+    min-width: 56px;
+    font-size: 0.75rem;
+    padding-right: 6px;
+  }
+
+  .grouped-group {
+    min-width: 110px;
+  }
+
+  .grouped-label {
+    min-width: 110px;
+    max-width: 110px;
+    font-size: 0.72rem;
+  }
+
+  .grouped-bar {
+    width: 22px;
+  }
+
+  .deepdive-page .results {
+    min-height: 360px;
+  }
+
+  .deepdive-page .results-grid {
+    max-height: 360px;
+  }
+
+  table {
+    min-width: 0;
+    font-size: 0.9rem;
+  }
+
+  table th,
+  table td {
+    padding: 10px 8px;
   }
 }

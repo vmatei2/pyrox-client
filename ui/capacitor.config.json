@@ -1,0 +1,8 @@
+{
+  "appId": "com.pyrox.app",
+  "appName": "Pyrox",
+  "webDir": "dist",
+  "server": {
+    "cleartext": true
+  }
+}
