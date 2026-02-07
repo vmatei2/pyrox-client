@@ -842,12 +842,67 @@ const PercentileLineChart = ({ title, subtitle, series, emptyMessage }) => {
   );
 };
 
+const ProgressiveSection = ({ enabled, summary, children, defaultOpen = false }) => {
+  if (!enabled) {
+    return <>{children}</>;
+  }
+  return (
+    <details className="form-advanced" open={defaultOpen}>
+      <summary>{summary}</summary>
+      <div className="form-advanced-content">{children}</div>
+    </details>
+  );
+};
+
+const ModeTabIcon = ({ kind }) => {
+  if (kind === "report") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="4" y="4" width="16" height="16" rx="4" />
+        <path d="M8 9h8" />
+        <path d="M8 13h8" />
+        <path d="M8 17h5" />
+      </svg>
+    );
+  }
+  if (kind === "compare") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M5 7h6v12H5z" />
+        <path d="M13 5h6v14h-6z" />
+      </svg>
+    );
+  }
+  if (kind === "deepdive") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="11" cy="11" r="6" />
+        <path d="M15.5 15.5L20 20" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M5 18h14" />
+      <path d="M7 18v-6" />
+      <path d="M12 18v-10" />
+      <path d="M17 18v-4" />
+    </svg>
+  );
+};
+
 export default function App() {
+  const platform = Capacitor.getPlatform ? Capacitor.getPlatform() : "web";
   const isNativeApp = Capacitor.isNativePlatform
     ? Capacitor.isNativePlatform()
-    : Capacitor.getPlatform
-      ? Capacitor.getPlatform() !== "web"
-      : false;
+    : platform !== "web";
+  const isIosPlatform = platform === "ios";
+  const [isIosMobile, setIsIosMobile] = useState(() => {
+    if (!isIosPlatform || typeof window === "undefined") {
+      return false;
+    }
+    return window.matchMedia("(max-width: 900px)").matches;
+  });
   const [mode, setMode] = useState("report");
   const [name, setName] = useState("");
   const [filters, setFilters] = useState({
@@ -1011,6 +1066,34 @@ export default function App() {
     }
     return tags;
   }, [plannerData]);
+
+  useEffect(() => {
+    if (!isIosPlatform || typeof window === "undefined") {
+      setIsIosMobile(false);
+      return;
+    }
+    const mediaQuery = window.matchMedia("(max-width: 900px)");
+    const updateIsIosMobile = () => {
+      setIsIosMobile(mediaQuery.matches);
+    };
+    updateIsIosMobile();
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener("change", updateIsIosMobile);
+      return () => mediaQuery.removeEventListener("change", updateIsIosMobile);
+    }
+    mediaQuery.addListener(updateIsIosMobile);
+    return () => mediaQuery.removeListener(updateIsIosMobile);
+  }, [isIosPlatform]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") {
+      return;
+    }
+    document.body.classList.toggle("ios-mobile", isIosMobile);
+    return () => {
+      document.body.classList.remove("ios-mobile");
+    };
+  }, [isIosMobile]);
 
   const handleSearch = async (event) => {
     event.preventDefault();
@@ -1639,7 +1722,7 @@ export default function App() {
   }, [report]);
 
   return (
-    <div className="app">
+    <div className={`app${isIosMobile ? " ios-mobile-shell" : ""}`}>
       <header className="hero">
         <div className="hero-tag">Pyrox Race Analysis Studio</div>
         <h1>Find an athlete, pick a race, and build a Pyrox race report.</h1>
@@ -1655,28 +1738,40 @@ export default function App() {
           className={`mode-tab ${mode === "report" ? "is-active" : ""}`}
           onClick={() => handleModeChange("report")}
         >
-          Race Report
+          <span className="mode-tab-icon">
+            <ModeTabIcon kind="report" />
+          </span>
+          <span className="mode-tab-label">Race Report</span>
         </button>
         <button
           type="button"
           className={`mode-tab ${mode === "compare" ? "is-active" : ""}`}
           onClick={() => handleModeChange("compare")}
         >
-          Compare
+          <span className="mode-tab-icon">
+            <ModeTabIcon kind="compare" />
+          </span>
+          <span className="mode-tab-label">Compare</span>
         </button>
         <button
           type="button"
           className={`mode-tab ${mode === "deepdive" ? "is-active" : ""}`}
           onClick={() => handleModeChange("deepdive")}
         >
-          Deep Dive
+          <span className="mode-tab-icon">
+            <ModeTabIcon kind="deepdive" />
+          </span>
+          <span className="mode-tab-label">Deep Dive</span>
         </button>
         <button
           type="button"
           className={`mode-tab ${mode === "planner" ? "is-active" : ""}`}
           onClick={() => handleModeChange("planner")}
         >
-          Race Planner
+          <span className="mode-tab-icon">
+            <ModeTabIcon kind="planner" />
+          </span>
+          <span className="mode-tab-label">Race Planner</span>
         </button>
       </div>
 
@@ -1695,43 +1790,45 @@ export default function App() {
                   />
                 </label>
 
-                <div className="grid-2">
+                <ProgressiveSection enabled={isIosMobile} summary="More search filters">
+                  <div className="grid-2">
+                    <label className="field">
+                      <span>Division</span>
+                      <input
+                        type="text"
+                        placeholder="open, pro, doubles"
+                        value={filters.division}
+                        onChange={(event) =>
+                          setFilters((prev) => ({ ...prev, division: event.target.value }))
+                        }
+                      />
+                    </label>
+
+                    <label className="field">
+                      <span>Gender</span>
+                      <input
+                        type="text"
+                        placeholder="male or female or mixed"
+                        value={filters.gender}
+                        onChange={(event) =>
+                          setFilters((prev) => ({ ...prev, gender: event.target.value }))
+                        }
+                      />
+                    </label>
+                  </div>
+
                   <label className="field">
-                    <span>Division</span>
+                    <span>Nationality</span>
                     <input
                       type="text"
-                      placeholder="open, pro, doubles"
-                      value={filters.division}
+                      placeholder="GBR"
+                      value={filters.nationality}
                       onChange={(event) =>
-                        setFilters((prev) => ({ ...prev, division: event.target.value }))
+                        setFilters((prev) => ({ ...prev, nationality: event.target.value }))
                       }
                     />
                   </label>
-
-                  <label className="field">
-                    <span>Gender</span>
-                    <input
-                      type="text"
-                      placeholder="male or female or mixed"
-                      value={filters.gender}
-                      onChange={(event) =>
-                        setFilters((prev) => ({ ...prev, gender: event.target.value }))
-                      }
-                    />
-                  </label>
-                </div>
-
-                <label className="field">
-                  <span>Nationality</span>
-                  <input
-                    type="text"
-                    placeholder="GBR"
-                    value={filters.nationality}
-                    onChange={(event) =>
-                      setFilters((prev) => ({ ...prev, nationality: event.target.value }))
-                    }
-                  />
-                </label>
+                </ProgressiveSection>
 
                 <button className="primary" type="submit" disabled={searchLoading}>
                   {searchLoading ? "Searching..." : "Search races"}
@@ -2061,30 +2158,38 @@ export default function App() {
                 <div className="report-card">
                   <h4>Splits</h4>
                   {report.splits?.length ? (
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Split</th>
-                          <th>Time</th>
-                          <th>Rank</th>
-                          <th>Percentile</th>
-                          <th>Window percentile</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {report.splits.map((split) => (
-                          <tr key={`${split.split_name}-${split.split_rank}`}>
-                            <td>{formatLabel(split.split_name)}</td>
-                            <td>{formatMinutes(split.split_time_min)}</td>
-                            <td>
-                              {formatLabel(split.split_rank)} / {formatLabel(split.split_size)}
-                            </td>
-                            <td>{formatPercent(split.split_percentile)}</td>
-                            <td>{formatPercent(split.split_percentile_time_window)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <div className="table-shell">
+                      <div className="table-scroll">
+                        <table className="responsive-table">
+                          <thead>
+                            <tr>
+                              <th>Split</th>
+                              <th>Time</th>
+                              <th>Rank</th>
+                              <th>Percentile</th>
+                              <th>Window percentile</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {report.splits.map((split) => (
+                              <tr key={`${split.split_name}-${split.split_rank}`}>
+                                <td data-label="Split">{formatLabel(split.split_name)}</td>
+                                <td data-label="Time">{formatMinutes(split.split_time_min)}</td>
+                                <td data-label="Rank">
+                                  {formatLabel(split.split_rank)} / {formatLabel(split.split_size)}
+                                </td>
+                                <td data-label="Percentile">
+                                  {formatPercent(split.split_percentile)}
+                                </td>
+                                <td data-label="Window percentile">
+                                  {formatPercent(split.split_percentile_time_window)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
                   ) : (
                     <p className="empty">No split data found for this race.</p>
                   )}
@@ -2182,52 +2287,54 @@ export default function App() {
                     />
                   </label>
 
-                  <div className="grid-2">
+                  <ProgressiveSection enabled={isIosMobile} summary="More search filters">
+                    <div className="grid-2">
+                      <label className="field">
+                        <span>Division</span>
+                        <input
+                          type="text"
+                          placeholder="open, pro, doubles"
+                          value={baseFilters.division}
+                          onChange={(event) =>
+                            setBaseFilters((prev) => ({
+                              ...prev,
+                              division: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+
+                      <label className="field">
+                        <span>Gender</span>
+                        <input
+                          type="text"
+                          placeholder="male or female or mixed"
+                          value={baseFilters.gender}
+                          onChange={(event) =>
+                            setBaseFilters((prev) => ({
+                              ...prev,
+                              gender: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    </div>
+
                     <label className="field">
-                      <span>Division</span>
+                      <span>Nationality</span>
                       <input
                         type="text"
-                        placeholder="open, pro, doubles"
-                        value={baseFilters.division}
+                        placeholder="GBR"
+                        value={baseFilters.nationality}
                         onChange={(event) =>
                           setBaseFilters((prev) => ({
                             ...prev,
-                            division: event.target.value,
+                            nationality: event.target.value,
                           }))
                         }
                       />
                     </label>
-
-                    <label className="field">
-                      <span>Gender</span>
-                      <input
-                        type="text"
-                        placeholder="male or female or mixed"
-                        value={baseFilters.gender}
-                        onChange={(event) =>
-                          setBaseFilters((prev) => ({
-                            ...prev,
-                            gender: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
-                  </div>
-
-                  <label className="field">
-                    <span>Nationality</span>
-                    <input
-                      type="text"
-                      placeholder="GBR"
-                      value={baseFilters.nationality}
-                      onChange={(event) =>
-                        setBaseFilters((prev) => ({
-                          ...prev,
-                          nationality: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
+                  </ProgressiveSection>
 
                   <button className="primary" type="submit" disabled={baseSearchLoading}>
                     {baseSearchLoading ? "Searching..." : "Search races"}
@@ -2312,52 +2419,54 @@ export default function App() {
                     />
                   </label>
 
-                  <div className="grid-2">
+                  <ProgressiveSection enabled={isIosMobile} summary="More search filters">
+                    <div className="grid-2">
+                      <label className="field">
+                        <span>Division</span>
+                        <input
+                          type="text"
+                          placeholder="open, pro, doubles"
+                          value={compareFilters.division}
+                          onChange={(event) =>
+                            setCompareFilters((prev) => ({
+                              ...prev,
+                              division: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+
+                      <label className="field">
+                        <span>Gender</span>
+                        <input
+                          type="text"
+                          placeholder="male or female or mixed"
+                          value={compareFilters.gender}
+                          onChange={(event) =>
+                            setCompareFilters((prev) => ({
+                              ...prev,
+                              gender: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    </div>
+
                     <label className="field">
-                      <span>Division</span>
+                      <span>Nationality</span>
                       <input
                         type="text"
-                        placeholder="open, pro, doubles"
-                        value={compareFilters.division}
+                        placeholder="GBR"
+                        value={compareFilters.nationality}
                         onChange={(event) =>
                           setCompareFilters((prev) => ({
                             ...prev,
-                            division: event.target.value,
+                            nationality: event.target.value,
                           }))
                         }
                       />
                     </label>
-
-                    <label className="field">
-                      <span>Gender</span>
-                      <input
-                        type="text"
-                        placeholder="male or female or mixed"
-                        value={compareFilters.gender}
-                        onChange={(event) =>
-                          setCompareFilters((prev) => ({
-                            ...prev,
-                            gender: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
-                  </div>
-
-                  <label className="field">
-                    <span>Nationality</span>
-                    <input
-                      type="text"
-                      placeholder="GBR"
-                      value={compareFilters.nationality}
-                      onChange={(event) =>
-                        setCompareFilters((prev) => ({
-                          ...prev,
-                          nationality: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
+                  </ProgressiveSection>
 
                   <button className="primary" type="submit" disabled={compareSearchLoading}>
                     {compareSearchLoading ? "Searching..." : "Search races"}
@@ -2503,36 +2612,46 @@ export default function App() {
 
                 <div className="report-card">
                   <h4>Split comparison</h4>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Split</th>
-                        <th>Base time</th>
-                        <th>Compare time</th>
-                        <th>Delta (base - compare)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {comparisonRows.map((row) => {
-                        const deltaClass =
-                          row.delta === null
-                            ? ""
-                            : row.delta > 0
-                              ? "delta-positive"
-                              : row.delta < 0
-                                ? "delta-negative"
-                                : "delta-even";
-                        return (
-                          <tr key={row.key}>
-                            <td>{formatLabel(row.label)}</td>
-                            <td>{formatMinutes(row.primaryValue)}</td>
-                            <td>{formatMinutes(row.compareValue)}</td>
-                            <td className={deltaClass}>{formatDeltaMinutes(row.delta)}</td>
+                  <div className="table-shell">
+                    <div className="table-scroll">
+                      <table className="responsive-table">
+                        <thead>
+                          <tr>
+                            <th>Split</th>
+                            <th>Base time</th>
+                            <th>Compare time</th>
+                            <th>Delta (base - compare)</th>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                        </thead>
+                        <tbody>
+                          {comparisonRows.map((row) => {
+                            const deltaClass =
+                              row.delta === null
+                                ? ""
+                                : row.delta > 0
+                                  ? "delta-positive"
+                                  : row.delta < 0
+                                    ? "delta-negative"
+                                    : "delta-even";
+                            return (
+                              <tr key={row.key}>
+                                <td data-label="Split">{formatLabel(row.label)}</td>
+                                <td data-label="Base time">
+                                  {formatMinutes(row.primaryValue)}
+                                </td>
+                                <td data-label="Compare time">
+                                  {formatMinutes(row.compareValue)}
+                                </td>
+                                <td data-label="Delta" className={deltaClass}>
+                                  {formatDeltaMinutes(row.delta)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               </>
             )}
@@ -2558,52 +2677,54 @@ export default function App() {
                     />
                   </label>
 
-                  <div className="grid-2">
+                  <ProgressiveSection enabled={isIosMobile} summary="More search filters">
+                    <div className="grid-2">
+                      <label className="field">
+                        <span>Division</span>
+                        <input
+                          type="text"
+                          placeholder="open, pro, doubles"
+                          value={deepdiveFilters.division}
+                          onChange={(event) =>
+                            setDeepdiveFilters((prev) => ({
+                              ...prev,
+                              division: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+
+                      <label className="field">
+                        <span>Gender</span>
+                        <input
+                          type="text"
+                          placeholder="male or female or mixed"
+                          value={deepdiveFilters.gender}
+                          onChange={(event) =>
+                            setDeepdiveFilters((prev) => ({
+                              ...prev,
+                              gender: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    </div>
+
                     <label className="field">
-                      <span>Division</span>
+                      <span>Nationality</span>
                       <input
                         type="text"
-                        placeholder="open, pro, doubles"
-                        value={deepdiveFilters.division}
+                        placeholder="GBR"
+                        value={deepdiveFilters.nationality}
                         onChange={(event) =>
                           setDeepdiveFilters((prev) => ({
                             ...prev,
-                            division: event.target.value,
+                            nationality: event.target.value,
                           }))
                         }
                       />
                     </label>
-
-                    <label className="field">
-                      <span>Gender</span>
-                      <input
-                        type="text"
-                        placeholder="male or female or mixed"
-                        value={deepdiveFilters.gender}
-                        onChange={(event) =>
-                          setDeepdiveFilters((prev) => ({
-                            ...prev,
-                            gender: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
-                  </div>
-
-                  <label className="field">
-                    <span>Nationality</span>
-                    <input
-                      type="text"
-                      placeholder="GBR"
-                      value={deepdiveFilters.nationality}
-                      onChange={(event) =>
-                        setDeepdiveFilters((prev) => ({
-                          ...prev,
-                          nationality: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
+                  </ProgressiveSection>
 
                   <button className="primary" type="submit" disabled={deepdiveSearchLoading}>
                     {deepdiveSearchLoading ? "Searching..." : "Search races"}
@@ -2733,89 +2854,96 @@ export default function App() {
                     </label>
                   </div>
 
-                  <div className="grid-3">
+                  <ProgressiveSection
+                    enabled={isIosMobile}
+                    summary="Advanced deepdive options"
+                  >
+                    <div className="grid-3">
+                      <label className="field">
+                        <span>Age group</span>
+                        <select
+                          value={deepdiveParams.ageGroup}
+                          onChange={(event) =>
+                            setDeepdiveParams((prev) => ({
+                              ...prev,
+                              ageGroup: event.target.value,
+                            }))
+                          }
+                          disabled={!deepdiveParams.season.trim() || deepdiveOptionsLoading}
+                        >
+                          <option value="">
+                            {deepdiveOptionsLoading
+                              ? "Loading age groups..."
+                              : "Any age group"}
+                          </option>
+                          {deepdiveOptions.ageGroups.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="field">
+                        <span>Metric</span>
+                        <select
+                          value={deepdiveParams.metric}
+                          onChange={(event) =>
+                            setDeepdiveParams((prev) => ({
+                              ...prev,
+                              metric: event.target.value,
+                            }))
+                          }
+                        >
+                          {DEEPDIVE_METRIC_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="field">
+                        <span>Stat focus</span>
+                        <select
+                          value={deepdiveParams.stat}
+                          onChange={(event) =>
+                            setDeepdiveParams((prev) => ({
+                              ...prev,
+                              stat: event.target.value,
+                            }))
+                          }
+                        >
+                          {DEEPDIVE_STAT_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+
                     <label className="field">
-                      <span>Age group</span>
+                      <span>Location (optional)</span>
                       <select
-                        value={deepdiveParams.ageGroup}
+                        value={deepdiveParams.location}
                         onChange={(event) =>
                           setDeepdiveParams((prev) => ({
                             ...prev,
-                            ageGroup: event.target.value,
+                            location: event.target.value,
                           }))
                         }
                         disabled={!deepdiveParams.season.trim() || deepdiveOptionsLoading}
                       >
                         <option value="">
-                          {deepdiveOptionsLoading ? "Loading age groups..." : "Any age group"}
+                          {deepdiveOptionsLoading ? "Loading locations..." : "Any location"}
                         </option>
-                        {deepdiveOptions.ageGroups.map((option) => (
+                        {deepdiveOptions.locations.map((option) => (
                           <option key={option} value={option}>
                             {option}
                           </option>
                         ))}
                       </select>
                     </label>
-                    <label className="field">
-                      <span>Metric</span>
-                      <select
-                        value={deepdiveParams.metric}
-                        onChange={(event) =>
-                          setDeepdiveParams((prev) => ({
-                            ...prev,
-                            metric: event.target.value,
-                          }))
-                        }
-                      >
-                        {DEEPDIVE_METRIC_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="field">
-                      <span>Stat focus</span>
-                      <select
-                        value={deepdiveParams.stat}
-                        onChange={(event) =>
-                          setDeepdiveParams((prev) => ({
-                            ...prev,
-                            stat: event.target.value,
-                          }))
-                        }
-                      >
-                        {DEEPDIVE_STAT_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-
-                  <label className="field">
-                    <span>Location (optional)</span>
-                    <select
-                      value={deepdiveParams.location}
-                      onChange={(event) =>
-                        setDeepdiveParams((prev) => ({
-                          ...prev,
-                          location: event.target.value,
-                        }))
-                      }
-                      disabled={!deepdiveParams.season.trim() || deepdiveOptionsLoading}
-                    >
-                      <option value="">
-                        {deepdiveOptionsLoading ? "Loading locations..." : "Any location"}
-                      </option>
-                      {deepdiveOptions.locations.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  </ProgressiveSection>
 
                   <div className="report-actions">
                     <button
@@ -2914,85 +3042,93 @@ export default function App() {
                   <div className="report-card">
                     <h4>Location targets ({deepdiveStatLabel})</h4>
                     {deepdiveRows.length ? (
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>Location</th>
-                            <th>N</th>
-                            <th>
-                              {deepdiveStatLabel} time
-                              {deepdiveParams.stat === "p05" ? (
-                                <span
-                                  className="info-tooltip"
-                                  data-tooltip="Top 5% time is the 5th percentile of the cohort (interpolated for small groups)."
-                                  aria-label="Top 5% time definition"
-                                >
-                                  i
-                                </span>
-                              ) : deepdiveParams.stat === "p90" ? (
-                                <span
-                                  className="info-tooltip"
-                                  data-tooltip="Bottom 10% time is the 90th percentile of the cohort (interpolated for small groups)."
-                                  aria-label="Bottom 10% time definition"
-                                >
-                                  i
-                                </span>
-                              ) : deepdiveParams.stat === "mean" ? (
-                                <span
-                                  className="info-tooltip"
-                                  data-tooltip="Mean time is the average across the cohort for the selected filters."
-                                  aria-label="Mean time definition"
-                                >
-                                  i
-                                </span>
-                              ) : null}
-                            </th>
-                            <th>Fastest time</th>
-                            <th>Athlete time</th>
-                            <th>Delta (athlete - target)</th>
-                            <th>Delta (athlete - fastest)</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {deepdiveRows.map((row, index) => {
-                            const deltaClass =
-                              row.delta === null
-                                ? ""
-                                : row.delta > 0
-                                  ? "delta-positive"
-                                  : row.delta < 0
-                                    ? "delta-negative"
-                                    : "delta-even";
-                            const fastestDeltaClass =
-                              row.deltaFastest === null
-                                ? ""
-                                : row.deltaFastest > 0
-                                  ? "delta-positive"
-                                  : row.deltaFastest < 0
-                                    ? "delta-negative"
-                                    : "delta-even";
-                            return (
-                              <tr key={`${row.location || "loc"}-${index}`}>
-                                <td>{formatLabel(row.location)}</td>
-                                <td>{formatLabel(row.count)}</td>
-                                <td>{formatMinutes(row.statValue)}</td>
-                                <td>{formatMinutes(row.fastestValue)}</td>
-                                <td>
-                                  {formatMinutes(
-                                    deepdiveData.athlete_value ?? deepdiveData.athlete_time
-                                  )}
-                                </td>
-                                <td className={deltaClass}>
-                                  {formatDeltaMinutes(row.delta)}
-                                </td>
-                                <td className={fastestDeltaClass}>
-                                  {formatDeltaMinutes(row.deltaFastest)}
-                                </td>
+                      <div className="table-shell">
+                        <div className="table-scroll">
+                          <table className="responsive-table">
+                            <thead>
+                              <tr>
+                                <th>Location</th>
+                                <th>N</th>
+                                <th>
+                                  {deepdiveStatLabel} time
+                                  {deepdiveParams.stat === "p05" ? (
+                                    <span
+                                      className="info-tooltip"
+                                      data-tooltip="Top 5% time is the 5th percentile of the cohort (interpolated for small groups)."
+                                      aria-label="Top 5% time definition"
+                                    >
+                                      i
+                                    </span>
+                                  ) : deepdiveParams.stat === "p90" ? (
+                                    <span
+                                      className="info-tooltip"
+                                      data-tooltip="Bottom 10% time is the 90th percentile of the cohort (interpolated for small groups)."
+                                      aria-label="Bottom 10% time definition"
+                                    >
+                                      i
+                                    </span>
+                                  ) : deepdiveParams.stat === "mean" ? (
+                                    <span
+                                      className="info-tooltip"
+                                      data-tooltip="Mean time is the average across the cohort for the selected filters."
+                                      aria-label="Mean time definition"
+                                    >
+                                      i
+                                    </span>
+                                  ) : null}
+                                </th>
+                                <th>Fastest time</th>
+                                <th>Athlete time</th>
+                                <th>Delta (athlete - target)</th>
+                                <th>Delta (athlete - fastest)</th>
                               </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                            </thead>
+                            <tbody>
+                              {deepdiveRows.map((row, index) => {
+                                const deltaClass =
+                                  row.delta === null
+                                    ? ""
+                                    : row.delta > 0
+                                      ? "delta-positive"
+                                      : row.delta < 0
+                                        ? "delta-negative"
+                                        : "delta-even";
+                                const fastestDeltaClass =
+                                  row.deltaFastest === null
+                                    ? ""
+                                    : row.deltaFastest > 0
+                                      ? "delta-positive"
+                                      : row.deltaFastest < 0
+                                        ? "delta-negative"
+                                        : "delta-even";
+                                return (
+                                  <tr key={`${row.location || "loc"}-${index}`}>
+                                    <td data-label="Location">{formatLabel(row.location)}</td>
+                                    <td data-label="N">{formatLabel(row.count)}</td>
+                                    <td data-label={`${deepdiveStatLabel} time`}>
+                                      {formatMinutes(row.statValue)}
+                                    </td>
+                                    <td data-label="Fastest time">
+                                      {formatMinutes(row.fastestValue)}
+                                    </td>
+                                    <td data-label="Athlete time">
+                                      {formatMinutes(
+                                        deepdiveData.athlete_value ?? deepdiveData.athlete_time
+                                      )}
+                                    </td>
+                                    <td data-label="Delta vs target" className={deltaClass}>
+                                      {formatDeltaMinutes(row.delta)}
+                                    </td>
+                                    <td data-label="Delta vs fastest" className={fastestDeltaClass}>
+                                      {formatDeltaMinutes(row.deltaFastest)}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
                     ) : (
                       <p className="empty">Run a deepdive to compare locations.</p>
                     )}
@@ -3044,52 +3180,54 @@ export default function App() {
                 </label>
               </div>
 
-              <div className="grid-3">
-                <label className="field">
-                  <span>Division</span>
-                  <input
-                    type="text"
-                    placeholder="open"
-                    value={plannerFilters.division}
-                    onChange={(event) =>
-                      setPlannerFilters((prev) => ({ ...prev, division: event.target.value }))
-                    }
-                  />
-                </label>
-                <label className="field">
-                  <span>Gender</span>
-                  <input
-                    type="text"
-                    placeholder="male or female or mixed"
-                    value={plannerFilters.gender}
-                    onChange={(event) =>
-                      setPlannerFilters((prev) => ({ ...prev, gender: event.target.value }))
-                    }
-                  />
-                </label>
-                <label className="field">
-                  <span>Time range (min)</span>
-                  <div className="range-inputs">
+              <ProgressiveSection enabled={isIosMobile} summary="Advanced planner filters">
+                <div className="grid-3">
+                  <label className="field">
+                    <span>Division</span>
                     <input
-                      type="number"
-                      placeholder="60"
-                      value={plannerFilters.minTime}
+                      type="text"
+                      placeholder="open"
+                      value={plannerFilters.division}
                       onChange={(event) =>
-                        setPlannerFilters((prev) => ({ ...prev, minTime: event.target.value }))
+                        setPlannerFilters((prev) => ({ ...prev, division: event.target.value }))
                       }
                     />
-                    <span>to</span>
+                  </label>
+                  <label className="field">
+                    <span>Gender</span>
                     <input
-                      type="number"
-                      placeholder="65"
-                      value={plannerFilters.maxTime}
+                      type="text"
+                      placeholder="male or female or mixed"
+                      value={plannerFilters.gender}
                       onChange={(event) =>
-                        setPlannerFilters((prev) => ({ ...prev, maxTime: event.target.value }))
+                        setPlannerFilters((prev) => ({ ...prev, gender: event.target.value }))
                       }
                     />
-                  </div>
-                </label>
-              </div>
+                  </label>
+                  <label className="field">
+                    <span>Time range (min)</span>
+                    <div className="range-inputs">
+                      <input
+                        type="number"
+                        placeholder="60"
+                        value={plannerFilters.minTime}
+                        onChange={(event) =>
+                          setPlannerFilters((prev) => ({ ...prev, minTime: event.target.value }))
+                        }
+                      />
+                      <span>to</span>
+                      <input
+                        type="number"
+                        placeholder="65"
+                        value={plannerFilters.maxTime}
+                        onChange={(event) =>
+                          setPlannerFilters((prev) => ({ ...prev, maxTime: event.target.value }))
+                        }
+                      />
+                    </div>
+                  </label>
+                </div>
+              </ProgressiveSection>
 
               <button className="primary" type="submit" disabled={plannerLoading}>
                 {plannerLoading ? "Building plan..." : "Run planner"}

@@ -6,7 +6,7 @@ primary_region = "lhr"
 
 [env]
   PYROX_DUCKDB_PATH = "/app/pyrox_duckdb"
-  PYROX_API_ALLOW_ORIGINS = "https://pyrox-analytics.vercel.app"
+  PYROX_API_ALLOW_ORIGINS = "https://pyrox-analytics.vercel.app,capacitor://localhost,ionic://localhost,http://localhost"
 
 [http_service]
   internal_port = 8080

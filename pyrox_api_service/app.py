@@ -21,7 +21,7 @@ except ModuleNotFoundError:  # Fallback for direct repository execution without 
     from src.pyrox.reporting import ReportingClient
 
 DEFAULT_DB_PATH = "pyrox_duckdb"
-DEFAULT_ORIGINS = "http://localhost:5173,capacitor://localhost,http://localhost"
+DEFAULT_ORIGINS = "http://localhost:5173,capacitor://localhost,ionic://localhost,http://localhost"
 SEGMENT_CONFIG = [
     {"key": "total_time_min", "label": "Total time", "group": "overall"},
     {"key": "run1_time_min", "label": "Run 1", "group": "runs"},
@@ -192,6 +192,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%dT%H:%M:%S",
 )
 logger = logging.getLogger("pyrox.api")
+logger.info("CORS allowed origins: %s", ", ".join(allowed_origins))
 
 # app.middleware is a decorator that runs this code on every incoming HTTP request!
 @app.middleware("http")

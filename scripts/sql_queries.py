@@ -28,7 +28,14 @@ CREATE OR REPLACE MACRO time_to_min(t) AS (
 );
 """
 
-CREATE_RACE_RESULTS = f"""
+
+def _sql_quote(value: str) -> str:
+    return value.replace("'", "''")
+
+
+def create_race_results_query(s3_uri: str) -> str:
+    safe_s3_uri = _sql_quote(s3_uri)
+    return f"""
 CREATE OR REPLACE TABLE race_results AS
 WITH src AS (
     SELECT
@@ -61,9 +68,10 @@ WITH src AS (
         trim(CAST(work_time AS VARCHAR)) AS work_time_str
 
       FROM read_parquet(
-          's3://hyrox-results/processed/parquet/season=*/location=*/year=*/*.parquet',
+          '{safe_s3_uri}',
           hive_partitioning=true,
-          union_by_name=true
+          union_by_name=true,
+          binary_as_string=true
       )
       WHERE try_cast(season AS INTEGER) IN (7, 8)
 )
@@ -93,7 +101,7 @@ SELECT
     trim(name) AS name_raw,
     trim(name) AS name,
 
-    nationality,
+    trim(CAST(nationality AS VARCHAR)) AS nationality,
 
     -- ===== time strings =====
     roxzone_time_str AS roxzone_time,
@@ -153,6 +161,10 @@ WHERE
     AND lower(location) NOT IN ('season-8', 'none', '');
 
 """
+
+
+DEFAULT_S3_URI = "s3://hyrox-results/processed/parquet/season=*/location=*/year=*/*.parquet"
+CREATE_RACE_RESULTS = create_race_results_query(DEFAULT_S3_URI)
 
 # Reporting: race_rankings
 # Goal: pre-compute race/season/overall standings for fast percentile lookups.

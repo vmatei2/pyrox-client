@@ -1,18 +1,20 @@
 from __future__ import annotations
 
-
-from dotenv import load_dotenv
-load_dotenv()
-import os
-import duckdb
 import logging
+import os
+import re
+
+import duckdb
+from dotenv import load_dotenv
 from sql_queries import (
     CREATE_ATHLETE_HISTORY,
     CREATE_RACE_RANKINGS,
-    CREATE_RACE_RESULTS,
     CREATE_SPLIT_PERCENTILES,
     MACRO,
+    create_race_results_query,
 )
+
+load_dotenv()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -20,6 +22,29 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 logger = logging.getLogger("ingest_duckdb")
+
+
+def warn_if_single_season_scope(s3_uri: str) -> None:
+    """
+    Warn when S3 URI appears scoped to a single season partition.
+    """
+    match = re.search(r"season=([^/]+)", s3_uri)
+    if not match:
+        return
+
+    season_selector = match.group(1).strip()
+    if season_selector == "*":
+        return
+
+    # Wildcards/lists/ranges are treated as multi-season selectors.
+    if any(char in season_selector for char in "*?{},[]"):
+        return
+
+    logger.warning(
+        "S3_URI appears pinned to a single season (%s). "
+        "Use season=* to ingest all available seasons.",
+        season_selector,
+    )
 
 def required_env(name: str) -> str:
     value = os.getenv(name)
@@ -75,6 +100,7 @@ def ingest_full_refresh() -> None:
     logger.info("Starting full refresh ingest...")
     logger.info(f"Reading from S3 URI: {S3_URI}")
     logger.info(f"Writing to DuckDB path: {DUCKDB_PATH}")
+    warn_if_single_season_scope(S3_URI)
 
     con = duckdb.connect(DUCKDB_TMP_PATH)
     configure_s3(con)
@@ -85,7 +111,7 @@ def ingest_full_refresh() -> None:
     con.execute(MACRO)
 
 
-    con.execute(CREATE_RACE_RESULTS)
+    con.execute(create_race_results_query(S3_URI))
 
 
     # Optional: basic hygiene (helps later joins/search)
