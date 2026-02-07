@@ -606,6 +606,140 @@ button {
   font-size: 1.05rem;
 }
 
+.report-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.report-card-head h4 {
+  margin: 0;
+}
+
+.card-help-button {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.9);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.card-help-button:hover,
+.card-help-button:focus-visible {
+  color: var(--ink);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.help-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(2, 6, 23, 0.6);
+  display: flex;
+  align-items: flex-end;
+}
+
+.help-sheet {
+  width: 100%;
+  max-height: min(80vh, 680px);
+  overflow-y: auto;
+  border-radius: 18px 18px 0 0;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  background: rgba(11, 17, 32, 0.98);
+  padding: 12px 16px 18px;
+  box-shadow: 0 -16px 40px rgba(2, 6, 23, 0.45);
+}
+
+.help-sheet-handle {
+  width: 42px;
+  height: 4px;
+  border-radius: 999px;
+  margin: 2px auto 10px;
+  background: rgba(148, 163, 184, 0.4);
+}
+
+.help-sheet-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.help-sheet-header h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.help-sheet-close {
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: rgba(15, 23, 42, 0.9);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.help-sheet-summary {
+  margin: 10px 0;
+  color: #e2e8f0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.help-sheet-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  display: grid;
+  gap: 6px;
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.help-sheet-formula {
+  margin: 12px 0 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.help-sheet-formula span {
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.help-sheet-formula code {
+  color: #bfdbfe;
+}
+
+@media (min-width: 960px) {
+  .help-sheet-backdrop {
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .help-sheet {
+    width: min(680px, 100%);
+    border-radius: 18px;
+    border: 1px solid var(--border);
+    box-shadow: 0 24px 56px rgba(2, 6, 23, 0.55);
+  }
+
+  .help-sheet-handle {
+    display: none;
+  }
+}
+
 .percentile-chart {
   display: grid;
   gap: 12px;
@@ -1203,6 +1337,10 @@ table th {
   .report-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .report-card-head {
+    flex-wrap: wrap;
   }
 }
 

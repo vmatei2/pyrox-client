@@ -103,6 +103,76 @@ const STATION_PERCENTILE_SEGMENTS = STATION_SEGMENTS.map(({ key, label }) => ({
   label,
 }));
 
+const formatTimeWindowLabel = (value) => {
+  const minutes = Number(value);
+  if (!Number.isFinite(minutes) || minutes <= 0) {
+    return "the selected +/- time window";
+  }
+  return `+/- ${minutes} min`;
+};
+
+const buildReportHelpContent = (timeWindowValue) => {
+  const timeWindowLabel = formatTimeWindowLabel(timeWindowValue);
+  return {
+    rankings: {
+      title: "How rankings are calculated",
+      summary: "Lower time is better. Rankings and percentiles are computed on total time.",
+      bullets: [
+        "Event cohort: same location + division + gender + age group.",
+        "Season cohort: same season + division + gender + age group.",
+        "Overall cohort: all seasons for the same division + gender + age group.",
+      ],
+      formula: "percentile = 1 - (rank - 1) / (cohort_size - 1)",
+    },
+    age_group_distributions: {
+      title: "How age group distributions work",
+      summary: "Histograms show total times for your demographic cohort with your race marked.",
+      bullets: [
+        "Bins are equal-width ranges across the observed min and max time.",
+        "The marker line is your total time.",
+        "n shows how many race results are in the cohort.",
+      ],
+    },
+    split_percentile_lines: {
+      title: "How split percentile lines work",
+      summary: "Each point is your percentile for one split. Higher percentile means faster relative performance.",
+      bullets: [
+        "Cohort line uses the age-group cohort at the same location.",
+        "Time-window line uses the same location + season and similar finish times.",
+        "Missing split values are left blank and lines break across gaps.",
+      ],
+      formula: "percentile = 1 - (rank - 1) / (cohort_size - 1)",
+    },
+    splits_table: {
+      title: "How split table values are calculated",
+      summary: "Each row compares one split against the selected cohorts.",
+      bullets: [
+        "Rank is your position within the split cohort (lower split time ranks higher).",
+        "Percentile is your standing vs the age-group split cohort.",
+        `Window percentile uses ${timeWindowLabel} around your total time.`,
+      ],
+    },
+    age_group_stats: {
+      title: "How age group stats are calculated",
+      summary: "Summary stats use total_time_min across your age-group cohort.",
+      bullets: [
+        "Best time is the minimum total time.",
+        "Median is the middle value when times are sorted.",
+        "90th percentile is the time at quantile 0.90.",
+      ],
+    },
+    time_window_stats: {
+      title: "How time window stats are calculated",
+      summary: `Summary stats are computed on athletes within ${timeWindowLabel}.`,
+      bullets: [
+        "Scope: same location + season.",
+        "Filter: total_time_min between athlete_time - window and athlete_time + window.",
+        "Stats shown are count, median, best, and 90th percentile.",
+      ],
+    },
+  };
+};
+
 const formatMinutes = (value) => {
   if (value === null || value === undefined || value === "") {
     return "-";
@@ -301,6 +371,64 @@ const parseError = async (response) => {
   } catch (error) {
     return response.statusText || "Request failed.";
   }
+};
+
+const CardHelpButton = ({ onClick }) => (
+  <button type="button" className="card-help-button" onClick={onClick}>
+    How calculated
+  </button>
+);
+
+const ReportCardHeader = ({ title, helpKey, onOpenHelp }) => (
+  <div className="report-card-head">
+    <h4>{title}</h4>
+    {helpKey ? <CardHelpButton onClick={() => onOpenHelp(helpKey)} /> : null}
+  </div>
+);
+
+const HelpSheet = ({ content, onClose }) => {
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <div className="help-sheet-backdrop" onClick={onClose} role="presentation">
+      <div
+        className="help-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="help-sheet-title"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="help-sheet-handle" />
+        <div className="help-sheet-header">
+          <h4 id="help-sheet-title">{content.title}</h4>
+          <button type="button" className="help-sheet-close" onClick={onClose}>
+            Close
+          </button>
+        </div>
+        <p className="help-sheet-summary">{content.summary}</p>
+        {Array.isArray(content.bullets) && content.bullets.length ? (
+          <ul className="help-sheet-list">
+            {content.bullets.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        ) : null}
+        {content.formula ? (
+          <p className="help-sheet-formula">
+            <span>Formula:</span> <code>{content.formula}</code>
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
 };
 
 const HistogramChart = ({ title, subtitle, histogram, stats, emptyMessage, infoTooltip }) => {
@@ -1009,6 +1137,7 @@ export default function App() {
   const [plannerData, setPlannerData] = useState(null);
   const [plannerLoading, setPlannerLoading] = useState(false);
   const [plannerError, setPlannerError] = useState("");
+  const [activeHelpKey, setActiveHelpKey] = useState(null);
 
   const selectedRace = useMemo(
     () => races.find((race) => race.result_id === selectedRaceId),
@@ -1078,6 +1207,11 @@ export default function App() {
     }
     return tags;
   }, [plannerData]);
+  const reportHelpContent = useMemo(
+    () => buildReportHelpContent(filters.timeWindow),
+    [filters.timeWindow]
+  );
+  const activeHelpContent = activeHelpKey ? reportHelpContent[activeHelpKey] || null : null;
 
   useEffect(() => {
     if (!isIosPlatform || typeof window === "undefined") {
@@ -1106,6 +1240,17 @@ export default function App() {
       document.body.classList.remove("ios-mobile");
     };
   }, [isIosMobile]);
+
+  useEffect(() => {
+    if (!activeHelpContent || typeof document === "undefined") {
+      return;
+    }
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [activeHelpContent]);
 
   const handleSearch = async (event) => {
     event.preventDefault();
@@ -1482,11 +1627,13 @@ export default function App() {
   };
 
   const handleBackToSearch = () => {
+    setActiveHelpKey(null);
     setView("search");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleModeChange = (nextMode) => {
+    setActiveHelpKey(null);
     setMode(nextMode);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -2046,7 +2193,11 @@ export default function App() {
                   </div>
 
                   <div className="report-card">
-                    <h4>Rankings</h4>
+                    <ReportCardHeader
+                      title="Rankings"
+                      helpKey="rankings"
+                      onOpenHelp={setActiveHelpKey}
+                    />
                     <div className="stat-grid">
                       <div>
                         <span>
@@ -2118,7 +2269,11 @@ export default function App() {
                 </div>
 
                 <div className="report-card">
-                  <h4>Age group distributions</h4>
+                  <ReportCardHeader
+                    title="Age group distributions"
+                    helpKey="age_group_distributions"
+                    onOpenHelp={setActiveHelpKey}
+                  />
                   <div className="chart-grid">
                     <HistogramChart
                       title="Age group total time"
@@ -2150,7 +2305,11 @@ export default function App() {
                 </div>
 
                 <div className="report-card">
-                  <h4>Split percentile lines</h4>
+                  <ReportCardHeader
+                    title="Split percentile lines"
+                    helpKey="split_percentile_lines"
+                    onOpenHelp={setActiveHelpKey}
+                  />
                   <div className="chart-grid">
                     <PercentileLineChart
                       title="Runs + Roxzone percentiles"
@@ -2168,7 +2327,11 @@ export default function App() {
                 </div>
 
                 <div className="report-card">
-                  <h4>Splits</h4>
+                  <ReportCardHeader
+                    title="Splits"
+                    helpKey="splits_table"
+                    onOpenHelp={setActiveHelpKey}
+                  />
                   {report.splits?.length ? (
                     <div className="table-shell">
                       <div className="table-scroll">
@@ -2209,7 +2372,11 @@ export default function App() {
 
                 <div className="report-grid">
                   <div className="report-card">
-                    <h4>Age group stats</h4>
+                    <ReportCardHeader
+                      title="Age group stats"
+                      helpKey="age_group_stats"
+                      onOpenHelp={setActiveHelpKey}
+                    />
                     {cohortStats ? (
                       <div className="stat-grid">
                         <div>
@@ -2235,7 +2402,11 @@ export default function App() {
                   </div>
 
                   <div className="report-card">
-                    <h4>Time window stats{windowLabel}</h4>
+                    <ReportCardHeader
+                      title={`Time window stats${windowLabel}`}
+                      helpKey="time_window_stats"
+                      onOpenHelp={setActiveHelpKey}
+                    />
                     {windowStats ? (
                       <div className="stat-grid">
                         <div>
@@ -3332,6 +3503,9 @@ export default function App() {
           </section>
         </main>
       )}
+      {activeHelpContent ? (
+        <HelpSheet content={activeHelpContent} onClose={() => setActiveHelpKey(null)} />
+      ) : null}
     </div>
   );
 }

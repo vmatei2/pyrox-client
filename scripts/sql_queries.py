@@ -73,7 +73,7 @@ WITH src AS (
           union_by_name=true,
           binary_as_string=true
       )
-      WHERE try_cast(season AS INTEGER) IN (7, 8)
+      WHERE try_cast(season AS INTEGER) IN (6, 7, 8)
 )
 SELECT
     -- deterministic row id for linking
