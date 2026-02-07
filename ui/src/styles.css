@@ -2059,19 +2059,31 @@ table th {
   stroke-width: 2.5;
 }
 
-.percentile-line.is-cohort,
-.legend-line.is-cohort,
+.percentile-line.is-cohort {
+  stroke: #42cbff;
+  fill: none;
+}
+
+.legend-line.is-cohort {
+  background: #42cbff;
+}
+
 .percentile-point.is-cohort {
   stroke: #42cbff;
-  background: #42cbff;
   fill: #42cbff;
 }
 
-.percentile-line.is-window,
-.legend-line.is-window,
+.percentile-line.is-window {
+  stroke: #ff9550;
+  fill: none;
+}
+
+.legend-line.is-window {
+  background: #ff9550;
+}
+
 .percentile-point.is-window {
   stroke: #ff9550;
-  background: #ff9550;
   fill: #ff9550;
 }
 

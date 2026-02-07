@@ -760,8 +760,20 @@ const PercentileLineChart = ({ title, subtitle, series, emptyMessage }) => {
               );
             })}
           </g>
-          <path className="percentile-line is-cohort" d={buildPath("cohort")} />
-          <path className="percentile-line is-window" d={buildPath("window")} />
+          <path
+            className="percentile-line is-cohort"
+            d={buildPath("cohort")}
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            className="percentile-line is-window"
+            d={buildPath("window")}
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
           {series.map((item, index) => {
             const x = xForIndex(index);
             const cohortValue = Number.isFinite(item.cohort) ? item.cohort : null;
