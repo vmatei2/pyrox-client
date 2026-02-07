@@ -11,7 +11,7 @@ This document is written as an execution guide for a second agent. Each step inc
 ---
 
 ## Current State (Baseline Reality)
-- App is a React + Vite UI inside Capacitor (`ui/`) with FastAPI backend (`src/pyrox/api/app.py`).
+- App is a React + Vite UI inside Capacitor (`ui/`) with FastAPI backend (`pyrox_api_service/app.py`).
 - Mobile support exists but UI is still primarily web-first.
 - Data exploration depth is strong, but product polish and iOS-native quality are not yet at top-tier App Store level.
 - Build/sync is functioning for iOS simulator.
@@ -425,4 +425,3 @@ If a screen does not answer this in under 5 seconds, it is not good enough:
 - What should I do next?
 
 When this is true across all core screens, and the app feels smooth, readable, and trustworthy on any iPhone size, you are close to top-tier category quality.
-
