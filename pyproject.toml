@@ -25,6 +25,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Repository-local service dependencies (FastAPI service lives in pyrox_api_service/).
 api = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",
@@ -42,12 +43,21 @@ api = [
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyrox"]
 
+exclude = [
+  "src/pyrox/api/**",
+  "src/pyrox/helpers.py",
+]
+
 [tool.hatch.build.targets.sdist]
 include = [
   "src/pyrox",
   "README.md",
   "pyproject.toml",
   "*.png"
+]
+exclude = [
+  "src/pyrox/api/**",
+  "src/pyrox/helpers.py",
 ]
 
 [tool.hatch.version]

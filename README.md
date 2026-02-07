@@ -35,12 +35,15 @@ pip install pyrox-client
 The repo ships with a FastAPI reporting backend and a Vite + React UI for searching athletes
 and generating HTML/PDF reports.
 
+Note: this service/UI code is for repository development workflows and is not part of the
+published `pyrox-client` wheel on PyPI.
+
 Backend (from repo root):
 
 ```commandline
 uv pip install -e ".[api]"
 export PYROX_DUCKDB_PATH=pyrox_duckdb
-uvicorn pyrox.api.app:app --reload --port 8000
+uvicorn pyrox_api_service.app:app --reload --port 8000
 ```
 
 Frontend:
@@ -272,6 +275,47 @@ For releasing, we have a script inside the `scripts` folder.
 Simply run `client % ./scripts/release.sh version_number (i.e. 0.2.3)` and then this will tag and commit the new version bump.
 
 Then, you will be prompted to run `Next: git push origin main --tags` - which will trigger the release.yml job, which is configured to push into pypi.
+
+### Published package surface
+
+The published `pyrox-client` wheel is intentionally limited to the core client API:
+
+- `pyrox.PyroxClient`
+- `pyrox.ReportingClient`
+- `pyrox.errors` types
+
+The wheel excludes internal/non-public modules:
+
+- `pyrox.api` package
+- `pyrox.helpers`
+
+This is enforced in `pyproject.toml` via Hatch build `exclude` rules.
+
+### Wheel verification before publishing
+
+Build the wheel:
+
+```commandline
+uv build --wheel
+```
+
+After building a wheel, run:
+
+```commandline
+python scripts/verify_wheel_contents.py
+```
+
+Or verify a specific artifact:
+
+```commandline
+python scripts/verify_wheel_contents.py dist/pyrox_client-<version>-py3-none-any.whl
+```
+
+The script checks:
+
+- required modules exist in the wheel
+- forbidden modules are not present
+- no unexpected `pyrox/*.py` modules are present (strict mode, default)
 
 ### Disclaimer
 

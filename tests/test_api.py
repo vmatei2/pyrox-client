@@ -1,17 +1,26 @@
-import os
 from pathlib import Path
+import importlib
 
 import duckdb
 import pytest
 
 fastapi = pytest.importorskip("fastapi")
-from fastapi.testclient import TestClient
+from fastapi.testclient import TestClient  # noqa: E402
 
-from src.pyrox.api import app as api
+from pyrox_api_service import app as api  # noqa: E402
 
 
 def _create_db(path: Path) -> duckdb.DuckDBPyConnection:
     return duckdb.connect(str(path))
+
+
+def test_legacy_api_shim_points_to_new_service_module():
+    legacy_package = importlib.import_module("src.pyrox.api")
+    legacy_module = importlib.import_module("src.pyrox.api.app")
+    new_module = importlib.import_module("pyrox_api_service.app")
+
+    assert legacy_package.app.title == new_module.app.title
+    assert legacy_module.app.title == new_module.app.title
 
 
 def _seed_search_tables(con: duckdb.DuckDBPyConnection) -> None:
