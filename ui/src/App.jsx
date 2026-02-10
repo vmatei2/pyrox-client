@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import html2pdf from "html2pdf.js";
+import {
+  FlowSteps,
+  HelpSheet,
+  ModeTabIcon,
+  ProgressiveSection,
+  ReportCardHeader,
+} from "./components/UiPrimitives.jsx";
+import { useAppBootstrap } from "./hooks/useAppBootstrap.js";
 
 const resolveApiBase = () => {
   const normalize = (value) => {
@@ -32,6 +40,15 @@ const resolveApiBase = () => {
 };
 
 const API_BASE = resolveApiBase();
+const VALID_MODES = new Set(["report", "compare", "deepdive", "planner"]);
+
+const getInitialMode = () => {
+  if (typeof window === "undefined") {
+    return "report";
+  }
+  const stored = window.localStorage.getItem("pyrox.ui.last-mode");
+  return VALID_MODES.has(stored) ? stored : "report";
+};
 
 const DEEPDIVE_STAT_OPTIONS = [
   { value: "p05", label: "Top 5%" },
@@ -371,64 +388,6 @@ const parseError = async (response) => {
   } catch (error) {
     return response.statusText || "Request failed.";
   }
-};
-
-const CardHelpButton = ({ onClick }) => (
-  <button type="button" className="card-help-button" onClick={onClick}>
-    How calculated
-  </button>
-);
-
-const ReportCardHeader = ({ title, helpKey, onOpenHelp }) => (
-  <div className="report-card-head">
-    <h4>{title}</h4>
-    {helpKey ? <CardHelpButton onClick={() => onOpenHelp(helpKey)} /> : null}
-  </div>
-);
-
-const HelpSheet = ({ content, onClose }) => {
-  useEffect(() => {
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
-
-  return (
-    <div className="help-sheet-backdrop" onClick={onClose} role="presentation">
-      <div
-        className="help-sheet"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="help-sheet-title"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="help-sheet-handle" />
-        <div className="help-sheet-header">
-          <h4 id="help-sheet-title">{content.title}</h4>
-          <button type="button" className="help-sheet-close" onClick={onClose}>
-            Close
-          </button>
-        </div>
-        <p className="help-sheet-summary">{content.summary}</p>
-        {Array.isArray(content.bullets) && content.bullets.length ? (
-          <ul className="help-sheet-list">
-            {content.bullets.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        ) : null}
-        {content.formula ? (
-          <p className="help-sheet-formula">
-            <span>Formula:</span> <code>{content.formula}</code>
-          </p>
-        ) : null}
-      </div>
-    </div>
-  );
 };
 
 const HistogramChart = ({ title, subtitle, histogram, stats, emptyMessage, infoTooltip }) => {
@@ -982,52 +941,221 @@ const PercentileLineChart = ({ title, subtitle, series, emptyMessage }) => {
   );
 };
 
-const ProgressiveSection = ({ enabled, summary, children, defaultOpen = false }) => {
-  if (!enabled) {
-    return <>{children}</>;
+const WorkRunSplitPieChart = ({ title, subtitle, split, emptyMessage }) => {
+  const workPct = toNumber(split?.work_pct);
+  const runPct = toNumber(split?.run_pct);
+  const workMinutes = toNumber(split?.work_time_min);
+  const runMinutes = toNumber(split?.run_time_with_roxzone_min);
+  const totalMinutes = toNumber(split?.total_time_min);
+  const hasData = Number.isFinite(workPct) && Number.isFinite(runPct);
+
+  if (!hasData) {
+    return (
+      <div className="chart-card">
+        <div className="chart-head">
+          <div>
+            <h5>{title}</h5>
+            {subtitle ? <p>{subtitle}</p> : null}
+          </div>
+        </div>
+        <div className="empty">{emptyMessage || "No work/run split data available."}</div>
+      </div>
+    );
   }
+
+  const safeWorkPct = Math.min(1, Math.max(0, workPct));
+  const safeRunPct = Math.min(1, Math.max(0, runPct));
+  const workDegrees = safeWorkPct * 360;
+  const pieStyle = {
+    background: `conic-gradient(var(--accent-cool) 0deg ${workDegrees}deg, var(--accent-strong) ${workDegrees}deg 360deg)`,
+  };
+
   return (
-    <details className="form-advanced" open={defaultOpen}>
-      <summary>{summary}</summary>
-      <div className="form-advanced-content">{children}</div>
-    </details>
+    <div className="chart-card pie-chart-card">
+      <div className="chart-head">
+        <div>
+          <h5>{title}</h5>
+          {subtitle ? <p>{subtitle}</p> : null}
+        </div>
+      </div>
+      <div className="work-run-pie-wrap">
+        <div
+          className="work-run-pie"
+          style={pieStyle}
+          role="img"
+          aria-label={`Work ${formatPercent(safeWorkPct)}, Run plus Roxzone ${formatPercent(
+            safeRunPct
+          )}`}
+        >
+          <div className="work-run-pie-center">
+            <span>Total</span>
+            <strong>{formatMinutes(totalMinutes)}</strong>
+          </div>
+        </div>
+        <div className="work-run-legend">
+          <div className="work-run-legend-item">
+            <span className="work-run-swatch is-work" />
+            <div>
+              <strong>Work time</strong>
+              <p>
+                {formatPercent(safeWorkPct)} • {formatMinutes(workMinutes)}
+              </p>
+            </div>
+          </div>
+          <div className="work-run-legend-item">
+            <span className="work-run-swatch is-run" />
+            <div>
+              <strong>Runs + Roxzone</strong>
+              <p>
+                {formatPercent(safeRunPct)} • {formatMinutes(runMinutes)}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
-const ModeTabIcon = ({ kind }) => {
-  if (kind === "report") {
+const RunChangeLineChart = ({ title, subtitle, series, emptyMessage }) => {
+  const points = Array.isArray(series?.points) ? series.points : [];
+  const validDeltas = points
+    .map((point) => toNumber(point?.delta_from_median_min))
+    .filter((value) => Number.isFinite(value));
+
+  if (!points.length || !validDeltas.length) {
     return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="4" y="4" width="16" height="16" rx="4" />
-        <path d="M8 9h8" />
-        <path d="M8 13h8" />
-        <path d="M8 17h5" />
-      </svg>
+      <div className="chart-card">
+        <div className="chart-head">
+          <div>
+            <h5>{title}</h5>
+            {subtitle ? <p>{subtitle}</p> : null}
+          </div>
+        </div>
+        <div className="empty">{emptyMessage || "No run pacing data available."}</div>
+      </div>
     );
   }
-  if (kind === "compare") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M5 7h6v12H5z" />
-        <path d="M13 5h6v14h-6z" />
-      </svg>
-    );
-  }
-  if (kind === "deepdive") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="11" cy="11" r="6" />
-        <path d="M15.5 15.5L20 20" />
-      </svg>
-    );
-  }
+
+  const width = 360;
+  const height = 220;
+  const padding = { left: 42, right: 16, top: 18, bottom: 42 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+  const maxAbs = Math.max(0.25, ...validDeltas.map((value) => Math.abs(value)));
+  const yMin = -maxAbs;
+  const yMax = maxAbs;
+  const yRange = yMax - yMin || 1;
+  const xForIndex =
+    points.length <= 1
+      ? () => padding.left + chartWidth / 2
+      : (index) => padding.left + (chartWidth * index) / (points.length - 1);
+  const yForValue = (value) => {
+    const clamped = Math.max(yMin, Math.min(yMax, value));
+    return padding.top + ((yMax - clamped) / yRange) * chartHeight;
+  };
+
+  let path = "";
+  let started = false;
+  points.forEach((point, index) => {
+    const value = toNumber(point?.delta_from_median_min);
+    if (!Number.isFinite(value)) {
+      started = false;
+      return;
+    }
+    const x = xForIndex(index);
+    const y = yForValue(value);
+    if (!started) {
+      path += `M ${x} ${y}`;
+      started = true;
+    } else {
+      path += ` L ${x} ${y}`;
+    }
+  });
+
+  const yTicks = [yMax, yMax / 2, 0, yMin / 2, yMin];
+  const medianRunTime = toNumber(series?.median_run_time_min);
+  const minDelta = toNumber(series?.min_delta_min);
+  const maxDelta = toNumber(series?.max_delta_min);
+
   return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M5 18h14" />
-      <path d="M7 18v-6" />
-      <path d="M12 18v-10" />
-      <path d="M17 18v-4" />
-    </svg>
+    <div className="chart-card run-change-chart">
+      <div className="chart-head">
+        <div>
+          <h5>{title}</h5>
+          {subtitle ? <p>{subtitle}</p> : null}
+        </div>
+      </div>
+      <svg className="run-change-svg" viewBox={`0 0 ${width} ${height}`} role="img">
+        <g className="run-change-grid">
+          {yTicks.map((tick, index) => (
+            <line
+              key={`tick-${index}`}
+              x1={padding.left}
+              x2={width - padding.right}
+              y1={yForValue(tick)}
+              y2={yForValue(tick)}
+            />
+          ))}
+        </g>
+        <g className="run-change-axis">
+          <line x1={padding.left} x2={padding.left} y1={padding.top} y2={height - padding.bottom} />
+          <line
+            x1={padding.left}
+            x2={width - padding.right}
+            y1={height - padding.bottom}
+            y2={height - padding.bottom}
+          />
+        </g>
+        <line
+          className="run-change-zero"
+          x1={padding.left}
+          x2={width - padding.right}
+          y1={yForValue(0)}
+          y2={yForValue(0)}
+        />
+        <g className="run-change-labels">
+          {yTicks.map((tick, index) => (
+            <text key={`label-${index}`} x={padding.left - 7} y={yForValue(tick) + 4} textAnchor="end">
+              {formatDeltaMinutes(tick)}
+            </text>
+          ))}
+        </g>
+        <path className="run-change-path" d={path} />
+        {points.map((point, index) => {
+          const value = toNumber(point?.delta_from_median_min);
+          const runTime = toNumber(point?.run_time_min);
+          if (!Number.isFinite(value)) {
+            return null;
+          }
+          const x = xForIndex(index);
+          const y = yForValue(value);
+          return (
+            <circle key={`${point.run}-${index}`} className="run-change-point" cx={x} cy={y} r="3.8">
+              <title>
+                {point.run}: {formatDeltaMinutes(value)} vs median
+                {runTime !== null ? ` (run ${formatMinutes(runTime)})` : ""}
+              </title>
+            </circle>
+          );
+        })}
+        <g className="run-change-labels">
+          {points.map((point, index) => {
+            const x = xForIndex(index);
+            return (
+              <text key={`run-${point.run}-${index}`} x={x} y={height - 14} textAnchor="middle">
+                {point.run}
+              </text>
+            );
+          })}
+        </g>
+      </svg>
+      <div className="chart-foot">
+        <span>Median run (R2-R7): {formatMinutes(medianRunTime)}</span>
+        <span>Fastest vs median: {formatDeltaMinutes(minDelta)}</span>
+        <span>Slowest vs median: {formatDeltaMinutes(maxDelta)}</span>
+      </div>
+    </div>
   );
 };
 
@@ -1037,13 +1165,19 @@ export default function App() {
     ? Capacitor.isNativePlatform()
     : platform !== "web";
   const isIosPlatform = platform === "ios";
+  const [mode, setMode] = useState(getInitialMode);
+  const {
+    isBootstrapping,
+    isReady,
+    warning: bootstrapWarning,
+    retryBootstrap,
+  } = useAppBootstrap(API_BASE);
   const [isIosMobile, setIsIosMobile] = useState(() => {
     if (!isIosPlatform || typeof window === "undefined") {
       return false;
     }
     return window.matchMedia("(max-width: 900px)").matches;
   });
-  const [mode, setMode] = useState("report");
   const [name, setName] = useState("");
   const [filters, setFilters] = useState({
     match: "best",
@@ -1251,6 +1385,20 @@ export default function App() {
       document.body.style.overflow = previousOverflow;
     };
   }, [activeHelpContent]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    window.localStorage.setItem("pyrox.ui.last-mode", mode);
+  }, [mode]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || isBootstrapping || !isReady) {
+      return;
+    }
+    window.dispatchEvent(new Event("pyrox:hide-boot-splash"));
+  }, [isBootstrapping, isReady]);
 
   const handleSearch = async (event) => {
     event.preventDefault();
@@ -1641,6 +1789,9 @@ export default function App() {
   const cohortStats = report?.cohort_stats;
   const windowStats = report?.cohort_time_window_stats;
   const distributions = report?.distributions;
+  const plotData = report?.plot_data;
+  const workVsRunSplit = plotData?.work_vs_run_split;
+  const runChangeSeries = plotData?.run_change_series;
   const selectedSplitDistribution = distributions?.selected_split;
   const selectedSplitLabel = selectedSplit ? selectedSplit : "Select station";
   const windowLabel =
@@ -1881,17 +2032,32 @@ export default function App() {
   }, [report]);
 
   return (
-    <div className={`app${isIosMobile ? " ios-mobile-shell" : ""}`}>
-      <header className="hero">
-        <div className="hero-tag">Pyrox Race Analysis Studio</div>
-        <h1>Find an athlete, pick a race, and build a Pyrox race report.</h1>
-        <p>
-          Search the Hyrox race database, review races, and generate a report.
-          {!isNativeApp ? " PDF export is available on desktop." : null}
-        </p>
-      </header>
+    <div className={`app-shell${isReady ? " is-ready" : ""}`}>
+      <div className="app-shell-content">
+        <div className={`app${isIosMobile ? " ios-mobile-shell" : ""}`}>
+          <header className="hero">
+            <div className="hero-tag">Pyrox Race Analysis</div>
+            <h1>Find an athlete, pick a race, and build a Pyrox race report.</h1>
+            <p>
+              Search our race database, review your race, and generate a report.
+              {!isNativeApp ? " PDF export is available on desktop." : null}
+            </p>
+          </header>
+          {bootstrapWarning ? (
+            <div className="bootstrap-warning" role="status" aria-live="polite">
+              <span>{bootstrapWarning}</span>
+              <button
+                type="button"
+                className="secondary bootstrap-warning-action"
+                onClick={retryBootstrap}
+                disabled={isBootstrapping}
+              >
+                {isBootstrapping ? "Retrying..." : "Retry connection"}
+              </button>
+            </div>
+          ) : null}
 
-      <div className="mode-tabs">
+          <div className="mode-tabs">
         <button
           type="button"
           className={`mode-tab ${mode === "report" ? "is-active" : ""}`}
@@ -1932,12 +2098,19 @@ export default function App() {
           </span>
           <span className="mode-tab-label">Race Planner</span>
         </button>
-      </div>
+          </div>
 
-      {mode === "report" ? (
+          {mode === "report" ? (
         view === "search" ? (
           <main className="layout is-single">
             <section className="panel">
+              <FlowSteps
+                steps={[
+                  "Search for an athlete",
+                  "Select the exact race result",
+                  "Generate race report",
+                ]}
+              />
               <form className="search-form" onSubmit={handleSearch}>
                 <label className="field">
                   <span>Athlete name</span>
@@ -1989,7 +2162,11 @@ export default function App() {
                   </label>
                 </ProgressiveSection>
 
-                <button className="primary" type="submit" disabled={searchLoading}>
+                <button
+                  className={races.length ? "secondary" : "primary"}
+                  type="submit"
+                  disabled={searchLoading}
+                >
                   {searchLoading ? "Searching..." : "Search races"}
                 </button>
                 {searchError ? <p className="error">{searchError}</p> : null}
@@ -2011,6 +2188,7 @@ export default function App() {
                         className={`race-card ${
                           race.result_id === selectedRaceId ? "is-selected" : ""
                         }`}
+                        aria-pressed={race.result_id === selectedRaceId}
                         style={{ animationDelay: `${index * 0.04}s` }}
                         onClick={() => {
                           setSelectedRaceId(race.result_id);
@@ -2327,6 +2505,24 @@ export default function App() {
                 </div>
 
                 <div className="report-card">
+                  <h4>Race pacing profile</h4>
+                  <div className="chart-grid">
+                    <WorkRunSplitPieChart
+                      title="Work vs run split"
+                      subtitle="Share of total effort between work time and runs + Roxzone."
+                      split={workVsRunSplit}
+                      emptyMessage="Work and run-time fields are missing for this race."
+                    />
+                    <RunChangeLineChart
+                      title="Run pacing vs median (Runs 2-7)"
+                      subtitle="Each run shows minutes faster/slower than your median run pace."
+                      series={runChangeSeries}
+                      emptyMessage="Run split columns are missing for this race."
+                    />
+                  </div>
+                </div>
+
+                <div className="report-card">
                   <ReportCardHeader
                     title="Splits"
                     helpKey="splits_table"
@@ -2459,6 +2655,7 @@ export default function App() {
                   <h2>Base race</h2>
                   <p>Select the race you want to compare from.</p>
                 </div>
+                <FlowSteps steps={["Search athlete", "Select base race", "Confirm base race"]} />
                 <form className="search-form" onSubmit={handleBaseSearch}>
                   <label className="field">
                     <span>Athlete name</span>
@@ -2519,7 +2716,11 @@ export default function App() {
                     </label>
                   </ProgressiveSection>
 
-                  <button className="primary" type="submit" disabled={baseSearchLoading}>
+                  <button
+                    className={baseRaces.length ? "secondary" : "primary"}
+                    type="submit"
+                    disabled={baseSearchLoading}
+                  >
                     {baseSearchLoading ? "Searching..." : "Search races"}
                   </button>
                   {baseSearchError ? <p className="error">{baseSearchError}</p> : null}
@@ -2545,6 +2746,7 @@ export default function App() {
                           className={`race-card ${
                             race.result_id === selectedBaseRaceId ? "is-selected" : ""
                           }`}
+                          aria-pressed={race.result_id === selectedBaseRaceId}
                           style={{ animationDelay: `${index * 0.04}s` }}
                           onClick={() => {
                             setSelectedBaseRaceId(race.result_id);
@@ -2591,6 +2793,9 @@ export default function App() {
                   <h2>Compare against</h2>
                   <p>Search and confirm the race you want to compare.</p>
                 </div>
+                <FlowSteps
+                  steps={["Search comparison athlete", "Select comparison race", "Confirm comparison"]}
+                />
                 <form className="search-form" onSubmit={handleCompareSearch}>
                   <label className="field">
                     <span>Athlete name</span>
@@ -2651,7 +2856,11 @@ export default function App() {
                     </label>
                   </ProgressiveSection>
 
-                  <button className="primary" type="submit" disabled={compareSearchLoading}>
+                  <button
+                    className={compareRaces.length ? "secondary" : "primary"}
+                    type="submit"
+                    disabled={compareSearchLoading}
+                  >
                     {compareSearchLoading ? "Searching..." : "Search races"}
                   </button>
                   {compareSearchError ? <p className="error">{compareSearchError}</p> : null}
@@ -2677,6 +2886,7 @@ export default function App() {
                           className={`race-card ${
                             race.result_id === selectedCompareRaceId ? "is-selected" : ""
                           }`}
+                          aria-pressed={race.result_id === selectedCompareRaceId}
                           style={{ animationDelay: `${index * 0.04}s` }}
                           onClick={() => {
                             setSelectedCompareRaceId(race.result_id);
@@ -2849,6 +3059,7 @@ export default function App() {
                   <h2>Base race</h2>
                   <p>Select the race you want to deepdive.</p>
                 </div>
+                <FlowSteps steps={["Search athlete", "Select base race", "Configure deepdive"]} />
                 <form className="search-form" onSubmit={handleDeepdiveSearch}>
                   <label className="field">
                     <span>Athlete name</span>
@@ -2909,7 +3120,11 @@ export default function App() {
                     </label>
                   </ProgressiveSection>
 
-                  <button className="primary" type="submit" disabled={deepdiveSearchLoading}>
+                  <button
+                    className={deepdiveRaces.length ? "secondary" : "primary"}
+                    type="submit"
+                    disabled={deepdiveSearchLoading}
+                  >
                     {deepdiveSearchLoading ? "Searching..." : "Search races"}
                   </button>
                   {deepdiveSearchError ? <p className="error">{deepdiveSearchError}</p> : null}
@@ -2937,6 +3152,7 @@ export default function App() {
                           className={`race-card ${
                             race.result_id === selectedDeepdiveRaceId ? "is-selected" : ""
                           }`}
+                          aria-pressed={race.result_id === selectedDeepdiveRaceId}
                           style={{ animationDelay: `${index * 0.04}s` }}
                           onClick={() => {
                             setSelectedDeepdiveRaceId(race.result_id);
@@ -2985,6 +3201,9 @@ export default function App() {
                   <h2>Deepdive filters</h2>
                   <p>Compare your time against the season-wide field.</p>
                 </div>
+                <FlowSteps
+                  steps={["Set season + cohort filters", "Choose metric and stat focus", "Run deepdive"]}
+                />
                 <form
                   className="search-form"
                   onSubmit={(event) => {
@@ -3326,6 +3545,13 @@ export default function App() {
       ) : (
         <main className="planner-page">
           <section className="panel">
+            <div className="panel-header">
+              <h2>Race planner</h2>
+              <p>Filter the cohort and review split distributions before race day.</p>
+            </div>
+            <FlowSteps
+              steps={["Set core filters", "Add advanced constraints (optional)", "Run planner"]}
+            />
             <form className="search-form" onSubmit={handlePlannerSearch}>
               <div className="grid-3">
                 <label className="field">
@@ -3503,9 +3729,11 @@ export default function App() {
           </section>
         </main>
       )}
-      {activeHelpContent ? (
-        <HelpSheet content={activeHelpContent} onClose={() => setActiveHelpKey(null)} />
-      ) : null}
+          {activeHelpContent ? (
+            <HelpSheet content={activeHelpContent} onClose={() => setActiveHelpKey(null)} />
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }

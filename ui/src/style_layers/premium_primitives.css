@@ -1,0 +1,161 @@
+/* Shared surfaces, controls, and interaction primitives. */
+.hero,
+.panel,
+.report,
+.report-card,
+.chart-card,
+.race-card,
+.compare-hero-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.28);
+}
+
+.hero {
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+}
+
+.hero-tag {
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  color: #dbe7ff;
+}
+
+.hero h1 {
+  color: var(--text-strong);
+  background-image: none;
+  -webkit-text-fill-color: currentColor;
+}
+
+.hero p,
+.panel-header p,
+.results-header span,
+.report-subtitle,
+.chart-head p,
+.chart-axis,
+.chart-foot,
+.legend-item,
+.stat-bar-label,
+.grouped-label,
+.grouped-axis {
+  color: var(--text-muted-2);
+}
+
+.search-form,
+.results,
+.report-actions,
+.toolbar-actions {
+  gap: var(--space-4);
+}
+
+.field input,
+.field select,
+.primary,
+.secondary {
+  min-height: var(--control-height);
+  border-radius: var(--radius-sm);
+}
+
+.field input,
+.field select {
+  background: var(--bg-surface-soft);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-strong);
+}
+
+.field input:focus,
+.field select:focus,
+.field input:focus-visible,
+.field select:focus-visible,
+.primary:focus-visible,
+.secondary:focus-visible,
+.race-card:focus-visible,
+.mode-tab:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.primary {
+  background: var(--accent-primary);
+  border: 1px solid var(--accent-primary);
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+}
+
+.primary::after {
+  display: none;
+}
+
+.primary:not(:disabled):hover {
+  background: #2f73f2;
+  transform: translateY(-1px);
+}
+
+.primary:not(:disabled):active {
+  background: var(--accent-primary-press);
+  transform: translateY(0);
+}
+
+.primary:disabled {
+  opacity: 0.55;
+}
+
+.secondary {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: #dbe7ff;
+  box-shadow: none;
+}
+
+.secondary:not(:disabled):hover {
+  background: rgba(148, 163, 184, 0.08);
+  transform: translateY(-1px);
+}
+
+.race-card {
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.race-card.is-selected {
+  border-color: rgba(59, 130, 246, 0.75);
+  background: rgba(59, 130, 246, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.3);
+}
+
+.mode-tabs {
+  background: rgba(15, 23, 36, 0.94);
+  border: 1px solid var(--border-subtle);
+}
+
+.mode-tab {
+  min-height: 44px;
+  border-radius: 10px;
+}
+
+.mode-tab.is-active {
+  background: var(--accent-primary);
+  box-shadow: none;
+}
+
+.empty {
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px dashed rgba(148, 163, 184, 0.28);
+  color: var(--text-muted-2);
+}
+
+@media (max-width: 700px) {
+  .hero {
+    padding: var(--space-5);
+  }
+}
+
+body.ios-mobile .hero,
+body.ios-mobile .panel,
+body.ios-mobile .report,
+body.ios-mobile .report-card,
+body.ios-mobile .chart-card,
+body.ios-mobile .race-card {
+  border-radius: var(--radius-md);
+}

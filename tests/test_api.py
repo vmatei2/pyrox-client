@@ -94,7 +94,17 @@ def _seed_report_tables(con: duckdb.DuckDBPyConnection) -> None:
             gender VARCHAR,
             age_group VARCHAR,
             name VARCHAR,
-            total_time_min DOUBLE
+            total_time_min DOUBLE,
+            work_time_min DOUBLE,
+            run_time_min DOUBLE,
+            roxzone_time_min DOUBLE,
+            run1_time_min DOUBLE,
+            run2_time_min DOUBLE,
+            run3_time_min DOUBLE,
+            run4_time_min DOUBLE,
+            run5_time_min DOUBLE,
+            run6_time_min DOUBLE,
+            run7_time_min DOUBLE
         );
         """
     )
@@ -131,10 +141,52 @@ def _seed_report_tables(con: duckdb.DuckDBPyConnection) -> None:
         """
     )
     con.executemany(
-        "INSERT INTO race_results VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO race_results VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
-            ("result_1", "event_1", 8, "london", 2024, "open", "F", "30-34", "Kate Russell", 62.0),
-            ("result_2", "event_2", 8, "london", 2024, "open", "F", "30-34", "Jane Doe", 64.0),
+            (
+                "result_1",
+                "event_1",
+                8,
+                "london",
+                2024,
+                "open",
+                "F",
+                "30-34",
+                "Kate Russell",
+                62.0,
+                36.0,
+                22.0,
+                4.0,
+                3.4,
+                3.6,
+                3.5,
+                3.8,
+                3.7,
+                3.9,
+                4.0,
+            ),
+            (
+                "result_2",
+                "event_2",
+                8,
+                "london",
+                2024,
+                "open",
+                "F",
+                "30-34",
+                "Jane Doe",
+                64.0,
+                38.0,
+                21.0,
+                3.0,
+                3.2,
+                3.3,
+                3.4,
+                3.5,
+                3.6,
+                3.7,
+                3.8,
+            ),
         ],
     )
     con.executemany(
@@ -246,6 +298,45 @@ def test_report_endpoint_filters_run_split_min_values(tmp_path, monkeypatch):
     selected_split = payload["distributions"]["selected_split"]
     assert selected_split["cohort"]["count"] == 1
     assert selected_split["stats"]["cohort"]["mean"] == 2.0
+
+
+def test_report_endpoint_includes_plot_data_series(tmp_path, monkeypatch):
+    db_path = tmp_path / "report-plots.db"
+    con = _create_db(db_path)
+    _seed_report_tables(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+    resp = client.get("/api/reports/result_1")
+
+    assert resp.status_code == 200
+    payload = resp.json()
+
+    work_vs_run = payload["plot_data"]["work_vs_run_split"]
+    assert work_vs_run["work_time_min"] == pytest.approx(36.0)
+    assert work_vs_run["run_time_with_roxzone_min"] == pytest.approx(26.0)
+    assert work_vs_run["work_pct"] == pytest.approx(36.0 / 62.0)
+    assert work_vs_run["run_pct"] == pytest.approx(26.0 / 62.0)
+
+    run_change_series = payload["plot_data"]["run_change_series"]
+    points = run_change_series["points"]
+    assert [point["run"] for point in points] == [
+        "Run 2",
+        "Run 3",
+        "Run 4",
+        "Run 5",
+        "Run 6",
+        "Run 7",
+    ]
+    assert run_change_series["median_run_time_min"] == pytest.approx(3.75)
+    assert points[0]["run_time_min"] == pytest.approx(3.6)
+    assert points[0]["delta_from_median_min"] == pytest.approx(3.6 - 3.75)
+    assert points[-1]["run_time_min"] == pytest.approx(4.0)
+    assert points[-1]["delta_from_median_min"] == pytest.approx(4.0 - 3.75)
+    assert run_change_series["count"] == 6
+    assert run_change_series["min_delta_min"] == pytest.approx(-0.25)
+    assert run_change_series["max_delta_min"] == pytest.approx(0.25)
 
 
 def test_planner_endpoint_applies_time_and_run_filters(tmp_path, monkeypatch):
