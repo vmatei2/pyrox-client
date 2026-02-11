@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import html2pdf from "html2pdf.js";
+import {
+  FlowSteps,
+  HelpSheet,
+  ModeTabIcon,
+  ProgressiveSection,
+  ReportCardHeader,
+} from "./components/UiPrimitives.jsx";
+import { useAppBootstrap } from "./hooks/useAppBootstrap.js";
 
 const resolveApiBase = () => {
   const normalize = (value) => {
@@ -32,6 +40,27 @@ const resolveApiBase = () => {
 };
 
 const API_BASE = resolveApiBase();
+const VALID_MODES = new Set(["report", "compare", "deepdive", "planner"]);
+const IOS_MOBILE_MEDIA_QUERY = "(max-width: 900px)";
+
+const isIosBrowserDevice = () => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  const { navigator } = window;
+  const userAgent = navigator.userAgent || "";
+  const isiOSUserAgent = /iPad|iPhone|iPod/i.test(userAgent);
+  const isIPadDesktopMode = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+  return isiOSUserAgent || isIPadDesktopMode;
+};
+
+const getInitialMode = () => {
+  if (typeof window === "undefined") {
+    return "report";
+  }
+  const stored = window.localStorage.getItem("pyrox.ui.last-mode");
+  return VALID_MODES.has(stored) ? stored : "report";
+};
 
 const DEEPDIVE_STAT_OPTIONS = [
   { value: "p05", label: "Top 5%" },
@@ -102,6 +131,76 @@ const STATION_PERCENTILE_SEGMENTS = STATION_SEGMENTS.map(({ key, label }) => ({
   key,
   label,
 }));
+
+const formatTimeWindowLabel = (value) => {
+  const minutes = Number(value);
+  if (!Number.isFinite(minutes) || minutes <= 0) {
+    return "the selected +/- time window";
+  }
+  return `+/- ${minutes} min`;
+};
+
+const buildReportHelpContent = (timeWindowValue) => {
+  const timeWindowLabel = formatTimeWindowLabel(timeWindowValue);
+  return {
+    rankings: {
+      title: "How rankings are calculated",
+      summary: "Lower time is better. Rankings and percentiles are computed on total time.",
+      bullets: [
+        "Event cohort: same location + division + gender + age group.",
+        "Season cohort: same season + division + gender + age group.",
+        "Overall cohort: all seasons for the same division + gender + age group.",
+      ],
+      formula: "percentile = 1 - (rank - 1) / (cohort_size - 1)",
+    },
+    age_group_distributions: {
+      title: "How age group distributions work",
+      summary: "Histograms show total times for your demographic cohort with your race marked.",
+      bullets: [
+        "Bins are equal-width ranges across the observed min and max time.",
+        "The marker line is your total time.",
+        "n shows how many race results are in the cohort.",
+      ],
+    },
+    split_percentile_lines: {
+      title: "How split percentile lines work",
+      summary: "Each point is your percentile for one split. Higher percentile means faster relative performance.",
+      bullets: [
+        "Cohort line uses the age-group cohort at the same location.",
+        "Time-window line uses the same location + season and similar finish times.",
+        "Missing split values are left blank and lines break across gaps.",
+      ],
+      formula: "percentile = 1 - (rank - 1) / (cohort_size - 1)",
+    },
+    splits_table: {
+      title: "How split table values are calculated",
+      summary: "Each row compares one split against the selected cohorts.",
+      bullets: [
+        "Rank is your position within the split cohort (lower split time ranks higher).",
+        "Percentile is your standing vs the age-group split cohort.",
+        `Window percentile uses ${timeWindowLabel} around your total time.`,
+      ],
+    },
+    age_group_stats: {
+      title: "How age group stats are calculated",
+      summary: "Summary stats use total_time_min across your age-group cohort.",
+      bullets: [
+        "Best time is the minimum total time.",
+        "Median is the middle value when times are sorted.",
+        "90th percentile is the time at quantile 0.90.",
+      ],
+    },
+    time_window_stats: {
+      title: "How time window stats are calculated",
+      summary: `Summary stats are computed on athletes within ${timeWindowLabel}.`,
+      bullets: [
+        "Scope: same location + season.",
+        "Filter: total_time_min between athlete_time - window and athlete_time + window.",
+        "Stats shown are count, median, best, and 90th percentile.",
+      ],
+    },
+  };
+};
 
 const formatMinutes = (value) => {
   if (value === null || value === undefined || value === "") {
@@ -760,8 +859,20 @@ const PercentileLineChart = ({ title, subtitle, series, emptyMessage }) => {
               );
             })}
           </g>
-          <path className="percentile-line is-cohort" d={buildPath("cohort")} />
-          <path className="percentile-line is-window" d={buildPath("window")} />
+          <path
+            className="percentile-line is-cohort"
+            d={buildPath("cohort")}
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            className="percentile-line is-window"
+            d={buildPath("window")}
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
           {series.map((item, index) => {
             const x = xForIndex(index);
             const cohortValue = Number.isFinite(item.cohort) ? item.cohort : null;
@@ -842,13 +953,244 @@ const PercentileLineChart = ({ title, subtitle, series, emptyMessage }) => {
   );
 };
 
+const WorkRunSplitPieChart = ({ title, subtitle, split, emptyMessage }) => {
+  const workPct = toNumber(split?.work_pct);
+  const runPct = toNumber(split?.run_pct);
+  const workMinutes = toNumber(split?.work_time_min);
+  const runMinutes = toNumber(split?.run_time_with_roxzone_min);
+  const totalMinutes = toNumber(split?.total_time_min);
+  const hasData = Number.isFinite(workPct) && Number.isFinite(runPct);
+
+  if (!hasData) {
+    return (
+      <div className="chart-card">
+        <div className="chart-head">
+          <div>
+            <h5>{title}</h5>
+            {subtitle ? <p>{subtitle}</p> : null}
+          </div>
+        </div>
+        <div className="empty">{emptyMessage || "No work/run split data available."}</div>
+      </div>
+    );
+  }
+
+  const safeWorkPct = Math.min(1, Math.max(0, workPct));
+  const safeRunPct = Math.min(1, Math.max(0, runPct));
+  const workDegrees = safeWorkPct * 360;
+  const pieStyle = {
+    background: `conic-gradient(var(--accent-cool) 0deg ${workDegrees}deg, var(--accent-strong) ${workDegrees}deg 360deg)`,
+  };
+
+  return (
+    <div className="chart-card pie-chart-card">
+      <div className="chart-head">
+        <div>
+          <h5>{title}</h5>
+          {subtitle ? <p>{subtitle}</p> : null}
+        </div>
+      </div>
+      <div className="work-run-pie-wrap">
+        <div
+          className="work-run-pie"
+          style={pieStyle}
+          role="img"
+          aria-label={`Work ${formatPercent(safeWorkPct)}, Run plus Roxzone ${formatPercent(
+            safeRunPct
+          )}`}
+        >
+          <div className="work-run-pie-center">
+            <span>Total</span>
+            <strong>{formatMinutes(totalMinutes)}</strong>
+          </div>
+        </div>
+        <div className="work-run-legend">
+          <div className="work-run-legend-item">
+            <span className="work-run-swatch is-work" />
+            <div>
+              <strong>Work time</strong>
+              <p>
+                {formatPercent(safeWorkPct)} • {formatMinutes(workMinutes)}
+              </p>
+            </div>
+          </div>
+          <div className="work-run-legend-item">
+            <span className="work-run-swatch is-run" />
+            <div>
+              <strong>Runs + Roxzone</strong>
+              <p>
+                {formatPercent(safeRunPct)} • {formatMinutes(runMinutes)}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const RunChangeLineChart = ({ title, subtitle, series, emptyMessage }) => {
+  const points = Array.isArray(series?.points) ? series.points : [];
+  const validDeltas = points
+    .map((point) => toNumber(point?.delta_from_median_min))
+    .filter((value) => Number.isFinite(value));
+
+  if (!points.length || !validDeltas.length) {
+    return (
+      <div className="chart-card">
+        <div className="chart-head">
+          <div>
+            <h5>{title}</h5>
+            {subtitle ? <p>{subtitle}</p> : null}
+          </div>
+        </div>
+        <div className="empty">{emptyMessage || "No run pacing data available."}</div>
+      </div>
+    );
+  }
+
+  const width = 360;
+  const height = 220;
+  const padding = { left: 42, right: 16, top: 18, bottom: 42 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+  const maxAbs = Math.max(0.25, ...validDeltas.map((value) => Math.abs(value)));
+  const yMin = -maxAbs;
+  const yMax = maxAbs;
+  const yRange = yMax - yMin || 1;
+  const xForIndex =
+    points.length <= 1
+      ? () => padding.left + chartWidth / 2
+      : (index) => padding.left + (chartWidth * index) / (points.length - 1);
+  const yForValue = (value) => {
+    const clamped = Math.max(yMin, Math.min(yMax, value));
+    return padding.top + ((yMax - clamped) / yRange) * chartHeight;
+  };
+
+  let path = "";
+  let started = false;
+  points.forEach((point, index) => {
+    const value = toNumber(point?.delta_from_median_min);
+    if (!Number.isFinite(value)) {
+      started = false;
+      return;
+    }
+    const x = xForIndex(index);
+    const y = yForValue(value);
+    if (!started) {
+      path += `M ${x} ${y}`;
+      started = true;
+    } else {
+      path += ` L ${x} ${y}`;
+    }
+  });
+
+  const yTicks = [yMax, yMax / 2, 0, yMin / 2, yMin];
+  const medianRunTime = toNumber(series?.median_run_time_min);
+  const minDelta = toNumber(series?.min_delta_min);
+  const maxDelta = toNumber(series?.max_delta_min);
+
+  return (
+    <div className="chart-card run-change-chart">
+      <div className="chart-head">
+        <div>
+          <h5>{title}</h5>
+          {subtitle ? <p>{subtitle}</p> : null}
+        </div>
+      </div>
+      <svg className="run-change-svg" viewBox={`0 0 ${width} ${height}`} role="img">
+        <g className="run-change-grid">
+          {yTicks.map((tick, index) => (
+            <line
+              key={`tick-${index}`}
+              x1={padding.left}
+              x2={width - padding.right}
+              y1={yForValue(tick)}
+              y2={yForValue(tick)}
+            />
+          ))}
+        </g>
+        <g className="run-change-axis">
+          <line x1={padding.left} x2={padding.left} y1={padding.top} y2={height - padding.bottom} />
+          <line
+            x1={padding.left}
+            x2={width - padding.right}
+            y1={height - padding.bottom}
+            y2={height - padding.bottom}
+          />
+        </g>
+        <line
+          className="run-change-zero"
+          x1={padding.left}
+          x2={width - padding.right}
+          y1={yForValue(0)}
+          y2={yForValue(0)}
+        />
+        <g className="run-change-labels">
+          {yTicks.map((tick, index) => (
+            <text key={`label-${index}`} x={padding.left - 7} y={yForValue(tick) + 4} textAnchor="end">
+              {formatDeltaMinutes(tick)}
+            </text>
+          ))}
+        </g>
+        <path className="run-change-path" d={path} />
+        {points.map((point, index) => {
+          const value = toNumber(point?.delta_from_median_min);
+          const runTime = toNumber(point?.run_time_min);
+          if (!Number.isFinite(value)) {
+            return null;
+          }
+          const x = xForIndex(index);
+          const y = yForValue(value);
+          return (
+            <circle key={`${point.run}-${index}`} className="run-change-point" cx={x} cy={y} r="3.8">
+              <title>
+                {point.run}: {formatDeltaMinutes(value)} vs median
+                {runTime !== null ? ` (run ${formatMinutes(runTime)})` : ""}
+              </title>
+            </circle>
+          );
+        })}
+        <g className="run-change-labels">
+          {points.map((point, index) => {
+            const x = xForIndex(index);
+            return (
+              <text key={`run-${point.run}-${index}`} x={x} y={height - 14} textAnchor="middle">
+                {point.run}
+              </text>
+            );
+          })}
+        </g>
+      </svg>
+      <div className="chart-foot">
+        <span>Median run (R2-R7): {formatMinutes(medianRunTime)}</span>
+        <span>Fastest vs median: {formatDeltaMinutes(minDelta)}</span>
+        <span>Slowest vs median: {formatDeltaMinutes(maxDelta)}</span>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
+  const platform = Capacitor.getPlatform ? Capacitor.getPlatform() : "web";
   const isNativeApp = Capacitor.isNativePlatform
     ? Capacitor.isNativePlatform()
-    : Capacitor.getPlatform
-      ? Capacitor.getPlatform() !== "web"
-      : false;
-  const [mode, setMode] = useState("report");
+    : platform !== "web";
+  const isIosPlatform = platform === "ios";
+  const isIosEnvironment = isIosPlatform || isIosBrowserDevice();
+  const [mode, setMode] = useState(getInitialMode);
+  const {
+    isBootstrapping,
+    isReady,
+    warning: bootstrapWarning,
+    retryBootstrap,
+  } = useAppBootstrap(API_BASE);
+  const [isIosMobile, setIsIosMobile] = useState(() => {
+    if (!isIosEnvironment || typeof window === "undefined") {
+      return false;
+    }
+    return window.matchMedia(IOS_MOBILE_MEDIA_QUERY).matches;
+  });
   const [name, setName] = useState("");
   const [filters, setFilters] = useState({
     match: "best",
@@ -942,6 +1284,7 @@ export default function App() {
   const [plannerData, setPlannerData] = useState(null);
   const [plannerLoading, setPlannerLoading] = useState(false);
   const [plannerError, setPlannerError] = useState("");
+  const [activeHelpKey, setActiveHelpKey] = useState(null);
 
   const selectedRace = useMemo(
     () => races.find((race) => race.result_id === selectedRaceId),
@@ -1011,6 +1354,64 @@ export default function App() {
     }
     return tags;
   }, [plannerData]);
+  const reportHelpContent = useMemo(
+    () => buildReportHelpContent(filters.timeWindow),
+    [filters.timeWindow]
+  );
+  const activeHelpContent = activeHelpKey ? reportHelpContent[activeHelpKey] || null : null;
+
+  useEffect(() => {
+    if (!isIosEnvironment || typeof window === "undefined") {
+      setIsIosMobile(false);
+      return;
+    }
+    const mediaQuery = window.matchMedia(IOS_MOBILE_MEDIA_QUERY);
+    const updateIsIosMobile = () => {
+      setIsIosMobile(mediaQuery.matches);
+    };
+    updateIsIosMobile();
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener("change", updateIsIosMobile);
+      return () => mediaQuery.removeEventListener("change", updateIsIosMobile);
+    }
+    mediaQuery.addListener(updateIsIosMobile);
+    return () => mediaQuery.removeListener(updateIsIosMobile);
+  }, [isIosEnvironment]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") {
+      return;
+    }
+    document.body.classList.toggle("ios-mobile", isIosMobile);
+    return () => {
+      document.body.classList.remove("ios-mobile");
+    };
+  }, [isIosMobile]);
+
+  useEffect(() => {
+    if (!activeHelpContent || typeof document === "undefined") {
+      return;
+    }
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [activeHelpContent]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    window.localStorage.setItem("pyrox.ui.last-mode", mode);
+  }, [mode]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || isBootstrapping || !isReady) {
+      return;
+    }
+    window.dispatchEvent(new Event("pyrox:hide-boot-splash"));
+  }, [isBootstrapping, isReady]);
 
   const handleSearch = async (event) => {
     event.preventDefault();
@@ -1387,11 +1788,13 @@ export default function App() {
   };
 
   const handleBackToSearch = () => {
+    setActiveHelpKey(null);
     setView("search");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleModeChange = (nextMode) => {
+    setActiveHelpKey(null);
     setMode(nextMode);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -1399,6 +1802,9 @@ export default function App() {
   const cohortStats = report?.cohort_stats;
   const windowStats = report?.cohort_time_window_stats;
   const distributions = report?.distributions;
+  const plotData = report?.plot_data;
+  const workVsRunSplit = plotData?.work_vs_run_split;
+  const runChangeSeries = plotData?.run_change_series;
   const selectedSplitDistribution = distributions?.selected_split;
   const selectedSplitLabel = selectedSplit ? selectedSplit : "Select station";
   const windowLabel =
@@ -1639,51 +2045,85 @@ export default function App() {
   }, [report]);
 
   return (
-    <div className="app">
-      <header className="hero">
-        <div className="hero-tag">Pyrox Race Analysis Studio</div>
-        <h1>Find an athlete, pick a race, and build a Pyrox race report.</h1>
-        <p>
-          Search the Hyrox race database, review races, and generate a report.
-          {!isNativeApp ? " PDF export is available on desktop." : null}
-        </p>
-      </header>
+    <div className={`app-shell${isReady ? " is-ready" : ""}`}>
+      <div className="app-shell-content">
+        <div className={`app${isIosMobile ? " ios-mobile-shell" : ""}`}>
+          <header className="hero">
+            <div className="hero-tag">Pyrox Race Analysis</div>
+            <h1>Find an athlete, pick a race, and build a Pyrox race report.</h1>
+            <p>
+              Search our race database, review your race, and generate a report.
+              {!isNativeApp ? " PDF export is available on desktop." : null}
+            </p>
+          </header>
+          {bootstrapWarning ? (
+            <div className="bootstrap-warning" role="status" aria-live="polite">
+              <span>{bootstrapWarning}</span>
+              <button
+                type="button"
+                className="secondary bootstrap-warning-action"
+                onClick={retryBootstrap}
+                disabled={isBootstrapping}
+              >
+                {isBootstrapping ? "Retrying..." : "Retry connection"}
+              </button>
+            </div>
+          ) : null}
 
-      <div className="mode-tabs">
+          <div className="mode-tabs">
         <button
           type="button"
           className={`mode-tab ${mode === "report" ? "is-active" : ""}`}
           onClick={() => handleModeChange("report")}
         >
-          Race Report
+          <span className="mode-tab-icon">
+            <ModeTabIcon kind="report" />
+          </span>
+          <span className="mode-tab-label">Race Report</span>
         </button>
         <button
           type="button"
           className={`mode-tab ${mode === "compare" ? "is-active" : ""}`}
           onClick={() => handleModeChange("compare")}
         >
-          Compare
+          <span className="mode-tab-icon">
+            <ModeTabIcon kind="compare" />
+          </span>
+          <span className="mode-tab-label">Compare</span>
         </button>
         <button
           type="button"
           className={`mode-tab ${mode === "deepdive" ? "is-active" : ""}`}
           onClick={() => handleModeChange("deepdive")}
         >
-          Deep Dive
+          <span className="mode-tab-icon">
+            <ModeTabIcon kind="deepdive" />
+          </span>
+          <span className="mode-tab-label">Deep Dive</span>
         </button>
         <button
           type="button"
           className={`mode-tab ${mode === "planner" ? "is-active" : ""}`}
           onClick={() => handleModeChange("planner")}
         >
-          Race Planner
+          <span className="mode-tab-icon">
+            <ModeTabIcon kind="planner" />
+          </span>
+          <span className="mode-tab-label">Race Planner</span>
         </button>
-      </div>
+          </div>
 
-      {mode === "report" ? (
+          {mode === "report" ? (
         view === "search" ? (
           <main className="layout is-single">
             <section className="panel">
+              <FlowSteps
+                steps={[
+                  "Search for an athlete",
+                  "Select the exact race result",
+                  "Generate race report",
+                ]}
+              />
               <form className="search-form" onSubmit={handleSearch}>
                 <label className="field">
                   <span>Athlete name</span>
@@ -1695,45 +2135,51 @@ export default function App() {
                   />
                 </label>
 
-                <div className="grid-2">
+                <ProgressiveSection enabled={isIosMobile} summary="More search filters">
+                  <div className="grid-2">
+                    <label className="field">
+                      <span>Division</span>
+                      <input
+                        type="text"
+                        placeholder="open, pro, doubles"
+                        value={filters.division}
+                        onChange={(event) =>
+                          setFilters((prev) => ({ ...prev, division: event.target.value }))
+                        }
+                      />
+                    </label>
+
+                    <label className="field">
+                      <span>Gender</span>
+                      <input
+                        type="text"
+                        placeholder="male or female or mixed"
+                        value={filters.gender}
+                        onChange={(event) =>
+                          setFilters((prev) => ({ ...prev, gender: event.target.value }))
+                        }
+                      />
+                    </label>
+                  </div>
+
                   <label className="field">
-                    <span>Division</span>
+                    <span>Nationality</span>
                     <input
                       type="text"
-                      placeholder="open, pro, doubles"
-                      value={filters.division}
+                      placeholder="GBR"
+                      value={filters.nationality}
                       onChange={(event) =>
-                        setFilters((prev) => ({ ...prev, division: event.target.value }))
+                        setFilters((prev) => ({ ...prev, nationality: event.target.value }))
                       }
                     />
                   </label>
+                </ProgressiveSection>
 
-                  <label className="field">
-                    <span>Gender</span>
-                    <input
-                      type="text"
-                      placeholder="male or female or mixed"
-                      value={filters.gender}
-                      onChange={(event) =>
-                        setFilters((prev) => ({ ...prev, gender: event.target.value }))
-                      }
-                    />
-                  </label>
-                </div>
-
-                <label className="field">
-                  <span>Nationality</span>
-                  <input
-                    type="text"
-                    placeholder="GBR"
-                    value={filters.nationality}
-                    onChange={(event) =>
-                      setFilters((prev) => ({ ...prev, nationality: event.target.value }))
-                    }
-                  />
-                </label>
-
-                <button className="primary" type="submit" disabled={searchLoading}>
+                <button
+                  className={races.length ? "secondary" : "primary"}
+                  type="submit"
+                  disabled={searchLoading}
+                >
                   {searchLoading ? "Searching..." : "Search races"}
                 </button>
                 {searchError ? <p className="error">{searchError}</p> : null}
@@ -1755,6 +2201,7 @@ export default function App() {
                         className={`race-card ${
                           race.result_id === selectedRaceId ? "is-selected" : ""
                         }`}
+                        aria-pressed={race.result_id === selectedRaceId}
                         style={{ animationDelay: `${index * 0.04}s` }}
                         onClick={() => {
                           setSelectedRaceId(race.result_id);
@@ -1937,7 +2384,11 @@ export default function App() {
                   </div>
 
                   <div className="report-card">
-                    <h4>Rankings</h4>
+                    <ReportCardHeader
+                      title="Rankings"
+                      helpKey="rankings"
+                      onOpenHelp={setActiveHelpKey}
+                    />
                     <div className="stat-grid">
                       <div>
                         <span>
@@ -2009,7 +2460,11 @@ export default function App() {
                 </div>
 
                 <div className="report-card">
-                  <h4>Age group distributions</h4>
+                  <ReportCardHeader
+                    title="Age group distributions"
+                    helpKey="age_group_distributions"
+                    onOpenHelp={setActiveHelpKey}
+                  />
                   <div className="chart-grid">
                     <HistogramChart
                       title="Age group total time"
@@ -2041,7 +2496,11 @@ export default function App() {
                 </div>
 
                 <div className="report-card">
-                  <h4>Split percentile lines</h4>
+                  <ReportCardHeader
+                    title="Split percentile lines"
+                    helpKey="split_percentile_lines"
+                    onOpenHelp={setActiveHelpKey}
+                  />
                   <div className="chart-grid">
                     <PercentileLineChart
                       title="Runs + Roxzone percentiles"
@@ -2059,32 +2518,62 @@ export default function App() {
                 </div>
 
                 <div className="report-card">
-                  <h4>Splits</h4>
+                  <h4>Race pacing profile</h4>
+                  <div className="chart-grid">
+                    <WorkRunSplitPieChart
+                      title="Work vs run split"
+                      subtitle="Share of total effort between work time and runs + Roxzone."
+                      split={workVsRunSplit}
+                      emptyMessage="Work and run-time fields are missing for this race."
+                    />
+                    <RunChangeLineChart
+                      title="Run pacing vs median (Runs 2-7)"
+                      subtitle="Each run shows minutes faster/slower than your median run pace."
+                      series={runChangeSeries}
+                      emptyMessage="Run split columns are missing for this race."
+                    />
+                  </div>
+                </div>
+
+                <div className="report-card">
+                  <ReportCardHeader
+                    title="Splits"
+                    helpKey="splits_table"
+                    onOpenHelp={setActiveHelpKey}
+                  />
                   {report.splits?.length ? (
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Split</th>
-                          <th>Time</th>
-                          <th>Rank</th>
-                          <th>Percentile</th>
-                          <th>Window percentile</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {report.splits.map((split) => (
-                          <tr key={`${split.split_name}-${split.split_rank}`}>
-                            <td>{formatLabel(split.split_name)}</td>
-                            <td>{formatMinutes(split.split_time_min)}</td>
-                            <td>
-                              {formatLabel(split.split_rank)} / {formatLabel(split.split_size)}
-                            </td>
-                            <td>{formatPercent(split.split_percentile)}</td>
-                            <td>{formatPercent(split.split_percentile_time_window)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    <div className="table-shell">
+                      <div className="table-scroll">
+                        <table className="responsive-table">
+                          <thead>
+                            <tr>
+                              <th>Split</th>
+                              <th>Time</th>
+                              <th>Rank</th>
+                              <th>Percentile</th>
+                              <th>Window percentile</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {report.splits.map((split) => (
+                              <tr key={`${split.split_name}-${split.split_rank}`}>
+                                <td data-label="Split">{formatLabel(split.split_name)}</td>
+                                <td data-label="Time">{formatMinutes(split.split_time_min)}</td>
+                                <td data-label="Rank">
+                                  {formatLabel(split.split_rank)} / {formatLabel(split.split_size)}
+                                </td>
+                                <td data-label="Percentile">
+                                  {formatPercent(split.split_percentile)}
+                                </td>
+                                <td data-label="Window percentile">
+                                  {formatPercent(split.split_percentile_time_window)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
                   ) : (
                     <p className="empty">No split data found for this race.</p>
                   )}
@@ -2092,7 +2581,11 @@ export default function App() {
 
                 <div className="report-grid">
                   <div className="report-card">
-                    <h4>Age group stats</h4>
+                    <ReportCardHeader
+                      title="Age group stats"
+                      helpKey="age_group_stats"
+                      onOpenHelp={setActiveHelpKey}
+                    />
                     {cohortStats ? (
                       <div className="stat-grid">
                         <div>
@@ -2118,7 +2611,11 @@ export default function App() {
                   </div>
 
                   <div className="report-card">
-                    <h4>Time window stats{windowLabel}</h4>
+                    <ReportCardHeader
+                      title={`Time window stats${windowLabel}`}
+                      helpKey="time_window_stats"
+                      onOpenHelp={setActiveHelpKey}
+                    />
                     {windowStats ? (
                       <div className="stat-grid">
                         <div>
@@ -2171,6 +2668,7 @@ export default function App() {
                   <h2>Base race</h2>
                   <p>Select the race you want to compare from.</p>
                 </div>
+                <FlowSteps steps={["Search athlete", "Select base race", "Confirm base race"]} />
                 <form className="search-form" onSubmit={handleBaseSearch}>
                   <label className="field">
                     <span>Athlete name</span>
@@ -2182,54 +2680,60 @@ export default function App() {
                     />
                   </label>
 
-                  <div className="grid-2">
+                  <ProgressiveSection enabled={isIosMobile} summary="More search filters">
+                    <div className="grid-2">
+                      <label className="field">
+                        <span>Division</span>
+                        <input
+                          type="text"
+                          placeholder="open, pro, doubles"
+                          value={baseFilters.division}
+                          onChange={(event) =>
+                            setBaseFilters((prev) => ({
+                              ...prev,
+                              division: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+
+                      <label className="field">
+                        <span>Gender</span>
+                        <input
+                          type="text"
+                          placeholder="male or female or mixed"
+                          value={baseFilters.gender}
+                          onChange={(event) =>
+                            setBaseFilters((prev) => ({
+                              ...prev,
+                              gender: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    </div>
+
                     <label className="field">
-                      <span>Division</span>
+                      <span>Nationality</span>
                       <input
                         type="text"
-                        placeholder="open, pro, doubles"
-                        value={baseFilters.division}
+                        placeholder="GBR"
+                        value={baseFilters.nationality}
                         onChange={(event) =>
                           setBaseFilters((prev) => ({
                             ...prev,
-                            division: event.target.value,
+                            nationality: event.target.value,
                           }))
                         }
                       />
                     </label>
+                  </ProgressiveSection>
 
-                    <label className="field">
-                      <span>Gender</span>
-                      <input
-                        type="text"
-                        placeholder="male or female or mixed"
-                        value={baseFilters.gender}
-                        onChange={(event) =>
-                          setBaseFilters((prev) => ({
-                            ...prev,
-                            gender: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
-                  </div>
-
-                  <label className="field">
-                    <span>Nationality</span>
-                    <input
-                      type="text"
-                      placeholder="GBR"
-                      value={baseFilters.nationality}
-                      onChange={(event) =>
-                        setBaseFilters((prev) => ({
-                          ...prev,
-                          nationality: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-
-                  <button className="primary" type="submit" disabled={baseSearchLoading}>
+                  <button
+                    className={baseRaces.length ? "secondary" : "primary"}
+                    type="submit"
+                    disabled={baseSearchLoading}
+                  >
                     {baseSearchLoading ? "Searching..." : "Search races"}
                   </button>
                   {baseSearchError ? <p className="error">{baseSearchError}</p> : null}
@@ -2255,6 +2759,7 @@ export default function App() {
                           className={`race-card ${
                             race.result_id === selectedBaseRaceId ? "is-selected" : ""
                           }`}
+                          aria-pressed={race.result_id === selectedBaseRaceId}
                           style={{ animationDelay: `${index * 0.04}s` }}
                           onClick={() => {
                             setSelectedBaseRaceId(race.result_id);
@@ -2301,6 +2806,9 @@ export default function App() {
                   <h2>Compare against</h2>
                   <p>Search and confirm the race you want to compare.</p>
                 </div>
+                <FlowSteps
+                  steps={["Search comparison athlete", "Select comparison race", "Confirm comparison"]}
+                />
                 <form className="search-form" onSubmit={handleCompareSearch}>
                   <label className="field">
                     <span>Athlete name</span>
@@ -2312,54 +2820,60 @@ export default function App() {
                     />
                   </label>
 
-                  <div className="grid-2">
+                  <ProgressiveSection enabled={isIosMobile} summary="More search filters">
+                    <div className="grid-2">
+                      <label className="field">
+                        <span>Division</span>
+                        <input
+                          type="text"
+                          placeholder="open, pro, doubles"
+                          value={compareFilters.division}
+                          onChange={(event) =>
+                            setCompareFilters((prev) => ({
+                              ...prev,
+                              division: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+
+                      <label className="field">
+                        <span>Gender</span>
+                        <input
+                          type="text"
+                          placeholder="male or female or mixed"
+                          value={compareFilters.gender}
+                          onChange={(event) =>
+                            setCompareFilters((prev) => ({
+                              ...prev,
+                              gender: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    </div>
+
                     <label className="field">
-                      <span>Division</span>
+                      <span>Nationality</span>
                       <input
                         type="text"
-                        placeholder="open, pro, doubles"
-                        value={compareFilters.division}
+                        placeholder="GBR"
+                        value={compareFilters.nationality}
                         onChange={(event) =>
                           setCompareFilters((prev) => ({
                             ...prev,
-                            division: event.target.value,
+                            nationality: event.target.value,
                           }))
                         }
                       />
                     </label>
+                  </ProgressiveSection>
 
-                    <label className="field">
-                      <span>Gender</span>
-                      <input
-                        type="text"
-                        placeholder="male or female or mixed"
-                        value={compareFilters.gender}
-                        onChange={(event) =>
-                          setCompareFilters((prev) => ({
-                            ...prev,
-                            gender: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
-                  </div>
-
-                  <label className="field">
-                    <span>Nationality</span>
-                    <input
-                      type="text"
-                      placeholder="GBR"
-                      value={compareFilters.nationality}
-                      onChange={(event) =>
-                        setCompareFilters((prev) => ({
-                          ...prev,
-                          nationality: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-
-                  <button className="primary" type="submit" disabled={compareSearchLoading}>
+                  <button
+                    className={compareRaces.length ? "secondary" : "primary"}
+                    type="submit"
+                    disabled={compareSearchLoading}
+                  >
                     {compareSearchLoading ? "Searching..." : "Search races"}
                   </button>
                   {compareSearchError ? <p className="error">{compareSearchError}</p> : null}
@@ -2385,6 +2899,7 @@ export default function App() {
                           className={`race-card ${
                             race.result_id === selectedCompareRaceId ? "is-selected" : ""
                           }`}
+                          aria-pressed={race.result_id === selectedCompareRaceId}
                           style={{ animationDelay: `${index * 0.04}s` }}
                           onClick={() => {
                             setSelectedCompareRaceId(race.result_id);
@@ -2503,36 +3018,46 @@ export default function App() {
 
                 <div className="report-card">
                   <h4>Split comparison</h4>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Split</th>
-                        <th>Base time</th>
-                        <th>Compare time</th>
-                        <th>Delta (base - compare)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {comparisonRows.map((row) => {
-                        const deltaClass =
-                          row.delta === null
-                            ? ""
-                            : row.delta > 0
-                              ? "delta-positive"
-                              : row.delta < 0
-                                ? "delta-negative"
-                                : "delta-even";
-                        return (
-                          <tr key={row.key}>
-                            <td>{formatLabel(row.label)}</td>
-                            <td>{formatMinutes(row.primaryValue)}</td>
-                            <td>{formatMinutes(row.compareValue)}</td>
-                            <td className={deltaClass}>{formatDeltaMinutes(row.delta)}</td>
+                  <div className="table-shell">
+                    <div className="table-scroll">
+                      <table className="responsive-table">
+                        <thead>
+                          <tr>
+                            <th>Split</th>
+                            <th>Base time</th>
+                            <th>Compare time</th>
+                            <th>Delta (base - compare)</th>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                        </thead>
+                        <tbody>
+                          {comparisonRows.map((row) => {
+                            const deltaClass =
+                              row.delta === null
+                                ? ""
+                                : row.delta > 0
+                                  ? "delta-positive"
+                                  : row.delta < 0
+                                    ? "delta-negative"
+                                    : "delta-even";
+                            return (
+                              <tr key={row.key}>
+                                <td data-label="Split">{formatLabel(row.label)}</td>
+                                <td data-label="Base time">
+                                  {formatMinutes(row.primaryValue)}
+                                </td>
+                                <td data-label="Compare time">
+                                  {formatMinutes(row.compareValue)}
+                                </td>
+                                <td data-label="Delta" className={deltaClass}>
+                                  {formatDeltaMinutes(row.delta)}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               </>
             )}
@@ -2547,6 +3072,7 @@ export default function App() {
                   <h2>Base race</h2>
                   <p>Select the race you want to deepdive.</p>
                 </div>
+                <FlowSteps steps={["Search athlete", "Select base race", "Configure deepdive"]} />
                 <form className="search-form" onSubmit={handleDeepdiveSearch}>
                   <label className="field">
                     <span>Athlete name</span>
@@ -2558,54 +3084,60 @@ export default function App() {
                     />
                   </label>
 
-                  <div className="grid-2">
+                  <ProgressiveSection enabled={isIosMobile} summary="More search filters">
+                    <div className="grid-2">
+                      <label className="field">
+                        <span>Division</span>
+                        <input
+                          type="text"
+                          placeholder="open, pro, doubles"
+                          value={deepdiveFilters.division}
+                          onChange={(event) =>
+                            setDeepdiveFilters((prev) => ({
+                              ...prev,
+                              division: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+
+                      <label className="field">
+                        <span>Gender</span>
+                        <input
+                          type="text"
+                          placeholder="male or female or mixed"
+                          value={deepdiveFilters.gender}
+                          onChange={(event) =>
+                            setDeepdiveFilters((prev) => ({
+                              ...prev,
+                              gender: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    </div>
+
                     <label className="field">
-                      <span>Division</span>
+                      <span>Nationality</span>
                       <input
                         type="text"
-                        placeholder="open, pro, doubles"
-                        value={deepdiveFilters.division}
+                        placeholder="GBR"
+                        value={deepdiveFilters.nationality}
                         onChange={(event) =>
                           setDeepdiveFilters((prev) => ({
                             ...prev,
-                            division: event.target.value,
+                            nationality: event.target.value,
                           }))
                         }
                       />
                     </label>
+                  </ProgressiveSection>
 
-                    <label className="field">
-                      <span>Gender</span>
-                      <input
-                        type="text"
-                        placeholder="male or female or mixed"
-                        value={deepdiveFilters.gender}
-                        onChange={(event) =>
-                          setDeepdiveFilters((prev) => ({
-                            ...prev,
-                            gender: event.target.value,
-                          }))
-                        }
-                      />
-                    </label>
-                  </div>
-
-                  <label className="field">
-                    <span>Nationality</span>
-                    <input
-                      type="text"
-                      placeholder="GBR"
-                      value={deepdiveFilters.nationality}
-                      onChange={(event) =>
-                        setDeepdiveFilters((prev) => ({
-                          ...prev,
-                          nationality: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-
-                  <button className="primary" type="submit" disabled={deepdiveSearchLoading}>
+                  <button
+                    className={deepdiveRaces.length ? "secondary" : "primary"}
+                    type="submit"
+                    disabled={deepdiveSearchLoading}
+                  >
                     {deepdiveSearchLoading ? "Searching..." : "Search races"}
                   </button>
                   {deepdiveSearchError ? <p className="error">{deepdiveSearchError}</p> : null}
@@ -2633,6 +3165,7 @@ export default function App() {
                           className={`race-card ${
                             race.result_id === selectedDeepdiveRaceId ? "is-selected" : ""
                           }`}
+                          aria-pressed={race.result_id === selectedDeepdiveRaceId}
                           style={{ animationDelay: `${index * 0.04}s` }}
                           onClick={() => {
                             setSelectedDeepdiveRaceId(race.result_id);
@@ -2681,6 +3214,9 @@ export default function App() {
                   <h2>Deepdive filters</h2>
                   <p>Compare your time against the season-wide field.</p>
                 </div>
+                <FlowSteps
+                  steps={["Set season + cohort filters", "Choose metric and stat focus", "Run deepdive"]}
+                />
                 <form
                   className="search-form"
                   onSubmit={(event) => {
@@ -2733,89 +3269,96 @@ export default function App() {
                     </label>
                   </div>
 
-                  <div className="grid-3">
+                  <ProgressiveSection
+                    enabled={isIosMobile}
+                    summary="Advanced deepdive options"
+                  >
+                    <div className="grid-3">
+                      <label className="field">
+                        <span>Age group</span>
+                        <select
+                          value={deepdiveParams.ageGroup}
+                          onChange={(event) =>
+                            setDeepdiveParams((prev) => ({
+                              ...prev,
+                              ageGroup: event.target.value,
+                            }))
+                          }
+                          disabled={!deepdiveParams.season.trim() || deepdiveOptionsLoading}
+                        >
+                          <option value="">
+                            {deepdiveOptionsLoading
+                              ? "Loading age groups..."
+                              : "Any age group"}
+                          </option>
+                          {deepdiveOptions.ageGroups.map((option) => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="field">
+                        <span>Metric</span>
+                        <select
+                          value={deepdiveParams.metric}
+                          onChange={(event) =>
+                            setDeepdiveParams((prev) => ({
+                              ...prev,
+                              metric: event.target.value,
+                            }))
+                          }
+                        >
+                          {DEEPDIVE_METRIC_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="field">
+                        <span>Stat focus</span>
+                        <select
+                          value={deepdiveParams.stat}
+                          onChange={(event) =>
+                            setDeepdiveParams((prev) => ({
+                              ...prev,
+                              stat: event.target.value,
+                            }))
+                          }
+                        >
+                          {DEEPDIVE_STAT_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+
                     <label className="field">
-                      <span>Age group</span>
+                      <span>Location (optional)</span>
                       <select
-                        value={deepdiveParams.ageGroup}
+                        value={deepdiveParams.location}
                         onChange={(event) =>
                           setDeepdiveParams((prev) => ({
                             ...prev,
-                            ageGroup: event.target.value,
+                            location: event.target.value,
                           }))
                         }
                         disabled={!deepdiveParams.season.trim() || deepdiveOptionsLoading}
                       >
                         <option value="">
-                          {deepdiveOptionsLoading ? "Loading age groups..." : "Any age group"}
+                          {deepdiveOptionsLoading ? "Loading locations..." : "Any location"}
                         </option>
-                        {deepdiveOptions.ageGroups.map((option) => (
+                        {deepdiveOptions.locations.map((option) => (
                           <option key={option} value={option}>
                             {option}
                           </option>
                         ))}
                       </select>
                     </label>
-                    <label className="field">
-                      <span>Metric</span>
-                      <select
-                        value={deepdiveParams.metric}
-                        onChange={(event) =>
-                          setDeepdiveParams((prev) => ({
-                            ...prev,
-                            metric: event.target.value,
-                          }))
-                        }
-                      >
-                        {DEEPDIVE_METRIC_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="field">
-                      <span>Stat focus</span>
-                      <select
-                        value={deepdiveParams.stat}
-                        onChange={(event) =>
-                          setDeepdiveParams((prev) => ({
-                            ...prev,
-                            stat: event.target.value,
-                          }))
-                        }
-                      >
-                        {DEEPDIVE_STAT_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-
-                  <label className="field">
-                    <span>Location (optional)</span>
-                    <select
-                      value={deepdiveParams.location}
-                      onChange={(event) =>
-                        setDeepdiveParams((prev) => ({
-                          ...prev,
-                          location: event.target.value,
-                        }))
-                      }
-                      disabled={!deepdiveParams.season.trim() || deepdiveOptionsLoading}
-                    >
-                      <option value="">
-                        {deepdiveOptionsLoading ? "Loading locations..." : "Any location"}
-                      </option>
-                      {deepdiveOptions.locations.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  </ProgressiveSection>
 
                   <div className="report-actions">
                     <button
@@ -2914,85 +3457,93 @@ export default function App() {
                   <div className="report-card">
                     <h4>Location targets ({deepdiveStatLabel})</h4>
                     {deepdiveRows.length ? (
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>Location</th>
-                            <th>N</th>
-                            <th>
-                              {deepdiveStatLabel} time
-                              {deepdiveParams.stat === "p05" ? (
-                                <span
-                                  className="info-tooltip"
-                                  data-tooltip="Top 5% time is the 5th percentile of the cohort (interpolated for small groups)."
-                                  aria-label="Top 5% time definition"
-                                >
-                                  i
-                                </span>
-                              ) : deepdiveParams.stat === "p90" ? (
-                                <span
-                                  className="info-tooltip"
-                                  data-tooltip="Bottom 10% time is the 90th percentile of the cohort (interpolated for small groups)."
-                                  aria-label="Bottom 10% time definition"
-                                >
-                                  i
-                                </span>
-                              ) : deepdiveParams.stat === "mean" ? (
-                                <span
-                                  className="info-tooltip"
-                                  data-tooltip="Mean time is the average across the cohort for the selected filters."
-                                  aria-label="Mean time definition"
-                                >
-                                  i
-                                </span>
-                              ) : null}
-                            </th>
-                            <th>Fastest time</th>
-                            <th>Athlete time</th>
-                            <th>Delta (athlete - target)</th>
-                            <th>Delta (athlete - fastest)</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {deepdiveRows.map((row, index) => {
-                            const deltaClass =
-                              row.delta === null
-                                ? ""
-                                : row.delta > 0
-                                  ? "delta-positive"
-                                  : row.delta < 0
-                                    ? "delta-negative"
-                                    : "delta-even";
-                            const fastestDeltaClass =
-                              row.deltaFastest === null
-                                ? ""
-                                : row.deltaFastest > 0
-                                  ? "delta-positive"
-                                  : row.deltaFastest < 0
-                                    ? "delta-negative"
-                                    : "delta-even";
-                            return (
-                              <tr key={`${row.location || "loc"}-${index}`}>
-                                <td>{formatLabel(row.location)}</td>
-                                <td>{formatLabel(row.count)}</td>
-                                <td>{formatMinutes(row.statValue)}</td>
-                                <td>{formatMinutes(row.fastestValue)}</td>
-                                <td>
-                                  {formatMinutes(
-                                    deepdiveData.athlete_value ?? deepdiveData.athlete_time
-                                  )}
-                                </td>
-                                <td className={deltaClass}>
-                                  {formatDeltaMinutes(row.delta)}
-                                </td>
-                                <td className={fastestDeltaClass}>
-                                  {formatDeltaMinutes(row.deltaFastest)}
-                                </td>
+                      <div className="table-shell">
+                        <div className="table-scroll">
+                          <table className="responsive-table">
+                            <thead>
+                              <tr>
+                                <th>Location</th>
+                                <th>N</th>
+                                <th>
+                                  {deepdiveStatLabel} time
+                                  {deepdiveParams.stat === "p05" ? (
+                                    <span
+                                      className="info-tooltip"
+                                      data-tooltip="Top 5% time is the 5th percentile of the cohort (interpolated for small groups)."
+                                      aria-label="Top 5% time definition"
+                                    >
+                                      i
+                                    </span>
+                                  ) : deepdiveParams.stat === "p90" ? (
+                                    <span
+                                      className="info-tooltip"
+                                      data-tooltip="Bottom 10% time is the 90th percentile of the cohort (interpolated for small groups)."
+                                      aria-label="Bottom 10% time definition"
+                                    >
+                                      i
+                                    </span>
+                                  ) : deepdiveParams.stat === "mean" ? (
+                                    <span
+                                      className="info-tooltip"
+                                      data-tooltip="Mean time is the average across the cohort for the selected filters."
+                                      aria-label="Mean time definition"
+                                    >
+                                      i
+                                    </span>
+                                  ) : null}
+                                </th>
+                                <th>Fastest time</th>
+                                <th>Athlete time</th>
+                                <th>Delta (athlete - target)</th>
+                                <th>Delta (athlete - fastest)</th>
                               </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                            </thead>
+                            <tbody>
+                              {deepdiveRows.map((row, index) => {
+                                const deltaClass =
+                                  row.delta === null
+                                    ? ""
+                                    : row.delta > 0
+                                      ? "delta-positive"
+                                      : row.delta < 0
+                                        ? "delta-negative"
+                                        : "delta-even";
+                                const fastestDeltaClass =
+                                  row.deltaFastest === null
+                                    ? ""
+                                    : row.deltaFastest > 0
+                                      ? "delta-positive"
+                                      : row.deltaFastest < 0
+                                        ? "delta-negative"
+                                        : "delta-even";
+                                return (
+                                  <tr key={`${row.location || "loc"}-${index}`}>
+                                    <td data-label="Location">{formatLabel(row.location)}</td>
+                                    <td data-label="N">{formatLabel(row.count)}</td>
+                                    <td data-label={`${deepdiveStatLabel} time`}>
+                                      {formatMinutes(row.statValue)}
+                                    </td>
+                                    <td data-label="Fastest time">
+                                      {formatMinutes(row.fastestValue)}
+                                    </td>
+                                    <td data-label="Athlete time">
+                                      {formatMinutes(
+                                        deepdiveData.athlete_value ?? deepdiveData.athlete_time
+                                      )}
+                                    </td>
+                                    <td data-label="Delta vs target" className={deltaClass}>
+                                      {formatDeltaMinutes(row.delta)}
+                                    </td>
+                                    <td data-label="Delta vs fastest" className={fastestDeltaClass}>
+                                      {formatDeltaMinutes(row.deltaFastest)}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
                     ) : (
                       <p className="empty">Run a deepdive to compare locations.</p>
                     )}
@@ -3007,6 +3558,13 @@ export default function App() {
       ) : (
         <main className="planner-page">
           <section className="panel">
+            <div className="panel-header">
+              <h2>Race planner</h2>
+              <p>Filter the cohort and review split distributions before race day.</p>
+            </div>
+            <FlowSteps
+              steps={["Set core filters", "Add advanced constraints (optional)", "Run planner"]}
+            />
             <form className="search-form" onSubmit={handlePlannerSearch}>
               <div className="grid-3">
                 <label className="field">
@@ -3044,52 +3602,54 @@ export default function App() {
                 </label>
               </div>
 
-              <div className="grid-3">
-                <label className="field">
-                  <span>Division</span>
-                  <input
-                    type="text"
-                    placeholder="open"
-                    value={plannerFilters.division}
-                    onChange={(event) =>
-                      setPlannerFilters((prev) => ({ ...prev, division: event.target.value }))
-                    }
-                  />
-                </label>
-                <label className="field">
-                  <span>Gender</span>
-                  <input
-                    type="text"
-                    placeholder="male or female or mixed"
-                    value={plannerFilters.gender}
-                    onChange={(event) =>
-                      setPlannerFilters((prev) => ({ ...prev, gender: event.target.value }))
-                    }
-                  />
-                </label>
-                <label className="field">
-                  <span>Time range (min)</span>
-                  <div className="range-inputs">
+              <ProgressiveSection enabled={isIosMobile} summary="Advanced planner filters">
+                <div className="grid-3">
+                  <label className="field">
+                    <span>Division</span>
                     <input
-                      type="number"
-                      placeholder="60"
-                      value={plannerFilters.minTime}
+                      type="text"
+                      placeholder="open"
+                      value={plannerFilters.division}
                       onChange={(event) =>
-                        setPlannerFilters((prev) => ({ ...prev, minTime: event.target.value }))
+                        setPlannerFilters((prev) => ({ ...prev, division: event.target.value }))
                       }
                     />
-                    <span>to</span>
+                  </label>
+                  <label className="field">
+                    <span>Gender</span>
                     <input
-                      type="number"
-                      placeholder="65"
-                      value={plannerFilters.maxTime}
+                      type="text"
+                      placeholder="male or female or mixed"
+                      value={plannerFilters.gender}
                       onChange={(event) =>
-                        setPlannerFilters((prev) => ({ ...prev, maxTime: event.target.value }))
+                        setPlannerFilters((prev) => ({ ...prev, gender: event.target.value }))
                       }
                     />
-                  </div>
-                </label>
-              </div>
+                  </label>
+                  <label className="field">
+                    <span>Time range (min)</span>
+                    <div className="range-inputs">
+                      <input
+                        type="number"
+                        placeholder="60"
+                        value={plannerFilters.minTime}
+                        onChange={(event) =>
+                          setPlannerFilters((prev) => ({ ...prev, minTime: event.target.value }))
+                        }
+                      />
+                      <span>to</span>
+                      <input
+                        type="number"
+                        placeholder="65"
+                        value={plannerFilters.maxTime}
+                        onChange={(event) =>
+                          setPlannerFilters((prev) => ({ ...prev, maxTime: event.target.value }))
+                        }
+                      />
+                    </div>
+                  </label>
+                </div>
+              </ProgressiveSection>
 
               <button className="primary" type="submit" disabled={plannerLoading}>
                 {plannerLoading ? "Building plan..." : "Run planner"}
@@ -3182,6 +3742,11 @@ export default function App() {
           </section>
         </main>
       )}
+          {activeHelpContent ? (
+            <HelpSheet content={activeHelpContent} onClose={() => setActiveHelpKey(null)} />
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }

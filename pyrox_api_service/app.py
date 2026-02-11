@@ -21,7 +21,7 @@ except ModuleNotFoundError:  # Fallback for direct repository execution without 
     from src.pyrox.reporting import ReportingClient
 
 DEFAULT_DB_PATH = "pyrox_duckdb"
-DEFAULT_ORIGINS = "http://localhost:5173,capacitor://localhost,http://localhost"
+DEFAULT_ORIGINS = "http://localhost:5173,capacitor://localhost,ionic://localhost,http://localhost"
 SEGMENT_CONFIG = [
     {"key": "total_time_min", "label": "Total time", "group": "overall"},
     {"key": "run1_time_min", "label": "Run 1", "group": "runs"},
@@ -175,6 +175,126 @@ def _min_value_for_split(split_name: str) -> Optional[float]:
     return None
 
 
+def _to_float(value: object) -> Optional[float]:
+    if value is None:
+        return None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not np.isfinite(number):
+        return None
+    return number
+
+
+def _normalize_split_key(value: object) -> str:
+    if value is None:
+        return ""
+    return "".join(ch for ch in str(value).strip().casefold() if ch.isalnum())
+
+
+def _build_split_time_map(splits: pd.DataFrame) -> dict[str, float]:
+    if (
+        splits.empty
+        or "split_name" not in splits.columns
+        or "split_time_min" not in splits.columns
+    ):
+        return {}
+    split_time_map: dict[str, float] = {}
+    for _, row in splits.iterrows():
+        key = _normalize_split_key(row.get("split_name"))
+        value = _to_float(row.get("split_time_min"))
+        if key and value is not None:
+            split_time_map[key] = value
+    return split_time_map
+
+
+def _resolve_run_time(
+    race: dict,
+    split_time_map: dict[str, float],
+    run_number: int,
+) -> Optional[float]:
+    column_value = _to_float(race.get(f"run{run_number}_time_min"))
+    if column_value is not None:
+        return column_value
+    return split_time_map.get(f"run{run_number}")
+
+
+def _build_work_vs_run_split(race: dict) -> Optional[dict]:
+    work_time = _to_float(race.get("work_time_min"))
+    run_time = _to_float(race.get("run_time_min"))
+    roxzone_time = _to_float(race.get("roxzone_time_min"))
+
+    if work_time is None and run_time is None and roxzone_time is None:
+        return None
+
+    run_with_roxzone = None
+    if run_time is not None and roxzone_time is not None:
+        run_with_roxzone = run_time + roxzone_time
+    elif run_time is not None:
+        run_with_roxzone = run_time
+    elif roxzone_time is not None:
+        run_with_roxzone = roxzone_time
+
+    total_time = None
+    work_pct = None
+    run_pct = None
+    if work_time is not None and run_with_roxzone is not None:
+        total_time = work_time + run_with_roxzone
+        if total_time > 0:
+            work_pct = work_time / total_time
+            run_pct = run_with_roxzone / total_time
+
+    return {
+        "work_time_min": work_time,
+        "run_time_min": run_time,
+        "roxzone_time_min": roxzone_time,
+        "run_time_with_roxzone_min": run_with_roxzone,
+        "total_time_min": total_time,
+        "work_pct": work_pct,
+        "run_pct": run_pct,
+    }
+
+
+def _build_run_change_series(race: dict, splits: pd.DataFrame) -> dict:
+    split_time_map = _build_split_time_map(splits)
+    points = []
+    run_values: list[float] = []
+    resolved_runs: dict[int, Optional[float]] = {}
+
+    for run_number in range(2, 8):
+        current_time = _resolve_run_time(race, split_time_map, run_number)
+        resolved_runs[run_number] = current_time
+        if current_time is not None:
+            run_values.append(current_time)
+
+    median_run_time = float(np.median(run_values)) if run_values else None
+    deltas: list[float] = []
+
+    for run_number in range(2, 8):
+        current_time = resolved_runs.get(run_number)
+        delta_from_median = None
+        if current_time is not None and median_run_time is not None:
+            delta_from_median = current_time - median_run_time
+            deltas.append(delta_from_median)
+        points.append(
+            {
+                "run": f"Run {run_number}",
+                "run_time_min": current_time,
+                "median_run_time_min": median_run_time,
+                "delta_from_median_min": delta_from_median,
+            }
+        )
+
+    return {
+        "median_run_time_min": median_run_time,
+        "points": points,
+        "count": len(deltas),
+        "min_delta_min": min(deltas) if deltas else None,
+        "max_delta_min": max(deltas) if deltas else None,
+    }
+
+
 app = FastAPI(title="Pyrox Reporting API", version="0.1.0")
 allowed_origins = _parse_origins(
     os.getenv("PYROX_API_ALLOW_ORIGINS", DEFAULT_ORIGINS)
@@ -192,6 +312,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%dT%H:%M:%S",
 )
 logger = logging.getLogger("pyrox.api")
+logger.info("CORS allowed origins: %s", ", ".join(allowed_origins))
 
 # app.middleware is a decorator that runs this code on every incoming HTTP request!
 @app.middleware("http")
@@ -386,6 +507,10 @@ def report_for_result(
         "result_id": result_id,
         "race": race,
         "splits": splits,
+        "plot_data": {
+            "work_vs_run_split": _build_work_vs_run_split(race),
+            "run_change_series": _build_run_change_series(race, report["splits"]),
+        },
         "cohort_time_window_min": cohort_time_window_min,
         "cohort_stats": _describe_times(report["cohort"]),
         "cohort_time_window_stats": _describe_times(

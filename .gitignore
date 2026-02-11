@@ -11,3 +11,5 @@ site/
 .idea/
 
 docs/issues/
+
+ui/.env.capacitor

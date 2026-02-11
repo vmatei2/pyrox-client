@@ -4,8 +4,57 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Pyrox Race Analysis</title>
+    <script>
+      (() => {
+        const ua = navigator.userAgent || "";
+        const protocol = window.location?.protocol || "";
+        const isCapacitorScheme = protocol === "capacitor:" || protocol === "ionic:";
+        const isCapacitorNative = isCapacitorScheme || ua.includes("Capacitor");
+        if (!isCapacitorNative) {
+          return;
+        }
+        document.documentElement.classList.add("native-capacitor");
+        document.documentElement.classList.add("app-ready");
+      })();
+    </script>
+    <style>
+      #boot-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: grid;
+        place-items: center;
+        background: radial-gradient(circle at 20% -8%, rgba(59, 130, 246, 0.16), transparent 42%),
+          linear-gradient(180deg, #090f19 0%, #0b1220 100%);
+        opacity: 1;
+        transition: opacity 180ms ease;
+      }
+      #boot-splash.is-hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #boot-splash img {
+        width: min(220px, 56vw);
+        height: auto;
+      }
+      html:not(.app-ready) #root {
+        opacity: 0;
+        visibility: hidden;
+      }
+      html.native-capacitor #boot-splash {
+        display: none;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #boot-splash {
+          transition: none;
+        }
+      }
+    </style>
   </head>
   <body>
+    <div id="boot-splash" aria-hidden="true">
+      <img src="/brand-wordmark.svg" alt="" width="220" height="64" />
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
