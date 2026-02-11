@@ -6,18 +6,18 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
         
-        <link rel="canonical" href="https://vmatei2.github.io/pyrox-client/faq/">
-        <link rel="shortcut icon" href="../img/favicon.ico">
-        <title>FAQ - pyrox-client</title>
-        <link href="../css/bootstrap.min.css" rel="stylesheet">
-        <link href="../css/fontawesome.min.css" rel="stylesheet">
-        <link href="../css/brands.min.css" rel="stylesheet">
-        <link href="../css/solid.min.css" rel="stylesheet">
-        <link href="../css/v4-font-face.min.css" rel="stylesheet">
-        <link href="../css/base.css" rel="stylesheet">
+        <link rel="canonical" href="https://vmatei2.github.io/pyrox-client/maintainers/release/">
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>Release Workflow - pyrox-client</title>
+        <link href="../../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../../css/brands.min.css" rel="stylesheet">
+        <link href="../../css/solid.min.css" rel="stylesheet">
+        <link href="../../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
         <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
         <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
-        <link href="../assets/styles.css" rel="stylesheet">
+        <link href="../../assets/styles.css" rel="stylesheet">
         <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
         <script>hljs.highlightAll();</script> 
     </head>
@@ -25,7 +25,7 @@
     <body>
         <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
             <div class="container">
-                <a class="navbar-brand" href="..">pyrox-client</a>
+                <a class="navbar-brand" href="../..">pyrox-client</a>
                 <!-- Expander button -->
                 <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -36,33 +36,33 @@
                         <!-- Main navigation -->
                         <ul class="nav navbar-nav">
                             <li class="nav-item">
-                                <a href=".." class="nav-link">Home</a>
+                                <a href="../.." class="nav-link">Home</a>
                             </li>
                             <li class="nav-item">
-                                <a href="../quickstart/" class="nav-link">Getting Started</a>
+                                <a href="../../quickstart/" class="nav-link">Getting Started</a>
                             </li>
                             <li class="nav-item dropdown">
                                 <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">User Guide</a>
                                 <ul class="dropdown-menu">
                                     
 <li>
-    <a href="../filters/" class="dropdown-item">Filtering</a>
+    <a href="../../filters/" class="dropdown-item">Filtering</a>
 </li>
                                     
 <li>
-    <a href="../caching/" class="dropdown-item">Caching</a>
+    <a href="../../caching/" class="dropdown-item">Caching</a>
 </li>
                                     
 <li>
-    <a href="../data-model/" class="dropdown-item">Data Model</a>
+    <a href="../../data-model/" class="dropdown-item">Data Model</a>
 </li>
                                     
 <li>
-    <a href="../analytics/" class="dropdown-item">Analytics</a>
+    <a href="../../analytics/" class="dropdown-item">Analytics</a>
 </li>
                                     
 <li>
-    <a href="../reproducible-research/" class="dropdown-item">Reproducible Research</a>
+    <a href="../../reproducible-research/" class="dropdown-item">Reproducible Research</a>
 </li>
                                 </ul>
                             </li>
@@ -71,19 +71,19 @@
                                 <ul class="dropdown-menu">
                                     
 <li>
-    <a href="../api/" class="dropdown-item">Client API</a>
+    <a href="../../api/" class="dropdown-item">Client API</a>
 </li>
                                     
 <li>
-    <a href="../errors/" class="dropdown-item">Errors</a>
+    <a href="../../errors/" class="dropdown-item">Errors</a>
 </li>
                                 </ul>
                             </li>
                             <li class="nav-item">
-                                <a href="./" class="nav-link active" aria-current="page">FAQ</a>
+                                <a href="../../faq/" class="nav-link">FAQ</a>
                             </li>
                             <li class="nav-item">
-                                <a href="../privacy/" class="nav-link">Privacy Policy</a>
+                                <a href="../../privacy/" class="nav-link">Privacy Policy</a>
                             </li>
                         </ul>
 
@@ -93,16 +93,6 @@
                                 <i class="fa fa-search"></i> Search
                             </a>
                         </li>
-                            <li class="nav-item">
-                                <a rel="prev" href="../errors/" class="nav-link">
-                                    <i class="fa fa-arrow-left"></i> Previous
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a rel="next" href="../privacy/" class="nav-link">
-                                    Next <i class="fa fa-arrow-right"></i>
-                                </a>
-                            </li>
                     </ul>
                 </div>
             </div>
@@ -121,21 +111,29 @@
     <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
         <ul class="nav flex-column">
             
-            <li class="nav-item" data-bs-level="1"><a href="#faq" class="nav-link">FAQ</a>
+            <li class="nav-item" data-bs-level="1"><a href="#release-workflow" class="nav-link">Release Workflow</a>
               <ul class="nav flex-column">
-            <li class="nav-item" data-bs-level="2"><a href="#which-seasons-are-covered" class="nav-link">Which seasons are covered?</a>
-              <ul class="nav flex-column">
-              </ul>
-            </li>
-            <li class="nav-item" data-bs-level="2"><a href="#why-are-times-in-minutes" class="nav-link">Why are times in minutes?</a>
+            <li class="nav-item" data-bs-level="2"><a href="#prerequisites" class="nav-link">Prerequisites</a>
               <ul class="nav flex-column">
               </ul>
             </li>
-            <li class="nav-item" data-bs-level="2"><a href="#how-do-i-update-cached-data" class="nav-link">How do I update cached data?</a>
+            <li class="nav-item" data-bs-level="2"><a href="#1-bump-version-and-tag" class="nav-link">1) Bump Version and Tag</a>
               <ul class="nav flex-column">
               </ul>
             </li>
-            <li class="nav-item" data-bs-level="2"><a href="#why-does-a-race-return-empty" class="nav-link">Why does a race return empty?</a>
+            <li class="nav-item" data-bs-level="2"><a href="#2-validate-build-artifacts-locally" class="nav-link">2) Validate Build Artifacts Locally</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#3-optional-local-quality-checks" class="nav-link">3) Optional Local Quality Checks</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#4-publish-via-github-actions" class="nav-link">4) Publish via GitHub Actions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#notes" class="nav-link">Notes</a>
               <ul class="nav flex-column">
               </ul>
             </li>
@@ -146,16 +144,58 @@
 </div></div>
                     <div class="col-md-9" role="main">
 
-<h1 id="faq">FAQ<a class="headerlink" href="#faq" title="Permanent link">&para;</a></h1>
-<h2 id="which-seasons-are-covered">Which seasons are covered?<a class="headerlink" href="#which-seasons-are-covered" title="Permanent link">&para;</a></h2>
-<p>Historical coverage for seasons 2-7 (with season 5-6 being most used in analysis).</p>
-<h2 id="why-are-times-in-minutes">Why are times in minutes?<a class="headerlink" href="#why-are-times-in-minutes" title="Permanent link">&para;</a></h2>
-<p>Times are normalized on load so your analysis can use numeric operations directly.</p>
-<h2 id="how-do-i-update-cached-data">How do I update cached data?<a class="headerlink" href="#how-do-i-update-cached-data" title="Permanent link">&para;</a></h2>
-<p>Pass <code>force_refresh=True</code> to <code>list_races</code> or <code>use_cache=False</code> to any read method.</p>
-<h2 id="why-does-a-race-return-empty">Why does a race return empty?<a class="headerlink" href="#why-does-a-race-return-empty" title="Permanent link">&para;</a></h2>
-<p>If a filter removes every row, <code>RaceNotFound</code> is raised. Try removing filters to
-confirm the base dataset exists.</p></div>
+<h1 id="release-workflow">Release Workflow<a class="headerlink" href="#release-workflow" title="Permanent link">&para;</a></h1>
+<p>This document describes how to cut and publish a new <code>pyrox-client</code> release.</p>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<ul>
+<li>You are on an up-to-date branch (typically <code>main</code>).</li>
+<li>CI is green.</li>
+<li>You have push permissions for tags.</li>
+</ul>
+<h2 id="1-bump-version-and-tag">1) Bump Version and Tag<a class="headerlink" href="#1-bump-version-and-tag" title="Permanent link">&para;</a></h2>
+<p>Use the release helper script:</p>
+<div class="codehilite"><pre><span></span><code>./scripts/release.sh<span class="w"> </span>&lt;version&gt;
+</code></pre></div>
+
+<p>Example:</p>
+<div class="codehilite"><pre><span></span><code>./scripts/release.sh<span class="w"> </span><span class="m">0</span>.2.4
+</code></pre></div>
+
+<p>This script:</p>
+<ul>
+<li>updates <code>src/pyrox/__init__.py</code> (<code>__version__</code>)</li>
+<li>creates a commit</li>
+<li>creates tag <code>v&lt;version&gt;</code></li>
+</ul>
+<h2 id="2-validate-build-artifacts-locally">2) Validate Build Artifacts Locally<a class="headerlink" href="#2-validate-build-artifacts-locally" title="Permanent link">&para;</a></h2>
+<p>Build a wheel:</p>
+<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>build<span class="w"> </span>--wheel
+</code></pre></div>
+
+<p>Validate wheel contents:</p>
+<div class="codehilite"><pre><span></span><code>python<span class="w"> </span>scripts/verify_wheel_contents.py
+</code></pre></div>
+
+<p>This confirms the published wheel contains only the intended package surface.</p>
+<h2 id="3-optional-local-quality-checks">3) Optional Local Quality Checks<a class="headerlink" href="#3-optional-local-quality-checks" title="Permanent link">&para;</a></h2>
+<div class="codehilite"><pre><span></span><code>pytest<span class="w"> </span>-q
+ruff<span class="w"> </span>check<span class="w"> </span>.
+</code></pre></div>
+
+<h2 id="4-publish-via-github-actions">4) Publish via GitHub Actions<a class="headerlink" href="#4-publish-via-github-actions" title="Permanent link">&para;</a></h2>
+<p>Push commit and tag:</p>
+<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>main<span class="w"> </span>--tags
+</code></pre></div>
+
+<p>Publishing is handled by <code>.github/workflows/release.yml</code>.</p>
+<h2 id="notes">Notes<a class="headerlink" href="#notes" title="Permanent link">&para;</a></h2>
+<ul>
+<li>The release workflow depends on <code>.github/workflows/tests.yml</code> passing first.</li>
+<li>If a bad tag was created, delete it locally and remotely before recreating:</li>
+</ul>
+<div class="codehilite"><pre><span></span><code>git<span class="w"> </span>tag<span class="w"> </span>-d<span class="w"> </span>v&lt;version&gt;
+git<span class="w"> </span>push<span class="w"> </span>--delete<span class="w"> </span>origin<span class="w"> </span>v&lt;version&gt;
+</code></pre></div></div>
             </div>
         </div>
 
@@ -163,13 +203,13 @@ confirm the base dataset exists.</p></div>
             <hr>
             <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
         </footer>
-        <script src="../js/bootstrap.bundle.min.js"></script>
+        <script src="../../js/bootstrap.bundle.min.js"></script>
         <script>
-            var base_url = "..",
+            var base_url = "../..",
                 shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
         </script>
-        <script src="../js/base.js"></script>
-        <script src="../search/main.js"></script>
+        <script src="../../js/base.js"></script>
+        <script src="../../search/main.js"></script>
 
         <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">

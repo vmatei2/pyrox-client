@@ -6,9 +6,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
         
-        <link rel="canonical" href="https://vmatei2.github.io/pyrox-client/faq/">
+        <link rel="canonical" href="https://vmatei2.github.io/pyrox-client/duckdb-stabilization/">
         <link rel="shortcut icon" href="../img/favicon.ico">
-        <title>FAQ - pyrox-client</title>
+        <title>DuckDB Stabilization Tasks - pyrox-client</title>
         <link href="../css/bootstrap.min.css" rel="stylesheet">
         <link href="../css/fontawesome.min.css" rel="stylesheet">
         <link href="../css/brands.min.css" rel="stylesheet">
@@ -80,7 +80,7 @@
                                 </ul>
                             </li>
                             <li class="nav-item">
-                                <a href="./" class="nav-link active" aria-current="page">FAQ</a>
+                                <a href="../faq/" class="nav-link">FAQ</a>
                             </li>
                             <li class="nav-item">
                                 <a href="../privacy/" class="nav-link">Privacy Policy</a>
@@ -93,16 +93,6 @@
                                 <i class="fa fa-search"></i> Search
                             </a>
                         </li>
-                            <li class="nav-item">
-                                <a rel="prev" href="../errors/" class="nav-link">
-                                    <i class="fa fa-arrow-left"></i> Previous
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a rel="next" href="../privacy/" class="nav-link">
-                                    Next <i class="fa fa-arrow-right"></i>
-                                </a>
-                            </li>
                     </ul>
                 </div>
             </div>
@@ -121,21 +111,17 @@
     <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
         <ul class="nav flex-column">
             
-            <li class="nav-item" data-bs-level="1"><a href="#faq" class="nav-link">FAQ</a>
+            <li class="nav-item" data-bs-level="1"><a href="#duckdb-stabilization-tasks" class="nav-link">DuckDB Stabilization Tasks</a>
               <ul class="nav flex-column">
-            <li class="nav-item" data-bs-level="2"><a href="#which-seasons-are-covered" class="nav-link">Which seasons are covered?</a>
-              <ul class="nav flex-column">
-              </ul>
-            </li>
-            <li class="nav-item" data-bs-level="2"><a href="#why-are-times-in-minutes" class="nav-link">Why are times in minutes?</a>
+            <li class="nav-item" data-bs-level="2"><a href="#remote-duckdb-usage-options" class="nav-link">Remote DuckDB Usage Options</a>
               <ul class="nav flex-column">
               </ul>
             </li>
-            <li class="nav-item" data-bs-level="2"><a href="#how-do-i-update-cached-data" class="nav-link">How do I update cached data?</a>
+            <li class="nav-item" data-bs-level="2"><a href="#schema-contracts-v1" class="nav-link">Schema Contracts (v1)</a>
               <ul class="nav flex-column">
               </ul>
             </li>
-            <li class="nav-item" data-bs-level="2"><a href="#why-does-a-race-return-empty" class="nav-link">Why does a race return empty?</a>
+            <li class="nav-item" data-bs-level="2"><a href="#contract-alignment-notes" class="nav-link">Contract Alignment Notes</a>
               <ul class="nav flex-column">
               </ul>
             </li>
@@ -146,16 +132,102 @@
 </div></div>
                     <div class="col-md-9" role="main">
 
-<h1 id="faq">FAQ<a class="headerlink" href="#faq" title="Permanent link">&para;</a></h1>
-<h2 id="which-seasons-are-covered">Which seasons are covered?<a class="headerlink" href="#which-seasons-are-covered" title="Permanent link">&para;</a></h2>
-<p>Historical coverage for seasons 2-7 (with season 5-6 being most used in analysis).</p>
-<h2 id="why-are-times-in-minutes">Why are times in minutes?<a class="headerlink" href="#why-are-times-in-minutes" title="Permanent link">&para;</a></h2>
-<p>Times are normalized on load so your analysis can use numeric operations directly.</p>
-<h2 id="how-do-i-update-cached-data">How do I update cached data?<a class="headerlink" href="#how-do-i-update-cached-data" title="Permanent link">&para;</a></h2>
-<p>Pass <code>force_refresh=True</code> to <code>list_races</code> or <code>use_cache=False</code> to any read method.</p>
-<h2 id="why-does-a-race-return-empty">Why does a race return empty?<a class="headerlink" href="#why-does-a-race-return-empty" title="Permanent link">&para;</a></h2>
-<p>If a filter removes every row, <code>RaceNotFound</code> is raised. Try removing filters to
-confirm the base dataset exists.</p></div>
+<h1 id="duckdb-stabilization-tasks">DuckDB Stabilization Tasks<a class="headerlink" href="#duckdb-stabilization-tasks" title="Permanent link">&para;</a></h1>
+<ul>
+<li>Define schema contracts for <code>race_results</code>, <code>athletes</code>, <code>athlete_results</code>, and <code>athlete_index</code></li>
+<li>Add a <code>metadata</code> table with schema_version, build timestamp, and data source info</li>
+<li>Store the hash/version of <code>scripts/sql_queries.py</code> and ingest macro in <code>metadata</code></li>
+<li>Validate ingest output (tables exist, required columns, non-zero row counts)</li>
+<li>Add a client-side health check for schema_version mismatch</li>
+<li>Build a minimal fixture DuckDB for tests (singles + doubles cases)</li>
+<li>Document required env vars and lock behavior (read-only vs read-write)</li>
+</ul>
+<h2 id="remote-duckdb-usage-options">Remote DuckDB Usage Options<a class="headerlink" href="#remote-duckdb-usage-options" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Publish the <code>.duckdb</code> file to object storage and download/cache locally</li>
+<li>Query Parquet directly from S3 (no DB file; requires on-the-fly views)</li>
+<li>Use a hosted DuckDB service (e.g., MotherDuck) for multi-user access</li>
+<li>Use a database server (Postgres/ClickHouse) if concurrent writes are needed</li>
+</ul>
+<h2 id="schema-contracts-v1">Schema Contracts (v1)<a class="headerlink" href="#schema-contracts-v1" title="Permanent link">&para;</a></h2>
+<p>Source of truth: <code>scripts/sql_queries.py</code> and <code>scripts/ingest_duckdb_from_s3.py</code>.</p>
+<h3 id="race_results">race_results<a class="headerlink" href="#race_results" title="Permanent link">&para;</a></h3>
+<p>Built from S3 parquet via <code>CREATE_RACE_RESULTS</code>. Non-nullable fields are required for
+stable keys and search; other fields may be NULL depending on source data.</p>
+<ul>
+<li>Keys and required fields:</li>
+<li><code>result_id</code> VARCHAR NOT NULL (deterministic md5, primary key)</li>
+<li><code>season</code> INTEGER NOT NULL</li>
+<li><code>location</code> VARCHAR NOT NULL (lowercased)</li>
+<li><code>year</code> INTEGER NOT NULL</li>
+<li><code>event_id</code> VARCHAR NOT NULL</li>
+<li><code>name</code> VARCHAR NOT NULL (trimmed)</li>
+<li>Nullable attributes:</li>
+<li><code>age_group</code> VARCHAR</li>
+<li><code>division</code> VARCHAR</li>
+<li><code>event_name</code> VARCHAR</li>
+<li><code>gender</code> VARCHAR</li>
+<li><code>name_raw</code> VARCHAR</li>
+<li><code>nationality</code> VARCHAR</li>
+<li>Time string columns (VARCHAR, nullable):</li>
+<li><code>roxzone_time</code></li>
+<li><code>run1_time</code>, <code>run2_time</code>, <code>run3_time</code>, <code>run4_time</code>,
+    <code>run5_time</code>, <code>run6_time</code>, <code>run7_time</code>, <code>run8_time</code></li>
+<li><code>run_time</code>, <code>total_time</code></li>
+<li><code>skiErg_time</code>, <code>sledPush_time</code>, <code>sledPull_time</code>, <code>burpeeBroadJump_time</code>,
+    <code>rowErg_time</code>, <code>farmersCarry_time</code>, <code>sandbagLunges_time</code>, <code>wallBalls_time</code></li>
+<li><code>work_time</code></li>
+<li>Time numeric columns (DOUBLE, nullable; minutes):</li>
+<li><code>roxzone_time_min</code></li>
+<li><code>run1_time_min</code>, <code>run2_time_min</code>, <code>run3_time_min</code>, <code>run4_time_min</code>,
+    <code>run5_time_min</code>, <code>run6_time_min</code>, <code>run7_time_min</code>, <code>run8_time_min</code></li>
+<li><code>run_time_min</code>, <code>total_time_min</code></li>
+<li><code>skiErg_time_min</code>, <code>sledPush_time_min</code>, <code>sledPull_time_min</code>,
+    <code>burpeeBroadJump_time_min</code>, <code>rowErg_time_min</code>, <code>farmersCarry_time_min</code>,
+    <code>sandbagLunges_time_min</code>, <code>wallBalls_time_min</code></li>
+<li><code>work_time_min</code></li>
+</ul>
+<h3 id="athletes">athletes<a class="headerlink" href="#athletes" title="Permanent link">&para;</a></h3>
+<p>Derived from <code>race_results</code> (canonical identity).</p>
+<ul>
+<li>Columns:</li>
+<li><code>athlete_id</code> VARCHAR NOT NULL (md5 of canonical_name|gender|nationality, primary key)</li>
+<li><code>canonical_name</code> VARCHAR NOT NULL (lower(trim(name_raw)))</li>
+<li><code>gender</code> VARCHAR</li>
+<li><code>nationality</code> VARCHAR</li>
+</ul>
+<h3 id="athlete_results">athlete_results<a class="headerlink" href="#athlete_results" title="Permanent link">&para;</a></h3>
+<p>Link table between athletes and race results.</p>
+<ul>
+<li>Columns:</li>
+<li><code>athlete_id</code> VARCHAR NOT NULL (FK to athletes.athlete_id)</li>
+<li><code>result_id</code> VARCHAR NOT NULL (FK to race_results.result_id)</li>
+<li><code>link_confidence</code> DOUBLE NOT NULL (currently 1.0 for exact match)</li>
+<li><code>link_method</code> VARCHAR NOT NULL (currently "exact_key")</li>
+<li>Constraints:</li>
+<li>Composite primary key (<code>athlete_id</code>, <code>result_id</code>)</li>
+</ul>
+<h3 id="athlete_index">athlete_index<a class="headerlink" href="#athlete_index" title="Permanent link">&para;</a></h3>
+<p>Pre-aggregated search index for fast lookup.</p>
+<ul>
+<li>Columns:</li>
+<li><code>athlete_id</code> VARCHAR NOT NULL (FK to athletes.athlete_id)</li>
+<li><code>canonical_name</code> VARCHAR NOT NULL</li>
+<li><code>name_lc</code> VARCHAR NOT NULL (lower(canonical_name))</li>
+<li><code>gender</code> VARCHAR</li>
+<li><code>nationality</code> VARCHAR</li>
+<li><code>race_count</code> INTEGER NOT NULL</li>
+<li><code>avg_total_time</code> DOUBLE</li>
+<li><code>avg_run_ratio</code> DOUBLE</li>
+<li>Constraints:</li>
+<li>Primary key (<code>athlete_id</code>)</li>
+</ul>
+<h2 id="contract-alignment-notes">Contract Alignment Notes<a class="headerlink" href="#contract-alignment-notes" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Tests should mirror contract columns (especially <code>athlete_results</code> link metadata).</li>
+<li><code>race_results.division</code> is required for client-side filtering in
+  <code>src/pyrox/reporting.py</code>.</li>
+</ul></div>
             </div>
         </div>
 

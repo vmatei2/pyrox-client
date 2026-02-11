@@ -6,9 +6,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
         
-        <link rel="canonical" href="https://vmatei2.github.io/pyrox-client/faq/">
+        <link rel="canonical" href="https://vmatei2.github.io/pyrox-client/maintainers/">
         <link rel="shortcut icon" href="../img/favicon.ico">
-        <title>FAQ - pyrox-client</title>
+        <title>Maintainer Docs - pyrox-client</title>
         <link href="../css/bootstrap.min.css" rel="stylesheet">
         <link href="../css/fontawesome.min.css" rel="stylesheet">
         <link href="../css/brands.min.css" rel="stylesheet">
@@ -80,7 +80,7 @@
                                 </ul>
                             </li>
                             <li class="nav-item">
-                                <a href="./" class="nav-link active" aria-current="page">FAQ</a>
+                                <a href="../faq/" class="nav-link">FAQ</a>
                             </li>
                             <li class="nav-item">
                                 <a href="../privacy/" class="nav-link">Privacy Policy</a>
@@ -93,16 +93,6 @@
                                 <i class="fa fa-search"></i> Search
                             </a>
                         </li>
-                            <li class="nav-item">
-                                <a rel="prev" href="../errors/" class="nav-link">
-                                    <i class="fa fa-arrow-left"></i> Previous
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a rel="next" href="../privacy/" class="nav-link">
-                                    Next <i class="fa fa-arrow-right"></i>
-                                </a>
-                            </li>
                     </ul>
                 </div>
             </div>
@@ -121,24 +111,8 @@
     <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
         <ul class="nav flex-column">
             
-            <li class="nav-item" data-bs-level="1"><a href="#faq" class="nav-link">FAQ</a>
+            <li class="nav-item" data-bs-level="1"><a href="#maintainer-docs" class="nav-link">Maintainer Docs</a>
               <ul class="nav flex-column">
-            <li class="nav-item" data-bs-level="2"><a href="#which-seasons-are-covered" class="nav-link">Which seasons are covered?</a>
-              <ul class="nav flex-column">
-              </ul>
-            </li>
-            <li class="nav-item" data-bs-level="2"><a href="#why-are-times-in-minutes" class="nav-link">Why are times in minutes?</a>
-              <ul class="nav flex-column">
-              </ul>
-            </li>
-            <li class="nav-item" data-bs-level="2"><a href="#how-do-i-update-cached-data" class="nav-link">How do I update cached data?</a>
-              <ul class="nav flex-column">
-              </ul>
-            </li>
-            <li class="nav-item" data-bs-level="2"><a href="#why-does-a-race-return-empty" class="nav-link">Why does a race return empty?</a>
-              <ul class="nav flex-column">
-              </ul>
-            </li>
               </ul>
             </li>
         </ul>
@@ -146,16 +120,14 @@
 </div></div>
                     <div class="col-md-9" role="main">
 
-<h1 id="faq">FAQ<a class="headerlink" href="#faq" title="Permanent link">&para;</a></h1>
-<h2 id="which-seasons-are-covered">Which seasons are covered?<a class="headerlink" href="#which-seasons-are-covered" title="Permanent link">&para;</a></h2>
-<p>Historical coverage for seasons 2-7 (with season 5-6 being most used in analysis).</p>
-<h2 id="why-are-times-in-minutes">Why are times in minutes?<a class="headerlink" href="#why-are-times-in-minutes" title="Permanent link">&para;</a></h2>
-<p>Times are normalized on load so your analysis can use numeric operations directly.</p>
-<h2 id="how-do-i-update-cached-data">How do I update cached data?<a class="headerlink" href="#how-do-i-update-cached-data" title="Permanent link">&para;</a></h2>
-<p>Pass <code>force_refresh=True</code> to <code>list_races</code> or <code>use_cache=False</code> to any read method.</p>
-<h2 id="why-does-a-race-return-empty">Why does a race return empty?<a class="headerlink" href="#why-does-a-race-return-empty" title="Permanent link">&para;</a></h2>
-<p>If a filter removes every row, <code>RaceNotFound</code> is raised. Try removing filters to
-confirm the base dataset exists.</p></div>
+<h1 id="maintainer-docs">Maintainer Docs<a class="headerlink" href="#maintainer-docs" title="Permanent link">&para;</a></h1>
+<p>Operational documentation for people maintaining this repository.</p>
+<ul>
+<li>Release workflow: <code>docs/maintainers/release.md</code></li>
+<li>Reporting service and UI workflows: <code>docs/maintainers/reporting-service.md</code></li>
+</ul>
+<p>These docs are intentionally repository-focused and may include commands that are
+not relevant to package users.</p></div>
             </div>
         </div>
 
