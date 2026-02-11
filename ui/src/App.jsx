@@ -41,6 +41,18 @@ const resolveApiBase = () => {
 
 const API_BASE = resolveApiBase();
 const VALID_MODES = new Set(["report", "compare", "deepdive", "planner"]);
+const IOS_MOBILE_MEDIA_QUERY = "(max-width: 900px)";
+
+const isIosBrowserDevice = () => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  const { navigator } = window;
+  const userAgent = navigator.userAgent || "";
+  const isiOSUserAgent = /iPad|iPhone|iPod/i.test(userAgent);
+  const isIPadDesktopMode = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+  return isiOSUserAgent || isIPadDesktopMode;
+};
 
 const getInitialMode = () => {
   if (typeof window === "undefined") {
@@ -1165,6 +1177,7 @@ export default function App() {
     ? Capacitor.isNativePlatform()
     : platform !== "web";
   const isIosPlatform = platform === "ios";
+  const isIosEnvironment = isIosPlatform || isIosBrowserDevice();
   const [mode, setMode] = useState(getInitialMode);
   const {
     isBootstrapping,
@@ -1173,10 +1186,10 @@ export default function App() {
     retryBootstrap,
   } = useAppBootstrap(API_BASE);
   const [isIosMobile, setIsIosMobile] = useState(() => {
-    if (!isIosPlatform || typeof window === "undefined") {
+    if (!isIosEnvironment || typeof window === "undefined") {
       return false;
     }
-    return window.matchMedia("(max-width: 900px)").matches;
+    return window.matchMedia(IOS_MOBILE_MEDIA_QUERY).matches;
   });
   const [name, setName] = useState("");
   const [filters, setFilters] = useState({
@@ -1348,11 +1361,11 @@ export default function App() {
   const activeHelpContent = activeHelpKey ? reportHelpContent[activeHelpKey] || null : null;
 
   useEffect(() => {
-    if (!isIosPlatform || typeof window === "undefined") {
+    if (!isIosEnvironment || typeof window === "undefined") {
       setIsIosMobile(false);
       return;
     }
-    const mediaQuery = window.matchMedia("(max-width: 900px)");
+    const mediaQuery = window.matchMedia(IOS_MOBILE_MEDIA_QUERY);
     const updateIsIosMobile = () => {
       setIsIosMobile(mediaQuery.matches);
     };
@@ -1363,7 +1376,7 @@ export default function App() {
     }
     mediaQuery.addListener(updateIsIosMobile);
     return () => mediaQuery.removeListener(updateIsIosMobile);
-  }, [isIosPlatform]);
+  }, [isIosEnvironment]);
 
   useEffect(() => {
     if (typeof document === "undefined") {

@@ -10,6 +10,21 @@ import "./style_layers/bootstrap.css";
 
 createRoot(document.getElementById("root")).render(<App />);
 
+const isNativeCapacitorRuntime = () => {
+  const protocol = window.location?.protocol || "";
+  const ua = navigator.userAgent || "";
+  return protocol === "capacitor:" || protocol === "ionic:" || ua.includes("Capacitor");
+};
+
+if (isNativeCapacitorRuntime()) {
+  document.documentElement.classList.add("native-capacitor");
+  document.documentElement.classList.add("app-ready");
+  const splash = document.getElementById("boot-splash");
+  if (splash) {
+    splash.remove();
+  }
+}
+
 const hideBootSplash = () => {
   document.documentElement.classList.add("app-ready");
   const splash = document.getElementById("boot-splash");

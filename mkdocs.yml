@@ -19,6 +19,7 @@ nav:
       - Client API: api.md
       - Errors: errors.md
   - FAQ: faq.md
+  - Privacy Policy: privacy.md
 
 markdown_extensions:
   - admonition
