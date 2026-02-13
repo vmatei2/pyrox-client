@@ -1,3 +1,9 @@
+"""API endpoint tests backed by temporary DuckDB fixtures.
+
+Each test seeds only the tables needed for its endpoint and validates key
+response fields to keep contract checks fast and focused.
+"""
+
 from pathlib import Path
 import importlib
 
@@ -11,10 +17,12 @@ from pyrox_api_service import app as api  # noqa: E402
 
 
 def _create_db(path: Path) -> duckdb.DuckDBPyConnection:
+    """Create an isolated on-disk DuckDB connection for one test case."""
     return duckdb.connect(str(path))
 
 
 def test_legacy_api_shim_points_to_new_service_module():
+    """Ensure legacy import shims still resolve to the active API service."""
     legacy_package = importlib.import_module("src.pyrox.api")
     legacy_module = importlib.import_module("src.pyrox.api.app")
     new_module = importlib.import_module("pyrox_api_service.app")
@@ -24,6 +32,7 @@ def test_legacy_api_shim_points_to_new_service_module():
 
 
 def _seed_search_tables(con: duckdb.DuckDBPyConnection) -> None:
+    """Seed the minimum schema and rows needed by the athlete search endpoint."""
     con.execute(
         """
         CREATE TABLE athlete_index (
@@ -82,6 +91,7 @@ def _seed_search_tables(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def _seed_report_tables(con: duckdb.DuckDBPyConnection) -> None:
+    """Seed report/ranking/split tables for /api/reports endpoint coverage."""
     con.execute(
         """
         CREATE TABLE race_results (
@@ -207,6 +217,7 @@ def _seed_report_tables(con: duckdb.DuckDBPyConnection) -> None:
 
 
 def _seed_planner_tables(con: duckdb.DuckDBPyConnection) -> None:
+    """Seed planner rows with controlled distributions for histogram assertions."""
     segment_keys = [config["key"] for config in api.SEGMENT_CONFIG]
     columns = [
         "season INTEGER",
@@ -251,7 +262,44 @@ def _seed_planner_tables(con: duckdb.DuckDBPyConnection) -> None:
     )
 
 
+def _seed_deepdive_tables(con: duckdb.DuckDBPyConnection) -> None:
+    """Seed multi-location cohort data for deepdive podium scope checks."""
+    con.execute(
+        """
+        CREATE TABLE race_results (
+            result_id VARCHAR,
+            event_name VARCHAR,
+            event_id VARCHAR,
+            season INTEGER,
+            location VARCHAR,
+            year INTEGER,
+            division VARCHAR,
+            gender VARCHAR,
+            age_group VARCHAR,
+            name VARCHAR,
+            total_time_min DOUBLE
+        );
+        """
+    )
+    con.executemany(
+        "INSERT INTO race_results VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+            ("athlete_result", "London Open", "evt_london", 8, "london", 2024, "open", "F", "30-34", "Athlete A", 63.0),
+            ("r_l_1", "London Open", "evt_london", 8, "london", 2024, "open", "F", "30-34", "A One", 60.0),
+            ("r_l_2", "London Open", "evt_london", 8, "london", 2024, "open", "F", "30-34", "B Two", 61.0),
+            ("r_l_3", "London Open", "evt_london", 8, "london", 2024, "open", "F", "30-34", "C Three", 62.0),
+            ("r_l_4", "London Open", "evt_london", 8, "london", 2024, "open", "F", "30-34", "D Four", 65.0),
+            ("r_p_1", "Paris Open", "evt_paris", 8, "paris", 2024, "open", "F", "30-34", "E Five", 59.0),
+            ("r_p_2", "Paris Open", "evt_paris", 8, "paris", 2024, "open", "F", "30-34", "F Six", 60.5),
+            ("r_p_3", "Paris Open", "evt_paris", 8, "paris", 2024, "open", "F", "30-34", "G Seven", 61.5),
+            ("r_p_4", "Paris Open", "evt_paris", 8, "paris", 2024, "open", "F", "30-34", "H Eight", 70.0),
+            ("r_other", "London Pro", "evt_other", 8, "london", 2024, "pro", "M", "35-39", "Ignored Athlete", 58.0),
+        ],
+    )
+
+
 def test_healthcheck_lists_tables(tmp_path, monkeypatch):
+    """Healthcheck should return table visibility for the configured DB."""
     db_path = tmp_path / "health.db"
     con = _create_db(db_path)
     con.execute("CREATE TABLE race_results (result_id VARCHAR);")
@@ -267,6 +315,7 @@ def test_healthcheck_lists_tables(tmp_path, monkeypatch):
 
 
 def test_search_endpoint_returns_races(tmp_path, monkeypatch):
+    """Search endpoint should return all races linked to a matched athlete."""
     db_path = tmp_path / "search.db"
     con = _create_db(db_path)
     _seed_search_tables(con)
@@ -284,6 +333,7 @@ def test_search_endpoint_returns_races(tmp_path, monkeypatch):
 
 
 def test_report_endpoint_filters_run_split_min_values(tmp_path, monkeypatch):
+    """Report endpoint should apply run split minimum thresholds in cohort stats."""
     db_path = tmp_path / "report.db"
     con = _create_db(db_path)
     _seed_report_tables(con)
@@ -301,6 +351,7 @@ def test_report_endpoint_filters_run_split_min_values(tmp_path, monkeypatch):
 
 
 def test_report_endpoint_includes_plot_data_series(tmp_path, monkeypatch):
+    """Report payload should include derived plotting series with expected values."""
     db_path = tmp_path / "report-plots.db"
     con = _create_db(db_path)
     _seed_report_tables(con)
@@ -340,6 +391,7 @@ def test_report_endpoint_includes_plot_data_series(tmp_path, monkeypatch):
 
 
 def test_planner_endpoint_applies_time_and_run_filters(tmp_path, monkeypatch):
+    """Planner endpoint should respect both total-time range and segment filters."""
     db_path = tmp_path / "planner.db"
     con = _create_db(db_path)
     _seed_planner_tables(con)
@@ -371,3 +423,47 @@ def test_planner_endpoint_applies_time_and_run_filters(tmp_path, monkeypatch):
     )
     assert run1_segment["histogram"]["count"] == 1
     assert total_segment["histogram"]["count"] == 2
+
+
+def test_deepdive_endpoint_supports_podium_for_all_and_location_scope(tmp_path, monkeypatch):
+    """Deepdive should expose podium stats for all-locations and location-only scopes."""
+    db_path = tmp_path / "deepdive.db"
+    con = _create_db(db_path)
+    _seed_deepdive_tables(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+    base_params = {
+        "season": 8,
+        "division": "open",
+        "gender": "female",
+        "age_group": "30-34",
+    }
+
+    # Any-location scope: podium is computed across both London and Paris cohorts.
+    all_resp = client.get("/api/deepdive/athlete_result", params=base_params)
+    assert all_resp.status_code == 200
+    all_payload = all_resp.json()
+    assert all_payload["total_locations"] == 2
+    assert all_payload["group_summary"]["podium"]["count"] == 3
+    assert all_payload["group_summary"]["podium"]["max"] == pytest.approx(60.5)
+    assert all_payload["group_distribution"]["podium"]["count"] == 3
+    all_locations = {row["location"]: row for row in all_payload["locations"]}
+    assert all_locations["london"]["podium"] == pytest.approx(62.0)
+    assert all_locations["paris"]["podium"] == pytest.approx(61.5)
+
+    # Location scope: podium is recomputed from London-only cohort rows.
+    london_resp = client.get(
+        "/api/deepdive/athlete_result",
+        params={**base_params, "location": "london"},
+    )
+    assert london_resp.status_code == 200
+    london_payload = london_resp.json()
+    assert london_payload["filters"]["location"] == "london"
+    assert london_payload["total_locations"] == 1
+    assert london_payload["group_summary"]["podium"]["count"] == 3
+    assert london_payload["group_summary"]["podium"]["max"] == pytest.approx(62.0)
+    assert london_payload["group_distribution"]["podium"]["count"] == 3
+    assert london_payload["locations"][0]["location"] == "london"
+    assert london_payload["locations"][0]["podium"] == pytest.approx(62.0)

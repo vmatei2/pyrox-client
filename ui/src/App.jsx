@@ -64,6 +64,7 @@ const getInitialMode = () => {
 
 const DEEPDIVE_STAT_OPTIONS = [
   { value: "p05", label: "Top 5%" },
+  { value: "podium", label: "Podium" },
   { value: "mean", label: "Mean" },
   { value: "p90", label: "Bottom 10%" },
 ];
@@ -3413,14 +3414,14 @@ export default function App() {
                     subtitle={`Filtered cohort distribution for ${deepdiveMetricLabel}`}
                     histogram={deepdiveDistribution}
                     stats={deepdiveGroupSummary}
-                    infoTooltip="Histogram uses equal-width bins from the selected cohort group. For Top 5%, bins include locations for the times in that bin."
+                    infoTooltip="Histogram uses equal-width bins from the selected cohort group. For Top 5% and Podium, bins include locations for the times in that bin."
                     emptyMessage="No distribution data available for these filters."
                   />
 
                   <StatBarChart
                     title="Metric comparison"
                     subtitle={`Athlete vs ${deepdiveStatLabel} group (${deepdiveMetricLabel})`}
-                    infoTooltip="Compares the athlete’s selected metric against the selected cohort group (Top 5%, Bottom 10%, or Mean). The bars show mean, median, fastest, and slowest within that group."
+                    infoTooltip="Compares the athlete’s selected metric against the selected cohort group (Top 5%, Podium, Bottom 10%, or Mean). The bars show mean, median, fastest, and slowest within that group."
                     items={[
                       {
                         label: "Athlete",
@@ -3479,6 +3480,14 @@ export default function App() {
                                       className="info-tooltip"
                                       data-tooltip="Bottom 10% time is the 90th percentile of the cohort (interpolated for small groups)."
                                       aria-label="Bottom 10% time definition"
+                                    >
+                                      i
+                                    </span>
+                                  ) : deepdiveParams.stat === "podium" ? (
+                                    <span
+                                      className="info-tooltip"
+                                      data-tooltip="Podium time is the 3rd-fastest result in the cohort (or the slowest of available top finishes when fewer than 3 results exist)."
+                                      aria-label="Podium time definition"
                                     >
                                       i
                                     </span>

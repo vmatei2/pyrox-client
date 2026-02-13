@@ -750,11 +750,14 @@ class ReportingClient:
         if df.empty:
             raise ValueError("No cohort data found for the selected filters.")
 
-        values = pd.to_numeric(df["metric_value"], errors="coerce").dropna()
+        cohort_df = df.copy()
+        cohort_df["metric_value"] = pd.to_numeric(cohort_df["metric_value"], errors="coerce")
+        cohort_df = cohort_df.dropna(subset=["metric_value"])
         if min_value is not None:
-            values = values[values >= min_value]
-        if values.empty:
+            cohort_df = cohort_df[cohort_df["metric_value"] >= min_value]
+        if cohort_df.empty:
             raise ValueError("No cohort data found for the selected filters.")
+        values = cohort_df["metric_value"]
 
         def describe(values_series: pd.Series) -> dict[str, float]:
             return {
@@ -765,12 +768,19 @@ class ReportingClient:
                 "median": float(values_series.median()),
             }
 
+        def top_n_group(values_series: pd.Series, n: int) -> pd.Series:
+            if values_series.empty:
+                return values_series
+            return values_series.nsmallest(min(n, int(values_series.shape[0])))
+
         summary_all = describe(values)
         p05_value = float(values.quantile(0.05))
         p90_value = float(values.quantile(0.9))
         top_group = values[values <= p05_value]
+        podium_group = top_n_group(values, n=3)
         bottom_group = values[values >= p90_value]
         summary_top = describe(top_group) if not top_group.empty else summary_all
+        summary_podium = describe(podium_group) if not podium_group.empty else summary_all
         summary_bottom = describe(bottom_group) if not bottom_group.empty else summary_all
 
         histogram_all = _build_histogram(
@@ -787,13 +797,30 @@ class ReportingClient:
                 top_athlete = athlete_value
         histogram_top = (
             _build_histogram_with_locations(
-                df.loc[df["metric_value"] <= p05_value, "metric_value"],
-                df.loc[df["metric_value"] <= p05_value, "location"],
+                cohort_df.loc[cohort_df["metric_value"] <= p05_value, "metric_value"],
+                cohort_df.loc[cohort_df["metric_value"] <= p05_value, "location"],
                 bins=bins,
                 athlete_value=top_athlete,
                 min_value=min_value,
             )
             if not top_group.empty
+            else None
+        )
+        podium_rows = cohort_df.nsmallest(min(3, int(cohort_df.shape[0])), "metric_value")
+        podium_athlete = None
+        if not podium_group.empty:
+            podium_values = podium_group.to_numpy(dtype=float, copy=False)
+            if np.isclose(podium_values, athlete_value).any():
+                podium_athlete = athlete_value
+        histogram_podium = (
+            _build_histogram_with_locations(
+                podium_rows["metric_value"],
+                podium_rows["location"],
+                bins=bins,
+                athlete_value=podium_athlete,
+                min_value=min_value,
+            )
+            if not podium_group.empty
             else None
         )
         bottom_athlete = None
@@ -810,10 +837,8 @@ class ReportingClient:
         ) if not bottom_group.empty else None
 
         rows = []
-        for location_label, group in df.groupby("location", dropna=False):
-            times = pd.to_numeric(group["metric_value"], errors="coerce").dropna()
-            if min_value is not None:
-                times = times[times >= min_value]
+        for location_label, group in cohort_df.groupby("location", dropna=False):
+            times = group["metric_value"].dropna()
             if times.empty:
                 continue
             seasons = sorted(
@@ -829,6 +854,7 @@ class ReportingClient:
                     "fastest": float(times.min()),
                     "mean": float(times.mean()),
                     "p05": float(times.quantile(0.05)),
+                    "podium": float(top_n_group(times, n=3).max()),
                     "p50": float(times.quantile(0.5)),
                     "p90": float(times.quantile(0.9)),
                 }
@@ -848,17 +874,20 @@ class ReportingClient:
             "summary": {
                 **summary_all,
                 "p05": p05_value,
+                "podium": float(podium_group.max()),
                 "p90": p90_value,
             },
             "group_summary": {
                 "mean": summary_all,
                 "p05": summary_top,
+                "podium": summary_podium,
                 "p90": summary_bottom,
             },
             "distribution": histogram_all,
             "group_distribution": {
                 "mean": histogram_all,
                 "p05": histogram_top,
+                "podium": histogram_podium,
                 "p90": histogram_bottom,
             },
             "filters": {
