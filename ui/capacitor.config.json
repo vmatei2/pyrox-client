@@ -5,9 +5,11 @@
   "server": {
     "cleartext": true
   },
-  "plugins":{
-    "launchShowDuration": 1200,
-    "launchutoHide": true,
-    "showSpiiner": false
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "launchAutoHide": true,
+      "showSpinner": false
+    }
   }
 }

@@ -1,0 +1,58 @@
+/* Base styles — body, resets, font rendering, scrollbar, selection, placeholder. */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-body);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -webkit-tap-highlight-color: transparent;
+  background:
+    radial-gradient(circle at 20% -10%, rgba(59, 130, 246, 0.12), transparent 45%),
+    linear-gradient(180deg, #0a0f1a 0%, #0b1220 100%);
+}
+
+body::before,
+body::after {
+  display: none;
+}
+
+input,
+select,
+button,
+textarea {
+  font: inherit;
+  font-size: 16px;
+}
+
+::placeholder {
+  color: rgba(171, 188, 218, 0.8);
+}
+
+::selection {
+  background: rgba(10, 132, 255, 0.3);
+  color: var(--ink);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.4);
+}

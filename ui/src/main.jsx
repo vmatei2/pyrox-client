@@ -1,14 +1,21 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
+import { QueryClientProvider } from "@tanstack/react-query";
 
 import App from "./App.jsx";
-import "./styles.css";
-import "./style_layers/premium_tokens.css";
-import "./style_layers/premium_primitives.css";
-import "./style_layers/premium_flow.css";
-import "./style_layers/bootstrap.css";
+import { queryClient } from "./api/client.js";
+import "./styles/tokens.css";
+import "./styles/base.css";
+import "./styles/components.css";
+import "./styles/charts.css";
+import "./styles/layouts.css";
+import "./styles/bootstrap.css";
 
-createRoot(document.getElementById("root")).render(<App />);
+createRoot(document.getElementById("root")).render(
+  <QueryClientProvider client={queryClient}>
+    <App />
+  </QueryClientProvider>
+);
 
 const isNativeCapacitorRuntime = () => {
   const protocol = window.location?.protocol || "";

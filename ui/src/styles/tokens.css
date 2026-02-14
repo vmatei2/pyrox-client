@@ -1,0 +1,64 @@
+/* Design tokens — single source of truth.
+   iOS-native palette (#0a84ff blue, SF Pro fonts) with premium spacing scale. */
+
+:root {
+  color-scheme: dark;
+
+  /* Typography */
+  --font-body: "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+    sans-serif;
+  --font-display: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+    sans-serif;
+
+  /* Ink / text */
+  --ink: #f2f6ff;
+  --muted: #9eb0cc;
+  --text-strong: #f8fafc;
+  --text-muted-2: #9aa8bf;
+
+  /* Surfaces */
+  --panel: #090f1b;
+  --surface: linear-gradient(158deg, rgba(22, 30, 48, 0.78), rgba(12, 18, 32, 0.9));
+  --bg-canvas: #0a0f1a;
+  --bg-surface: #101827;
+  --bg-surface-soft: #0f1724;
+
+  /* Accents */
+  --accent: #0a84ff;
+  --accent-cool: #5ac8fa;
+  --accent-strong: #ff9f0a;
+  --accent-soft: rgba(10, 132, 255, 0.18);
+  --accent-primary: #3b82f6;
+  --accent-primary-press: #2563eb;
+  --accent-primary-soft: rgba(59, 130, 246, 0.2);
+
+  /* Borders */
+  --border: rgba(156, 177, 214, 0.2);
+  --hairline: rgba(156, 177, 214, 0.14);
+  --border-subtle: rgba(148, 163, 184, 0.24);
+
+  /* Elevation */
+  --shadow: 0 24px 60px rgba(1, 5, 14, 0.56);
+  --focus-ring: 0 0 0 3px rgba(59, 130, 246, 0.35);
+
+  /* Radii */
+  --radius: 24px;
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+
+  /* Spacing scale (premium) */
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Controls */
+  --control-height: 48px;
+
+  /* Safe areas */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}

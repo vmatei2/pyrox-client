@@ -1,0 +1,703 @@
+/* Layout styles — grids, responsive breakpoints, app shell,
+   iOS mobile overrides, safe areas, animations, reduced motion. */
+
+/* ----------------------------------------------------------------
+   App container
+   ---------------------------------------------------------------- */
+.app {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: calc(16px + var(--safe-top)) 14px calc(28px + var(--safe-bottom));
+}
+
+/* ----------------------------------------------------------------
+   App shell (loading wrapper)
+   ---------------------------------------------------------------- */
+.app-shell {
+  position: relative;
+  min-height: 100vh;
+}
+
+.app-shell-content {
+  transition: opacity 0.24s ease, transform 0.24s ease;
+}
+
+.app-shell-content.is-obscured {
+  opacity: 0;
+  transform: scale(0.992);
+  pointer-events: none;
+}
+
+/* ----------------------------------------------------------------
+   Layout grid
+   ---------------------------------------------------------------- */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+}
+
+.layout.is-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* ----------------------------------------------------------------
+   Grid utilities
+   ---------------------------------------------------------------- */
+.grid-2 {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1fr;
+}
+
+.grid-3 {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1fr;
+}
+
+.deepdive-page .grid-3 {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+/* ----------------------------------------------------------------
+   Report grid
+   ---------------------------------------------------------------- */
+.report-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr;
+  margin: 18px 0;
+}
+
+/* ----------------------------------------------------------------
+   Animations
+   ---------------------------------------------------------------- */
+@keyframes float-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ----------------------------------------------------------------
+   Responsive: >= 700px (tablet)
+   ---------------------------------------------------------------- */
+@media (min-width: 700px) {
+  .app {
+    max-width: 920px;
+    padding: calc(26px + var(--safe-top)) 20px calc(56px + var(--safe-bottom));
+  }
+
+  .mode-tab {
+    min-width: 146px;
+  }
+
+  .primary,
+  .secondary {
+    width: auto;
+  }
+
+  .results-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .report-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+
+  .report-actions .field {
+    flex: 1;
+    min-width: 220px;
+  }
+
+  .report-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+
+  .toolbar-actions > * {
+    width: auto;
+    flex: 1 1 220px;
+  }
+
+  .chart-body {
+    height: 170px;
+  }
+
+  .deepdive-page .results-grid {
+    max-height: 340px;
+  }
+
+  .work-run-pie-wrap {
+    grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
+  }
+
+  .flow-steps {
+    margin-bottom: var(--space-5);
+  }
+
+  .flow-step {
+    font-size: 0.84rem;
+  }
+}
+
+/* ----------------------------------------------------------------
+   Responsive: <= 700px (small screens)
+   ---------------------------------------------------------------- */
+@media (max-width: 700px) {
+  .app {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .hero {
+    padding: var(--space-5);
+    border-radius: 22px;
+  }
+
+  .hero h1 {
+    font-size: clamp(1.5rem, 8vw, 2rem);
+  }
+
+  .hero p {
+    font-size: 0.92rem;
+  }
+
+  .mode-tabs {
+    top: calc(var(--safe-top) + 4px);
+  }
+
+  .mode-tab {
+    min-height: 44px;
+    min-width: 120px;
+  }
+
+  .panel,
+  .report {
+    border-radius: 18px;
+    padding: 15px;
+  }
+
+  .report-card,
+  .chart-card,
+  .race-card {
+    border-radius: 14px;
+  }
+
+  .field input,
+  .field select,
+  .primary,
+  .secondary {
+    min-height: 46px;
+  }
+
+  .work-run-pie-wrap {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .work-run-legend {
+    width: 100%;
+  }
+
+  .run-change-svg {
+    height: 224px;
+  }
+
+  .flow-steps {
+    margin-bottom: var(--space-4);
+  }
+
+  .flow-step {
+    font-size: 0.8rem;
+  }
+
+  .report-card-head {
+    flex-wrap: wrap;
+  }
+
+  .help-sheet-backdrop {
+    align-items: flex-end;
+  }
+}
+
+/* ----------------------------------------------------------------
+   Responsive: >= 960px (help sheet desktop)
+   ---------------------------------------------------------------- */
+@media (min-width: 960px) {
+  .help-sheet-backdrop {
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-6);
+  }
+
+  .help-sheet {
+    width: min(680px, 100%);
+    border-radius: 18px;
+    border: 1px solid var(--border);
+    box-shadow: 0 24px 56px rgba(2, 6, 23, 0.55);
+  }
+
+  .help-sheet-handle {
+    display: none;
+  }
+}
+
+/* ----------------------------------------------------------------
+   Responsive: >= 1024px (desktop)
+   ---------------------------------------------------------------- */
+@media (min-width: 1024px) {
+  .app {
+    max-width: 1260px;
+    padding: 48px 24px 80px;
+  }
+
+  .mode-tabs {
+    position: static;
+    display: inline-flex;
+    width: auto;
+    overflow: visible;
+    border-radius: 14px;
+    margin-bottom: var(--space-6);
+    backdrop-filter: none;
+  }
+
+  .mode-tab {
+    min-width: 0;
+    min-height: 0;
+    padding: 9px 18px;
+    font-size: 0.95rem;
+  }
+
+  .layout {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr);
+  }
+
+  .grid-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .grid-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .report-grid,
+  .chart-grid,
+  .stat-grid,
+  .comparison-grid,
+  .compare-hero,
+  .compare-charts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .panel {
+    padding: 28px;
+    border-radius: var(--radius);
+  }
+
+  .report {
+    border-radius: 22px;
+    padding: 24px;
+  }
+
+  .report-time {
+    width: auto;
+    min-width: 160px;
+    text-align: right;
+  }
+
+  .report-card,
+  .chart-card,
+  .compare-hero-card,
+  .race-card {
+    border-radius: 18px;
+  }
+
+  .hero {
+    padding: 32px;
+    border-radius: 30px;
+  }
+
+  .grouped-chart-wrap {
+    grid-template-columns: auto 1fr;
+    gap: var(--space-3);
+    height: 360px;
+    --label-row-height: 44px;
+  }
+
+  .grouped-axis {
+    min-width: 56px;
+    font-size: 0.75rem;
+    padding-right: 6px;
+  }
+
+  .grouped-group {
+    min-width: 110px;
+  }
+
+  .grouped-label {
+    min-width: 110px;
+    max-width: 110px;
+    font-size: 0.72rem;
+  }
+
+  .grouped-bar {
+    width: 22px;
+  }
+
+  .deepdive-page .results {
+    min-height: 360px;
+  }
+
+  .deepdive-page .results-grid {
+    max-height: 360px;
+  }
+
+  table {
+    min-width: 0;
+    font-size: 0.9rem;
+  }
+
+  table th,
+  table td {
+    padding: 10px 8px;
+  }
+}
+
+/* ----------------------------------------------------------------
+   Responsive table (block mode for small screens)
+   ---------------------------------------------------------------- */
+@media (max-width: 640px) {
+  table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
+/* ----------------------------------------------------------------
+   Safe area support
+   ---------------------------------------------------------------- */
+@supports (padding: env(safe-area-inset-top)) {
+  .app {
+    padding-top: calc(16px + env(safe-area-inset-top));
+    padding-bottom: calc(28px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ----------------------------------------------------------------
+   iOS mobile overrides (body.ios-mobile)
+   ---------------------------------------------------------------- */
+body.ios-mobile,
+body.ios-mobile #root {
+  overflow-x: clip;
+}
+
+body.ios-mobile .app {
+  max-width: 100%;
+  width: 100%;
+  padding: calc(14px + var(--safe-top)) 12px calc(114px + var(--safe-bottom));
+  overflow-x: clip;
+}
+
+body.ios-mobile .hero,
+body.ios-mobile .panel,
+body.ios-mobile .report,
+body.ios-mobile .report-card,
+body.ios-mobile .chart-card,
+body.ios-mobile .compare-hero-card,
+body.ios-mobile .race-card {
+  overflow-x: clip;
+  border-radius: var(--radius-md);
+}
+
+body.ios-mobile .hero {
+  margin-bottom: 14px;
+}
+
+body.ios-mobile .hero h1 {
+  font-size: clamp(1.42rem, 7.3vw, 1.92rem);
+}
+
+body.ios-mobile .hero p,
+body.ios-mobile .report-subtitle,
+body.ios-mobile .race-title,
+body.ios-mobile .race-location,
+body.ios-mobile .chart-head h5,
+body.ios-mobile .chart-head p {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+body.ios-mobile .mode-tabs {
+  position: fixed;
+  top: auto;
+  left: 10px;
+  right: 10px;
+  bottom: calc(10px + var(--safe-bottom));
+  z-index: 80;
+  margin: 0;
+  width: auto;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: visible;
+  gap: 5px;
+  padding: 6px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, rgba(9, 16, 29, 0.95), rgba(8, 15, 26, 0.88));
+  border: 1px solid rgba(156, 177, 214, 0.2);
+  box-shadow:
+    0 16px 32px rgba(1, 6, 16, 0.48),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+body.ios-mobile .mode-tab {
+  min-width: 0;
+  min-height: 44px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 4px;
+  border-radius: 10px;
+  font-size: 0.73rem;
+  line-height: 1.16;
+  letter-spacing: -0.005em;
+  text-align: center;
+  white-space: normal;
+}
+
+body.ios-mobile .mode-tab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+body.ios-mobile .mode-tab-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+body.ios-mobile .mode-tab-label {
+  display: block;
+  font-size: 0.63rem;
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+body.ios-mobile .mode-tab.is-active {
+  box-shadow:
+    0 8px 18px rgba(10, 132, 255, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+body.ios-mobile .form-advanced {
+  margin: 2px 0 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(156, 177, 214, 0.2);
+  background: rgba(12, 20, 34, 0.66);
+}
+
+body.ios-mobile .form-advanced > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 11px 12px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #c5d4eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+body.ios-mobile .form-advanced > summary::-webkit-details-marker {
+  display: none;
+}
+
+body.ios-mobile .form-advanced > summary::after {
+  content: "Show";
+  font-size: 0.72rem;
+  color: #90a8cb;
+}
+
+body.ios-mobile .form-advanced[open] > summary::after {
+  content: "Hide";
+}
+
+body.ios-mobile .form-advanced-content {
+  padding: 0 12px 12px;
+  display: grid;
+  gap: var(--space-3);
+}
+
+body.ios-mobile .table-shell {
+  margin-top: 6px;
+  border-radius: 14px;
+  border: 1px solid rgba(156, 177, 214, 0.18);
+  background: rgba(8, 14, 25, 0.72);
+  overflow: hidden;
+}
+
+body.ios-mobile .table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 10px;
+}
+
+body.ios-mobile .table-scroll table {
+  min-width: 100%;
+  width: 100%;
+  font-size: 0.84rem;
+}
+
+body.ios-mobile .responsive-table {
+  min-width: 0;
+}
+
+body.ios-mobile .responsive-table thead {
+  display: none;
+}
+
+body.ios-mobile .responsive-table tbody {
+  display: grid;
+  gap: 10px;
+}
+
+body.ios-mobile .responsive-table tbody tr {
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(156, 177, 214, 0.14);
+  background: rgba(12, 20, 34, 0.58);
+}
+
+body.ios-mobile .responsive-table tbody td {
+  border: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(100px, 44%) minmax(0, 1fr);
+  gap: var(--space-2);
+  align-items: start;
+  overflow-wrap: anywhere;
+}
+
+body.ios-mobile .responsive-table tbody td::before {
+  content: attr(data-label);
+  color: #9eb3d3;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+body.ios-mobile .grouped-chart-wrap {
+  grid-template-columns: 36px 1fr;
+  height: 248px;
+  --label-row-height: 52px;
+}
+
+body.ios-mobile .grouped-axis {
+  min-width: 36px;
+  font-size: 0.58rem;
+}
+
+body.ios-mobile .grouped-group,
+body.ios-mobile .grouped-label {
+  min-width: 82px;
+  max-width: 82px;
+}
+
+body.ios-mobile .grouped-label {
+  font-size: 0.62rem;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+body.ios-mobile .chart-head {
+  gap: 6px;
+}
+
+body.ios-mobile .chart-body {
+  height: 148px;
+}
+
+body.ios-mobile .report-toolbar,
+body.ios-mobile .toolbar-actions {
+  gap: 10px;
+}
+
+body.ios-mobile .field input,
+body.ios-mobile .field select,
+body.ios-mobile .primary,
+body.ios-mobile .secondary {
+  min-height: 46px;
+}
+
+body.ios-mobile .work-run-pie-wrap {
+  grid-template-columns: 1fr;
+  justify-items: center;
+}
+
+body.ios-mobile .run-change-svg {
+  height: 214px;
+}
+
+/* ----------------------------------------------------------------
+   Reduced motion
+   ---------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .app-shell-content,
+  .bootstrap-screen,
+  .bootstrap-progress-bar {
+    transition: none !important;
+  }
+}
