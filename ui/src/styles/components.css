@@ -903,6 +903,64 @@ table tr:hover td {
 }
 
 /* ----------------------------------------------------------------
+   Rankings
+   ---------------------------------------------------------------- */
+.rankings-leaderboard {
+  position: relative;
+  overflow: hidden;
+}
+
+.rankings-leaderboard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.16), transparent 45%),
+    radial-gradient(circle at 90% 20%, rgba(249, 115, 22, 0.13), transparent 42%);
+  pointer-events: none;
+}
+
+.rankings-list {
+  position: relative;
+  z-index: 1;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  max-height: 420px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.rankings-list-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(156, 177, 214, 0.22);
+  background: rgba(7, 13, 23, 0.82);
+}
+
+.rankings-rank {
+  grid-row: span 2;
+  min-width: 26px;
+  font-weight: 700;
+  color: #ffc480;
+}
+
+.rankings-name {
+  font-weight: 650;
+  color: #ecf2ff;
+}
+
+.rankings-meta {
+  font-size: 0.82rem;
+  color: #a9bedf;
+}
+
+/* ----------------------------------------------------------------
    Planner
    ---------------------------------------------------------------- */
 .planner-results {

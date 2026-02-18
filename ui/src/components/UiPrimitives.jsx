@@ -113,6 +113,16 @@ const ModeTabIcon = ({ kind }) => {
       </svg>
     );
   }
+  if (kind === "rankings") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M7 6h10" />
+        <path d="M9 6v4l3 2 3-2V6" />
+        <path d="M10 14h4" />
+        <path d="M9 18h6" />
+      </svg>
+    );
+  }
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M5 18h14" />

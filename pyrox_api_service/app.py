@@ -78,6 +78,28 @@ def _df_to_records(df: pd.DataFrame, limit: Optional[int] = None) -> list[dict]:
     return json.loads(df.to_json(orient="records", date_format="iso"))
 
 
+def _normalize_optional_text(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text if text else None
+
+
+def _clean_distinct_values(df: pd.DataFrame, column: str) -> list[str]:
+    if df.empty or column not in df.columns:
+        return []
+    values = (
+        df[column]
+        .dropna()
+        .astype(str)
+        .map(str.strip)
+        .loc[lambda series: series != ""]
+        .unique()
+        .tolist()
+    )
+    return sorted(values, key=lambda value: value.casefold())
+
+
 def _describe_times(
     df: pd.DataFrame, column: str = "total_time_min"
 ) -> Optional[dict]:
@@ -716,3 +738,216 @@ def planner_summary(
         "count": int(len(df)),
         "segments": segments,
     }
+
+
+@app.get("/api/rankings/filters")
+def rankings_filter_options(
+    season: int = Query(..., ge=1),
+    division: str = Query(..., min_length=1),
+    gender: str = Query(..., min_length=1),
+    age_group: Optional[str] = Query(None),
+) -> dict:
+    reporting = _get_reporting()
+    con = reporting._ensure_connection()
+
+    normalized_division = str(division).strip()
+    if not normalized_division:
+        raise HTTPException(status_code=400, detail="division is required for rankings filters.")
+    normalized_gender = str(gender).strip()
+    if not normalized_gender:
+        raise HTTPException(status_code=400, detail="gender is required for rankings filters.")
+
+    gender_clauses = []
+    gender_params: list[object] = []
+    normalized_gender_key = normalized_gender.casefold()
+    if normalized_gender_key in {"m", "male"}:
+        gender_clauses.append("lower(gender) IN (?, ?)")
+        gender_params.extend(["m", "male"])
+    elif normalized_gender_key in {"f", "female"}:
+        gender_clauses.append("lower(gender) IN (?, ?)")
+        gender_params.extend(["f", "female"])
+    else:
+        gender_clauses.append("lower(gender) = ?")
+        gender_params.append(normalized_gender_key)
+
+    normalized_age_group = _normalize_optional_text(age_group)
+    age_group_clauses = ["season = ?", "lower(division) = ?", *gender_clauses]
+    age_group_params: list[object] = [int(season), normalized_division.casefold(), *gender_params]
+    if normalized_age_group is not None:
+        age_group_clauses.append("lower(age_group) = ?")
+        age_group_params.append(normalized_age_group.casefold())
+    age_group_where_sql = " AND ".join(age_group_clauses)
+
+    age_groups_df = con.execute(
+        f"""
+        SELECT DISTINCT age_group
+        FROM race_results
+        WHERE season = ?
+          AND lower(division) = ?
+          AND {' AND '.join(gender_clauses)}
+        """,
+        [int(season), normalized_division.casefold(), *gender_params],
+    ).fetchdf()
+    locations_df = con.execute(
+        f"SELECT DISTINCT location FROM race_results WHERE {age_group_where_sql}",
+        age_group_params,
+    ).fetchdf()
+
+    return {
+        "filters": {
+            "season": int(season),
+            "division": normalized_division,
+            "gender": normalized_gender,
+            "age_group": normalized_age_group,
+        },
+        "age_groups": _clean_distinct_values(age_groups_df, "age_group"),
+        "locations": _clean_distinct_values(locations_df, "location"),
+    }
+
+
+@app.get("/api/rankings")
+def rankings(
+    season: int = Query(..., ge=1),
+    division: str = Query(..., min_length=1),
+    gender: str = Query(..., min_length=1),
+    age_group: Optional[str] = Query(None),
+    athlete_name: Optional[str] = Query(None),
+    limit: int = Query(200, ge=1, le=2000),
+    target_time_min: Optional[float] = Query(None, gt=0),
+) -> dict:
+    start = time.perf_counter()
+    logger.info(
+        "rankings start season=%s division=%s gender=%s age_group=%s",
+        season,
+        division,
+        gender,
+        age_group,
+    )
+
+    reporting = _get_reporting()
+    con = reporting._ensure_connection()
+
+    normalized_division = str(division).strip()
+    if not normalized_division:
+        raise HTTPException(status_code=400, detail="division is required for rankings.")
+    normalized_gender = str(gender).strip()
+    if not normalized_gender:
+        raise HTTPException(status_code=400, detail="gender is required for rankings.")
+
+    gender_clauses = []
+    gender_params: list[object] = []
+    normalized_gender_key = normalized_gender.casefold()
+    if normalized_gender_key in {"m", "male"}:
+        gender_clauses.append("lower(gender) IN (?, ?)")
+        gender_params.extend(["m", "male"])
+    elif normalized_gender_key in {"f", "female"}:
+        gender_clauses.append("lower(gender) IN (?, ?)")
+        gender_params.extend(["f", "female"])
+    else:
+        gender_clauses.append("lower(gender) = ?")
+        gender_params.append(normalized_gender_key)
+
+    normalized_age_group = _normalize_optional_text(age_group)
+    normalized_athlete_name = _normalize_optional_text(athlete_name)
+    clauses = [
+        "season = ?",
+        "lower(division) = ?",
+        *gender_clauses,
+        "total_time_min IS NOT NULL",
+    ]
+    params: list[object] = [int(season), normalized_division.casefold(), *gender_params]
+    if normalized_age_group is not None:
+        clauses.append("lower(age_group) = ?")
+        params.append(normalized_age_group.casefold())
+    where_sql = " AND ".join(clauses)
+
+    total_rows = con.execute(
+        f"SELECT COUNT(*) FROM race_results WHERE {where_sql}",
+        params,
+    ).fetchone()[0]
+    ranked_where_sql = ""
+    ranked_params: list[object] = []
+    if normalized_athlete_name is not None:
+        ranked_where_sql = "WHERE lower(name) LIKE ?"
+        ranked_params.append(f"%{normalized_athlete_name.casefold()}%")
+
+    ranking_rows = con.execute(
+        f"""
+        WITH base AS (
+            SELECT *
+            FROM race_results
+            WHERE {where_sql}
+        ),
+        ranked AS (
+            SELECT
+                ROW_NUMBER() OVER (ORDER BY total_time_min ASC, result_id ASC) AS placement,
+                result_id,
+                name,
+                event_name,
+                event_id,
+                location,
+                season,
+                year,
+                division,
+                gender,
+                age_group,
+                total_time_min
+            FROM base
+        )
+        SELECT *
+        FROM ranked
+        {ranked_where_sql}
+        ORDER BY placement
+        LIMIT ?
+        """,
+        [*params, *ranked_params, int(limit)],
+    ).fetchdf()
+
+    location_rows = con.execute(
+        f"""
+        SELECT
+            location,
+            COUNT(*) AS count,
+            MIN(total_time_min) AS fastest_time_min
+        FROM race_results
+        WHERE {where_sql}
+        GROUP BY location
+        ORDER BY lower(location)
+        """,
+        params,
+    ).fetchdf()
+
+    placement_lookup = None
+    if target_time_min is not None and total_rows > 0:
+        less_count = con.execute(
+            f"SELECT COUNT(*) FROM race_results WHERE {where_sql} AND total_time_min < ?",
+            [*params, float(target_time_min)],
+        ).fetchone()[0]
+        equal_count = con.execute(
+            f"SELECT COUNT(*) FROM race_results WHERE {where_sql} AND total_time_min = ?",
+            [*params, float(target_time_min)],
+        ).fetchone()[0]
+        placement_lookup = {
+            "target_time_min": float(target_time_min),
+            "placement": int(less_count) + 1,
+            "out_of": int(total_rows),
+            "exact_matches": int(equal_count),
+        }
+
+    payload = {
+        "filters": {
+            "season": int(season),
+            "division": normalized_division,
+            "gender": normalized_gender,
+            "age_group": normalized_age_group,
+            "athlete_name": normalized_athlete_name,
+        },
+        "count": int(total_rows),
+        "limit": int(limit),
+        "rows": _df_to_records(ranking_rows),
+        "locations": _df_to_records(location_rows),
+        "total_locations": int(len(location_rows)),
+        "placement_lookup": placement_lookup,
+    }
+    logger.info("rankings ready in %.3fs", time.perf_counter() - start)
+    return payload

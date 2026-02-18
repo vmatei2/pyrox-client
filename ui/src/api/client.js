@@ -76,3 +76,24 @@ export function fetchPlanner(filters = {}) {
   if (filters.maxTime?.trim()) params.max_total_time = filters.maxTime.trim();
   return apiFetch("/api/planner", params);
 }
+
+export function fetchRankingsFilters(options = {}) {
+  const params = {};
+  if (options.season?.trim()) params.season = options.season.trim();
+  if (options.division?.trim()) params.division = options.division.trim();
+  if (options.gender?.trim()) params.gender = options.gender.trim();
+  if (options.ageGroup?.trim()) params.age_group = options.ageGroup.trim();
+  return apiFetch("/api/rankings/filters", params);
+}
+
+export function fetchRankings(filters = {}) {
+  const params = {};
+  if (filters.season?.trim()) params.season = filters.season.trim();
+  if (filters.division?.trim()) params.division = filters.division.trim();
+  if (filters.gender?.trim()) params.gender = filters.gender.trim();
+  if (filters.ageGroup?.trim()) params.age_group = filters.ageGroup.trim();
+  if (filters.athleteName?.trim()) params.athlete_name = filters.athleteName.trim();
+  if (filters.limit?.trim()) params.limit = filters.limit.trim();
+  if (filters.targetTime?.trim()) params.target_time_min = filters.targetTime.trim();
+  return apiFetch("/api/rankings", params);
+}
