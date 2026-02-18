@@ -8,13 +8,15 @@ import { useIosMobile } from "./hooks/useIosMobile.js";
 const ReportMode = lazy(() => import("./pages/ReportMode.jsx"));
 const CompareMode = lazy(() => import("./pages/CompareMode.jsx"));
 const DeepdiveMode = lazy(() => import("./pages/DeepdiveMode.jsx"));
+const RankingsMode = lazy(() => import("./pages/RankingsMode.jsx"));
 const PlannerMode = lazy(() => import("./pages/PlannerMode.jsx"));
 
-const MODE_ORDER = ["report", "compare", "deepdive", "planner"];
+const MODE_ORDER = ["report", "compare", "deepdive", "rankings", "planner"];
 const MODE_CONFIG = {
   report: { label: "Race Report", component: ReportMode },
   compare: { label: "Compare", component: CompareMode },
   deepdive: { label: "Deep Dive", component: DeepdiveMode },
+  rankings: { label: "Rankings", component: RankingsMode },
   planner: { label: "Race Planner", component: PlannerMode },
 };
 
@@ -145,4 +147,3 @@ export default function App() {
     </div>
   );
 }
-

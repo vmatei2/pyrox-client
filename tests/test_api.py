@@ -293,6 +293,7 @@ def _seed_deepdive_tables(con: duckdb.DuckDBPyConnection) -> None:
             ("r_p_2", "Paris Open", "evt_paris", 8, "paris", 2024, "open", "F", "30-34", "F Six", 60.5),
             ("r_p_3", "Paris Open", "evt_paris", 8, "paris", 2024, "open", "F", "30-34", "G Seven", 61.5),
             ("r_p_4", "Paris Open", "evt_paris", 8, "paris", 2024, "open", "F", "30-34", "H Eight", 70.0),
+            ("r_b_1", "Berlin Pro", "evt_berlin", 8, "berlin", 2024, "pro", "M", "35-39", "I Nine", 57.5),
             ("r_other", "London Pro", "evt_other", 8, "london", 2024, "pro", "M", "35-39", "Ignored Athlete", 58.0),
         ],
     )
@@ -467,3 +468,159 @@ def test_deepdive_endpoint_supports_podium_for_all_and_location_scope(tmp_path, 
     assert london_payload["group_distribution"]["podium"]["count"] == 3
     assert london_payload["locations"][0]["location"] == "london"
     assert london_payload["locations"][0]["podium"] == pytest.approx(62.0)
+
+
+def test_rankings_endpoint_returns_top_rows_and_time_lookup(tmp_path, monkeypatch):
+    """Rankings should sort by fastest times and return lookup placement for a target time."""
+    db_path = tmp_path / "rankings.db"
+    con = _create_db(db_path)
+    _seed_deepdive_tables(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+    resp = client.get(
+        "/api/rankings",
+        params={
+            "season": 8,
+            "division": "open",
+            "gender": "female",
+            "age_group": "30-34",
+            "limit": 3,
+            "target_time_min": 61.0,
+        },
+    )
+
+    assert resp.status_code == 200
+    payload = resp.json()
+    assert payload["count"] == 9
+    assert payload["total_locations"] == 2
+    assert len(payload["rows"]) == 3
+
+    first_row = payload["rows"][0]
+    assert first_row["placement"] == 1
+    assert first_row["name"] == "E Five"
+    assert first_row["total_time_min"] == pytest.approx(59.0)
+    assert first_row["location"] == "paris"
+
+    location_rows = {row["location"]: row for row in payload["locations"]}
+    assert location_rows["london"]["count"] == 5
+    assert location_rows["paris"]["count"] == 4
+    assert location_rows["london"]["fastest_time_min"] == pytest.approx(60.0)
+    assert location_rows["paris"]["fastest_time_min"] == pytest.approx(59.0)
+
+    lookup = payload["placement_lookup"]
+    assert lookup["target_time_min"] == pytest.approx(61.0)
+    assert lookup["placement"] == 4
+    assert lookup["out_of"] == 9
+    assert lookup["exact_matches"] == 1
+
+
+def test_rankings_filters_endpoint_exposes_age_groups_and_filtered_locations(tmp_path, monkeypatch):
+    """Rankings filters should return age-groups and locations for required scope."""
+    db_path = tmp_path / "rankings-filters.db"
+    con = _create_db(db_path)
+    _seed_deepdive_tables(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+
+    all_resp = client.get(
+        "/api/rankings/filters",
+        params={"season": 8, "division": "open", "gender": "female"},
+    )
+    assert all_resp.status_code == 200
+    all_payload = all_resp.json()
+    assert all_payload["age_groups"] == ["30-34"]
+    assert all_payload["locations"] == ["london", "paris"]
+
+    filtered_resp = client.get(
+        "/api/rankings/filters",
+        params={
+            "season": 8,
+            "division": "open",
+            "gender": "female",
+            "age_group": "30-34",
+        },
+    )
+    assert filtered_resp.status_code == 200
+    filtered_payload = filtered_resp.json()
+    assert filtered_payload["filters"]["age_group"] == "30-34"
+    assert filtered_payload["locations"] == ["london", "paris"]
+
+
+def test_rankings_endpoint_requires_division_and_gender(tmp_path, monkeypatch):
+    """Rankings endpoint should enforce mandatory division and gender query params."""
+    db_path = tmp_path / "rankings-required.db"
+    con = _create_db(db_path)
+    _seed_deepdive_tables(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+
+    missing_division = client.get("/api/rankings", params={"season": 8, "gender": "female"})
+    assert missing_division.status_code == 422
+
+    missing_gender = client.get("/api/rankings", params={"season": 8, "division": "open"})
+    assert missing_gender.status_code == 422
+
+
+def test_rankings_endpoint_supports_db_name_search_without_losing_global_placement(
+    tmp_path, monkeypatch
+):
+    """Athlete-name filter should search DB rows while keeping global placement numbers."""
+    db_path = tmp_path / "rankings-athlete-search.db"
+    con = _create_db(db_path)
+    _seed_deepdive_tables(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+
+    resp = client.get(
+        "/api/rankings",
+        params={
+            "season": 8,
+            "division": "open",
+            "gender": "female",
+            "age_group": "30-34",
+            "athlete_name": "Athlete A",
+        },
+    )
+
+    assert resp.status_code == 200
+    payload = resp.json()
+    assert payload["count"] == 9
+    assert payload["filters"]["athlete_name"] == "Athlete A"
+    assert len(payload["rows"]) == 1
+    assert payload["rows"][0]["name"] == "Athlete A"
+    assert payload["rows"][0]["placement"] == 7
+
+
+def test_rankings_endpoint_name_search_returns_empty_rows_when_not_found(tmp_path, monkeypatch):
+    """Unknown athlete searches should return an empty rows list instead of a hard API error."""
+    db_path = tmp_path / "rankings-empty-name-search.db"
+    con = _create_db(db_path)
+    _seed_deepdive_tables(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+
+    resp = client.get(
+        "/api/rankings",
+        params={
+            "season": 8,
+            "division": "open",
+            "gender": "female",
+            "age_group": "30-34",
+            "athlete_name": "No Such Athlete",
+        },
+    )
+
+    assert resp.status_code == 200
+    payload = resp.json()
+    assert payload["count"] == 9
+    assert payload["rows"] == []
