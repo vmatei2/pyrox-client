@@ -331,6 +331,7 @@ def test_search_endpoint_returns_races(tmp_path, monkeypatch):
     assert payload["count"] == 2
     event_ids = {race["event_id"] for race in payload["races"]}
     assert event_ids == {"event_1", "event_2"}
+    assert {race["athlete_id"] for race in payload["races"]} == {"ath_1"}
 
 
 def test_report_endpoint_filters_run_split_min_values(tmp_path, monkeypatch):
@@ -624,3 +625,288 @@ def test_rankings_endpoint_name_search_returns_empty_rows_when_not_found(tmp_pat
     payload = resp.json()
     assert payload["count"] == 9
     assert payload["rows"] == []
+
+
+# ── Athlete Profile ────────────────────────────────────────────────────────────
+
+
+def _seed_profile_tables(con: duckdb.DuckDBPyConnection) -> None:
+    """Seed tables required for GET /api/athletes/profile tests."""
+    con.execute(
+        """
+        CREATE TABLE race_results (
+            result_id VARCHAR,
+            event_id  VARCHAR,
+            season    INTEGER,
+            location  VARCHAR,
+            year      INTEGER,
+            division  VARCHAR,
+            gender    VARCHAR,
+            age_group VARCHAR,
+            name      VARCHAR,
+            total_time_min          DOUBLE,
+            skiErg_time_min         DOUBLE,
+            sledPush_time_min       DOUBLE,
+            sledPull_time_min       DOUBLE,
+            burpeeBroadJump_time_min DOUBLE,
+            rowErg_time_min         DOUBLE,
+            farmersCarry_time_min   DOUBLE,
+            sandbagLunges_time_min  DOUBLE,
+            wallBalls_time_min      DOUBLE
+        );
+        """
+    )
+    con.execute(
+        """
+        CREATE TABLE race_rankings (
+            result_id        VARCHAR,
+            event_rank       INTEGER,
+            event_size       INTEGER,
+            event_percentile DOUBLE,
+            season_rank      INTEGER,
+            season_size      INTEGER,
+            season_percentile DOUBLE,
+            overall_rank     INTEGER,
+            overall_size     INTEGER,
+            overall_percentile DOUBLE
+        );
+        """
+    )
+    con.execute(
+        """
+        CREATE TABLE athlete_index (
+            athlete_id     VARCHAR,
+            canonical_name VARCHAR,
+            name_lc        VARCHAR,
+            gender         VARCHAR,
+            nationality    VARCHAR,
+            race_count     INTEGER
+        );
+        """
+    )
+    con.execute(
+        """
+        CREATE TABLE athlete_results (
+            athlete_id VARCHAR,
+            result_id  VARCHAR
+        );
+        """
+    )
+
+    # Two races for "Sarah Johnson" (different events, different years)
+    con.executemany(
+        """
+        INSERT INTO race_results VALUES
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        [
+            # result_id, event_id, season, location, year, division, gender, age_group,
+            # name, total, skiErg, sledPush, sledPull, burpee, rowErg, farmers, sandbag, wallBalls
+            ("r1", "evt1", 8, "Vienna",  2025, "Open", "Female", "F30-34",
+             "Sarah Johnson", 84.55, 4.35, 5.1, 5.2, 3.8, 5.5, 4.0, 4.2, 3.9),
+            ("r2", "evt2", 7, "Berlin",  2024, "Open", "Female", "F30-34",
+             "Sarah Johnson", 86.20, 4.50, 5.3, 5.4, 3.9, 5.7, 4.1, 4.3, 4.0),
+        ],
+    )
+    # One race for a different athlete (must not appear in Sarah's profile)
+    con.executemany(
+        """
+        INSERT INTO race_results VALUES
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        [
+            ("r3", "evt1", 8, "Vienna", 2025, "Open", "Male", "M30-34",
+             "John Smith", 90.0, 4.8, 5.5, 5.6, 4.0, 6.0, 4.5, 4.8, 4.3),
+            ("r4", "evt1", 8, "Vienna", 2025, "Open", "Female", "F30-34",
+             "Faster Rival", 82.0, 4.2, 4.9, 5.0, 3.6, 5.2, 3.8, 4.0, 3.7),
+            ("r5", "evt2", 7, "Berlin", 2024, "Open", "Female", "F30-34",
+             "Slower Rival", 89.0, 4.8, 5.6, 5.7, 4.2, 6.1, 4.6, 4.9, 4.4),
+        ],
+    )
+    con.executemany(
+        "INSERT INTO race_rankings VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+            ("r1", 5, 120, 0.96, 30, 600, 0.95, 100, 5000, 0.98),
+            ("r2", 7, 100, 0.93, 40, 550, 0.93, 120, 4800, 0.97),
+        ],
+    )
+    con.executemany(
+        "INSERT INTO athlete_index VALUES (?, ?, ?, ?, ?, ?)",
+        [
+            ("ath_sarah", "sarah johnson", "sarah johnson", "Female", "USA", 2),
+        ],
+    )
+    con.executemany(
+        "INSERT INTO athlete_results VALUES (?, ?)",
+        [
+            ("ath_sarah", "r1"),
+            ("ath_sarah", "r2"),
+        ],
+    )
+
+
+def _make_profile_client(tmp_path, monkeypatch, suffix="profile"):
+    db_path = tmp_path / f"{suffix}.db"
+    con = _create_db(db_path)
+    _seed_profile_tables(con)
+    con.close()
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    return TestClient(api.app)
+
+
+def test_profile_returns_200_for_known_athlete(tmp_path, monkeypatch):
+    client = _make_profile_client(tmp_path, monkeypatch)
+    resp = client.get("/api/athletes/profile", params={"name": "Sarah Johnson"})
+    assert resp.status_code == 200
+
+
+def test_profile_by_id_returns_200_for_known_athlete(tmp_path, monkeypatch):
+    client = _make_profile_client(tmp_path, monkeypatch)
+    resp = client.get("/api/athletes/ath_sarah/profile")
+    assert resp.status_code == 200
+    assert resp.json()["athlete"]["athlete_id"] == "ath_sarah"
+
+
+def test_profile_by_id_returns_404_for_unknown_athlete(tmp_path, monkeypatch):
+    client = _make_profile_client(tmp_path, monkeypatch)
+    resp = client.get("/api/athletes/ath_missing/profile")
+    assert resp.status_code == 404
+
+
+def test_profile_returns_404_for_unknown_athlete(tmp_path, monkeypatch):
+    client = _make_profile_client(tmp_path, monkeypatch)
+    resp = client.get("/api/athletes/profile", params={"name": "Ghost Runner"})
+    assert resp.status_code == 404
+
+
+def test_profile_athlete_fields(tmp_path, monkeypatch):
+    client = _make_profile_client(tmp_path, monkeypatch)
+    payload = client.get("/api/athletes/profile", params={"name": "Sarah Johnson"}).json()
+    athlete = payload["athlete"]
+    assert athlete["name"] == "Sarah Johnson"
+    assert athlete["gender"] == "Female"
+    assert athlete["division"] == "Open"
+    assert athlete["age_group"] == "F30-34"
+
+
+def test_profile_nationality_from_athlete_index(tmp_path, monkeypatch):
+    client = _make_profile_client(tmp_path, monkeypatch)
+    payload = client.get("/api/athletes/profile", params={"name": "Sarah Johnson"}).json()
+    assert payload["athlete"]["nationality"] == "USA"
+
+
+def test_profile_summary_total_races(tmp_path, monkeypatch):
+    client = _make_profile_client(tmp_path, monkeypatch)
+    payload = client.get("/api/athletes/profile", params={"name": "Sarah Johnson"}).json()
+    assert payload["summary"]["total_races"] == 2
+
+
+def test_profile_summary_best_overall_time(tmp_path, monkeypatch):
+    client = _make_profile_client(tmp_path, monkeypatch)
+    payload = client.get("/api/athletes/profile", params={"name": "Sarah Johnson"}).json()
+    assert payload["summary"]["best_overall_time"] == pytest.approx(84.55)
+
+
+def test_profile_summary_best_age_group_finish(tmp_path, monkeypatch):
+    """Best AG finish should reflect DB event/age-group rankings."""
+    client = _make_profile_client(tmp_path, monkeypatch)
+    payload = client.get("/api/athletes/profile", params={"name": "Sarah Johnson"}).json()
+    assert payload["summary"]["best_age_group_finish"] == 1
+
+
+def test_profile_summary_first_season(tmp_path, monkeypatch):
+    client = _make_profile_client(tmp_path, monkeypatch)
+    payload = client.get("/api/athletes/profile", params={"name": "Sarah Johnson"}).json()
+    assert payload["summary"]["first_season"] == "2024"
+
+
+def test_profile_personal_bests_overall(tmp_path, monkeypatch):
+    client = _make_profile_client(tmp_path, monkeypatch)
+    payload = client.get("/api/athletes/profile", params={"name": "Sarah Johnson"}).json()
+    pb = payload["personal_bests"]
+    assert "overall" in pb
+    assert pb["overall"]["time"] == pytest.approx(84.55)
+    assert pb["overall"]["result_id"] == "r1"
+    assert pb["overall"]["year"] == 2025
+
+
+def test_profile_personal_bests_station_present(tmp_path, monkeypatch):
+    client = _make_profile_client(tmp_path, monkeypatch)
+    payload = client.get("/api/athletes/profile", params={"name": "Sarah Johnson"}).json()
+    pb = payload["personal_bests"]
+    assert "skierg" in pb
+    assert pb["skierg"]["time"] == pytest.approx(4.35)
+    assert pb["skierg"]["result_id"] == "r1"
+
+
+def test_profile_personal_bests_empty_when_no_station_data(tmp_path, monkeypatch):
+    """If race_results has no station columns, personal_bests should only have 'overall'."""
+    db_path = tmp_path / "profile-nostations.db"
+    con = _create_db(db_path)
+    # Minimal schema without station columns
+    con.execute(
+        """
+        CREATE TABLE race_results (
+            result_id VARCHAR, event_id VARCHAR, season INTEGER,
+            location VARCHAR, year INTEGER, division VARCHAR,
+            gender VARCHAR, age_group VARCHAR, name VARCHAR,
+            total_time_min DOUBLE
+        );
+        """
+    )
+    con.execute("CREATE TABLE race_rankings (result_id VARCHAR)")
+    con.execute("CREATE TABLE athlete_results (athlete_id VARCHAR, result_id VARCHAR)")
+    con.execute(
+        "CREATE TABLE athlete_index (athlete_id VARCHAR, canonical_name VARCHAR, "
+        "name_lc VARCHAR, gender VARCHAR, nationality VARCHAR, race_count INTEGER)"
+    )
+    con.execute(
+        "INSERT INTO race_results VALUES ('r1', 'e1', 8, 'Vienna', 2025, 'Open', 'F', 'F30-34', 'Mini Athlete', 84.0)"
+    )
+    con.execute("INSERT INTO athlete_results VALUES ('ath_mini', 'r1')")
+    con.execute(
+        "INSERT INTO athlete_index VALUES ('ath_mini', 'mini athlete', 'mini athlete', 'F', 'USA', 1)"
+    )
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+    payload = client.get("/api/athletes/profile", params={"name": "Mini Athlete"}).json()
+    pb = payload["personal_bests"]
+    # Only the overall key (from total_time_min) should appear; no station keys
+    assert set(pb.keys()) == {"overall"}
+
+
+def test_profile_seasons_grouped_by_year_ascending(tmp_path, monkeypatch):
+    client = _make_profile_client(tmp_path, monkeypatch)
+    payload = client.get("/api/athletes/profile", params={"name": "Sarah Johnson"}).json()
+    seasons = payload["seasons"]
+    assert len(seasons) == 2
+    assert seasons[0]["season"] == "2024"
+    assert seasons[1]["season"] == "2025"
+    assert seasons[0]["best_time"] == pytest.approx(86.20)
+    assert seasons[1]["best_time"] == pytest.approx(84.55)
+
+
+def test_profile_races_ordered_year_desc(tmp_path, monkeypatch):
+    client = _make_profile_client(tmp_path, monkeypatch)
+    payload = client.get("/api/athletes/profile", params={"name": "Sarah Johnson"}).json()
+    races = payload["races"]
+    assert len(races) == 2
+    assert races[0]["year"] == 2025
+    assert races[1]["year"] == 2024
+
+
+def test_profile_races_age_group_rank(tmp_path, monkeypatch):
+    client = _make_profile_client(tmp_path, monkeypatch)
+    payload = client.get("/api/athletes/profile", params={"name": "Sarah Johnson"}).json()
+    ranks = {r["result_id"]: r["age_group_rank"] for r in payload["races"]}
+    assert ranks["r1"] == 2
+    assert ranks["r2"] == 1
+
+
+def test_profile_name_match_is_case_insensitive(tmp_path, monkeypatch):
+    client = _make_profile_client(tmp_path, monkeypatch)
+    resp = client.get("/api/athletes/profile", params={"name": "sarah johnson"})
+    assert resp.status_code == 200
+    assert resp.json()["summary"]["total_races"] == 2

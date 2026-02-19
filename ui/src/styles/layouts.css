@@ -683,6 +683,26 @@ body.ios-mobile .run-change-svg {
 }
 
 /* ----------------------------------------------------------------
+   Profile page
+   ---------------------------------------------------------------- */
+.profile-page {
+  display: grid;
+  gap: 20px;
+}
+
+@media (min-width: 700px) {
+  .profile-pb-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .profile-pb-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ----------------------------------------------------------------
    Reduced motion
    ---------------------------------------------------------------- */
 @media (prefers-reduced-motion: reduce) {

@@ -10,14 +10,16 @@ const CompareMode = lazy(() => import("./pages/CompareMode.jsx"));
 const DeepdiveMode = lazy(() => import("./pages/DeepdiveMode.jsx"));
 const RankingsMode = lazy(() => import("./pages/RankingsMode.jsx"));
 const PlannerMode = lazy(() => import("./pages/PlannerMode.jsx"));
+const ProfileMode = lazy(() => import("./pages/ProfileMode.jsx"));
 
-const MODE_ORDER = ["report", "compare", "deepdive", "rankings", "planner"];
+const MODE_ORDER = ["report", "compare", "deepdive", "rankings", "planner", "profile"];
 const MODE_CONFIG = {
   report: { label: "Race Report", component: ReportMode },
   compare: { label: "Compare", component: CompareMode },
   deepdive: { label: "Deep Dive", component: DeepdiveMode },
   rankings: { label: "Rankings", component: RankingsMode },
   planner: { label: "Race Planner", component: PlannerMode },
+  profile: { label: "Profile", component: ProfileMode },
 };
 
 const ModeLoadingFallback = () => (
@@ -40,6 +42,7 @@ export default function App() {
   const isIosMobile = useIosMobile();
   const [mode, setMode] = useState(getInitialMode);
   const [mountedModes, setMountedModes] = useState(() => ({ [getInitialMode()]: true }));
+  const [pendingRaceJump, setPendingRaceJump] = useState(null);
   const {
     isBootstrapping,
     isReady,
@@ -80,6 +83,11 @@ export default function App() {
     }
     setMode(nextMode);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleOpenRace = (resultId) => {
+    setPendingRaceJump(resultId);
+    handleModeChange("report");
   };
 
   return (
@@ -130,6 +138,15 @@ export default function App() {
               return null;
             }
             const ModeComponent = MODE_CONFIG[modeKey].component;
+            const extraProps =
+              modeKey === "profile"
+                ? { onOpenRace: handleOpenRace }
+                : modeKey === "report"
+                  ? {
+                      pendingRaceJump,
+                      onRaceJumpHandled: () => setPendingRaceJump(null),
+                    }
+                  : {};
             return (
               <section
                 key={modeKey}
@@ -137,7 +154,7 @@ export default function App() {
                 style={{ display: mode === modeKey ? "block" : "none" }}
               >
                 <Suspense fallback={<ModeLoadingFallback />}>
-                  <ModeComponent isIosMobile={isIosMobile} />
+                  <ModeComponent isIosMobile={isIosMobile} {...extraProps} />
                 </Suspense>
               </section>
             );

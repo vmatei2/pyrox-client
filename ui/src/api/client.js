@@ -86,6 +86,29 @@ export function fetchRankingsFilters(options = {}) {
   return apiFetch("/api/rankings/filters", params);
 }
 
+export function fetchAthleteProfile(identityOrName) {
+  if (typeof identityOrName === "string") {
+    const name = identityOrName.trim();
+    return apiFetch("/api/athletes/profile", { name });
+  }
+
+  const athleteId =
+    typeof identityOrName?.athleteId === "string"
+      ? identityOrName.athleteId.trim()
+      : "";
+  if (athleteId) {
+    return apiFetch(`/api/athletes/${encodeURIComponent(athleteId)}/profile`);
+  }
+
+  const name =
+    typeof identityOrName?.name === "string" ? identityOrName.name.trim() : "";
+  if (name) {
+    return apiFetch("/api/athletes/profile", { name });
+  }
+
+  throw new Error("athleteId or name is required.");
+}
+
 export function fetchRankings(filters = {}) {
   const params = {};
   if (filters.season?.trim()) params.season = filters.season.trim();

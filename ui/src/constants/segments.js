@@ -29,7 +29,7 @@ export const resolveApiBase = () => {
 };
 
 export const API_BASE = resolveApiBase();
-export const VALID_MODES = new Set(["report", "compare", "deepdive", "rankings", "planner"]);
+export const VALID_MODES = new Set(["report", "compare", "deepdive", "rankings", "planner", "profile"]);
 export const IOS_MOBILE_MEDIA_QUERY = "(max-width: 900px)";
 
 export const isIosBrowserDevice = () => {

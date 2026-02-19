@@ -42,6 +42,19 @@ SEGMENT_CONFIG = [
     {"key": "wallBalls_time_min", "label": "Wall Balls", "group": "stations"},
 ]
 
+# Athlete-profile: maps frontend PB key → race_results column name
+_PROFILE_STATION_MAP = {
+    "overall":         "total_time_min",
+    "skierg":          "skiErg_time_min",
+    "sledpush":        "sledPush_time_min",
+    "sledpull":        "sledPull_time_min",
+    "burpeebroadjump": "burpeeBroadJump_time_min",
+    "rowerg":          "rowErg_time_min",
+    "farmerscarry":    "farmersCarry_time_min",
+    "sandbaglunges":   "sandbagLunges_time_min",
+    "wallballs":       "wallBalls_time_min",
+}
+
 
 def _parse_origins(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
@@ -950,4 +963,258 @@ def rankings(
         "placement_lookup": placement_lookup,
     }
     logger.info("rankings ready in %.3fs", time.perf_counter() - start)
+    return payload
+
+
+def _load_profile_rows_for_athlete_id(con, athlete_id: str) -> pd.DataFrame:
+    race_columns = {
+        str(row[1])
+        for row in con.execute("PRAGMA table_info('race_results')").fetchall()
+    }
+    can_compute_ag_rank = {
+        "event_id",
+        "age_group",
+        "total_time_min",
+    }.issubset(race_columns)
+
+    if can_compute_ag_rank:
+        sql = """
+            WITH athlete_rows AS (
+                SELECT
+                    rr.*,
+                    ar.athlete_id,
+                    COALESCE(NULLIF(rr.name, ''), ai.canonical_name) AS athlete_name,
+                    ai.canonical_name AS athlete_canonical_name,
+                    ai.gender AS athlete_index_gender,
+                    ai.nationality AS athlete_index_nationality
+                FROM athlete_results ar
+                JOIN race_results rr ON rr.result_id = ar.result_id
+                LEFT JOIN athlete_index ai ON ai.athlete_id = ar.athlete_id
+                WHERE ar.athlete_id = ?
+            ),
+            ag_rankings AS (
+                SELECT
+                    rr.result_id,
+                    RANK() OVER (
+                        PARTITION BY rr.event_id, rr.age_group
+                        ORDER BY rr.total_time_min ASC NULLS LAST
+                    ) AS age_group_rank
+                FROM race_results rr
+                WHERE rr.event_id IN (
+                    SELECT DISTINCT event_id
+                    FROM athlete_rows
+                    WHERE event_id IS NOT NULL
+                )
+            )
+            SELECT
+                athlete_rows.*,
+                ag_rankings.age_group_rank
+            FROM athlete_rows
+            LEFT JOIN ag_rankings ON ag_rankings.result_id = athlete_rows.result_id
+            ORDER BY
+                athlete_rows.year DESC NULLS LAST,
+                athlete_rows.location ASC NULLS LAST,
+                athlete_rows.result_id ASC
+        """
+    else:
+        sql = """
+            SELECT
+                rr.*,
+                ar.athlete_id,
+                COALESCE(NULLIF(rr.name, ''), ai.canonical_name) AS athlete_name,
+                ai.canonical_name AS athlete_canonical_name,
+                ai.gender AS athlete_index_gender,
+                ai.nationality AS athlete_index_nationality,
+                CAST(NULL AS INTEGER) AS age_group_rank
+            FROM athlete_results ar
+            JOIN race_results rr ON rr.result_id = ar.result_id
+            LEFT JOIN athlete_index ai ON ai.athlete_id = ar.athlete_id
+            WHERE ar.athlete_id = ?
+            ORDER BY rr.year DESC NULLS LAST, rr.location ASC NULLS LAST, rr.result_id ASC
+        """
+
+    return con.execute(sql, [athlete_id]).fetchdf()
+
+
+def _build_athlete_profile_payload(con, athlete_id: str) -> dict:
+    df = _load_profile_rows_for_athlete_id(con, athlete_id)
+    if df.empty:
+        raise HTTPException(status_code=404, detail=f"No races found for athlete_id '{athlete_id}'.")
+
+    recent = df.iloc[0]
+
+    def _row_text(column: str) -> Optional[str]:
+        value = recent.get(column)
+        if value is None or not pd.notna(value):
+            return None
+        return _normalize_optional_text(str(value))
+
+    nationality = None
+    if (
+        "athlete_index_nationality" in df.columns
+        and df["athlete_index_nationality"].notna().any()
+    ):
+        nationality = _normalize_optional_text(
+            str(df["athlete_index_nationality"].dropna().iloc[0])
+        )
+
+    valid_times = (
+        pd.to_numeric(df["total_time_min"], errors="coerce").dropna()
+        if "total_time_min" in df.columns
+        else pd.Series(dtype=float)
+    )
+    best_ag = (
+        pd.to_numeric(df["age_group_rank"], errors="coerce").dropna()
+        if "age_group_rank" in df.columns
+        else pd.Series(dtype=float)
+    )
+    years = (
+        pd.to_numeric(df["year"], errors="coerce").dropna()
+        if "year" in df.columns
+        else pd.Series(dtype=float)
+    )
+
+    personal_bests: dict = {}
+    for pb_key, col in _PROFILE_STATION_MAP.items():
+        if col not in df.columns:
+            continue
+        series = pd.to_numeric(df[col], errors="coerce")
+        valid = series[series > 0].dropna()
+        if valid.empty:
+            continue
+        idx = valid.idxmin()
+        pb_row = df.loc[idx]
+        pb_year = pb_row.get("year")
+        pb_location = pb_row.get("location")
+        personal_bests[pb_key] = {
+            "time": float(valid[idx]),
+            "result_id": pb_row["result_id"],
+            "location": (
+                _normalize_optional_text(str(pb_location))
+                if pb_location is not None and pd.notna(pb_location)
+                else None
+            ),
+            "year": int(pb_year) if pb_year is not None and pd.notna(pb_year) else None,
+        }
+
+    seasons = []
+    if "year" in df.columns and "total_time_min" in df.columns:
+        for year_val, group in df.groupby("year", sort=True):
+            year_times = pd.to_numeric(group["total_time_min"], errors="coerce").dropna()
+            if year_times.empty or not pd.notna(year_val):
+                continue
+            seasons.append(
+                {
+                    "season": str(int(year_val)),
+                    "best_time": float(year_times.min()),
+                    "race_count": int(len(group)),
+                }
+            )
+
+    races = []
+    for _, race_row in df.iterrows():
+        ag_rank = race_row.get("age_group_rank")
+        total_time = race_row.get("total_time_min")
+        race_year = race_row.get("year")
+        race_location = race_row.get("location")
+        races.append(
+            {
+                "result_id": race_row["result_id"],
+                "location": (
+                    _normalize_optional_text(str(race_location))
+                    if race_location is not None and pd.notna(race_location)
+                    else None
+                ),
+                "year": int(race_year) if race_year is not None and pd.notna(race_year) else None,
+                "total_time": (
+                    float(total_time)
+                    if total_time is not None and pd.notna(total_time)
+                    else None
+                ),
+                "age_group_rank": (
+                    int(ag_rank) if ag_rank is not None and pd.notna(ag_rank) else None
+                ),
+            }
+        )
+
+    profile_name = _row_text("name") or _row_text("athlete_name") or "Athlete"
+    profile_gender = _row_text("gender") or _row_text("athlete_index_gender")
+
+    return {
+        "athlete": {
+            "athlete_id": athlete_id,
+            "name": profile_name,
+            "gender": profile_gender,
+            "division": _row_text("division"),
+            "age_group": _row_text("age_group"),
+            "nationality": nationality,
+        },
+        "summary": {
+            "total_races": int(len(df)),
+            "best_overall_time": float(valid_times.min()) if not valid_times.empty else None,
+            "best_age_group_finish": int(best_ag.min()) if not best_ag.empty else None,
+            "first_season": str(int(years.min())) if not years.empty else None,
+        },
+        "personal_bests": personal_bests,
+        "seasons": seasons,
+        "races": races,
+    }
+
+
+@app.get("/api/athletes/{athlete_id}/profile")
+def athlete_profile_by_id(athlete_id: str) -> dict:
+    start = time.perf_counter()
+    athlete_id_trimmed = athlete_id.strip()
+    if not athlete_id_trimmed:
+        raise HTTPException(status_code=400, detail="athlete_id is required.")
+
+    logger.info("athlete_profile start athlete_id=%s", athlete_id_trimmed)
+    reporting = _get_reporting()
+    con = reporting._ensure_connection()
+    payload = _build_athlete_profile_payload(con, athlete_id_trimmed)
+    logger.info("athlete_profile ready in %.3fs", time.perf_counter() - start)
+    return payload
+
+
+@app.get("/api/athletes/profile")
+def athlete_profile(name: str = Query(..., min_length=1)) -> dict:
+    start = time.perf_counter()
+    name_trimmed = name.strip()
+    if not name_trimmed:
+        raise HTTPException(status_code=400, detail="name is required.")
+
+    logger.info("athlete_profile by-name start name=%s", name_trimmed)
+    reporting = _get_reporting()
+    con = reporting._ensure_connection()
+    athlete_id_rows = con.execute(
+        """
+        SELECT DISTINCT ar.athlete_id
+        FROM race_results rr
+        JOIN athlete_results ar ON ar.result_id = rr.result_id
+        WHERE lower(rr.name) = lower(?)
+        """,
+        [name_trimmed],
+    ).fetchall()
+    athlete_ids = sorted(
+        {
+            str(row[0]).strip()
+            for row in athlete_id_rows
+            if row and row[0] is not None and str(row[0]).strip()
+        },
+        key=str.casefold,
+    )
+
+    if not athlete_ids:
+        raise HTTPException(status_code=404, detail=f"No races found for '{name_trimmed}'.")
+    if len(athlete_ids) > 1:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Multiple athlete_ids match this name. "
+                "Resolve athlete_id from /api/athletes/search and retry."
+            ),
+        )
+
+    payload = _build_athlete_profile_payload(con, athlete_ids[0])
+    logger.info("athlete_profile by-name ready in %.3fs", time.perf_counter() - start)
     return payload
