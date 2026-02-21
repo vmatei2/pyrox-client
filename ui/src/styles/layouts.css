@@ -60,6 +60,12 @@
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
+.deepdive-page .deepdive-primary-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr;
+}
+
 /* ----------------------------------------------------------------
    Report grid
    ---------------------------------------------------------------- */
@@ -76,7 +82,18 @@
 @keyframes float-in {
   from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(18px) scale(0.994);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -84,15 +101,22 @@
   }
 }
 
-@keyframes rise {
+@keyframes mode-enter {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(18px) scale(0.993);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
+}
+
+/* ----------------------------------------------------------------
+   Mode section (tab content wrapper — animated on switch)
+   ---------------------------------------------------------------- */
+.mode-section {
+  animation: mode-enter 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /* ----------------------------------------------------------------
@@ -119,6 +143,11 @@
     align-items: baseline;
   }
 
+  /* Deep Dive: keep "Base races" and status text on the same visual line. */
+  .deepdive-page .results-header {
+    align-items: center;
+  }
+
   .report-actions {
     display: flex;
     flex-wrap: wrap;
@@ -128,6 +157,10 @@
   .report-actions .field {
     flex: 1;
     min-width: 220px;
+  }
+
+  .deepdive-page .deepdive-primary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .report-toolbar {
@@ -179,16 +212,7 @@
   }
 
   .hero {
-    padding: var(--space-5);
-    border-radius: 22px;
-  }
-
-  .hero h1 {
-    font-size: clamp(1.5rem, 8vw, 2rem);
-  }
-
-  .hero p {
-    font-size: 0.92rem;
+    padding: var(--space-4) var(--space-3);
   }
 
   .mode-tabs {
@@ -342,8 +366,7 @@
   }
 
   .hero {
-    padding: 32px;
-    border-radius: 30px;
+    padding: var(--space-5) var(--space-4);
   }
 
   .grouped-chart-wrap {
@@ -379,6 +402,17 @@
 
   .deepdive-page .results-grid {
     max-height: 360px;
+  }
+
+  /* Keep both Deep Dive column forms aligned even when header copy wraps differently. */
+  .deepdive-page .comparison-column .panel-header {
+    min-height: 96px;
+    display: grid;
+    align-content: start;
+  }
+
+  .deepdive-page .comparison-column .panel-header p {
+    min-height: 2.8em;
   }
 
   table {
@@ -427,7 +461,6 @@ body.ios-mobile .app {
   overflow-x: clip;
 }
 
-body.ios-mobile .hero,
 body.ios-mobile .panel,
 body.ios-mobile .report,
 body.ios-mobile .report-card,
@@ -439,14 +472,10 @@ body.ios-mobile .race-card {
 }
 
 body.ios-mobile .hero {
-  margin-bottom: 14px;
+  margin-bottom: 10px;
+  padding: var(--space-3) var(--space-2);
 }
 
-body.ios-mobile .hero h1 {
-  font-size: clamp(1.42rem, 7.3vw, 1.92rem);
-}
-
-body.ios-mobile .hero p,
 body.ios-mobile .report-subtitle,
 body.ios-mobile .race-title,
 body.ios-mobile .race-location,
@@ -680,6 +709,26 @@ body.ios-mobile .work-run-pie-wrap {
 
 body.ios-mobile .run-change-svg {
   height: 214px;
+}
+
+/* ----------------------------------------------------------------
+   Profile page
+   ---------------------------------------------------------------- */
+.profile-page {
+  display: grid;
+  gap: 20px;
+}
+
+@media (min-width: 700px) {
+  .profile-pb-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .profile-pb-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 /* ----------------------------------------------------------------

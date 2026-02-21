@@ -5,48 +5,28 @@
    Hero
    ---------------------------------------------------------------- */
 .hero {
-  margin-bottom: 20px;
-  animation: float-in 0.8s ease both;
-  padding: var(--space-6);
-  border-radius: var(--radius-lg);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.28);
-}
-
-.hero-tag {
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: rgba(148, 163, 184, 0.12);
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  color: #dbe7ff;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.66rem;
+  text-align: center;
+  margin-bottom: 20px;
+  padding: var(--space-5) var(--space-4);
+  animation: float-in 0.8s ease both;
 }
 
-.hero h1 {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(1.55rem, 7.5vw, 2rem);
-  line-height: 1.07;
-  margin: 12px 0 10px;
-  letter-spacing: -0.03em;
-  color: var(--text-strong);
-  background-image: none;
-  -webkit-text-fill-color: currentColor;
+.hero-wordmark {
+  opacity: 0.85;
+  pointer-events: none;
+  user-select: none;
 }
 
-.hero p {
+.hero-tagline {
+  margin: var(--space-1) 0 0;
+  font-size: 0.8rem;
   color: var(--text-muted-2);
-  max-width: 52ch;
-  margin: 0;
-  font-size: 0.95rem;
-  line-height: 1.5;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 500;
 }
 
 /* ----------------------------------------------------------------
@@ -60,18 +40,21 @@
   flex-wrap: nowrap;
   justify-content: flex-start;
   width: 100%;
-  gap: 6px;
+  gap: 5px;
   padding: 5px;
   margin-bottom: 18px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   border-radius: 14px;
-  background: rgba(15, 23, 36, 0.94);
-  border: 1px solid var(--border-subtle);
+  background: rgba(11, 17, 30, 0.96);
+  border: 1px solid rgba(156, 177, 214, 0.18);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.22);
+    0 8px 28px rgba(1, 5, 14, 0.44),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28);
 }
 
 .mode-tabs::-webkit-scrollbar {
@@ -80,6 +63,8 @@
 
 .mode-tab {
   flex: 0 0 auto;
+  position: relative;
+  overflow: hidden;
   border: none;
   background: transparent;
   color: var(--muted);
@@ -93,19 +78,36 @@
   line-height: 1.2;
   white-space: nowrap;
   cursor: pointer;
-  transition: transform 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease,
-    color 0.16s ease;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease,
+    color 0.18s ease;
 }
 
 .mode-tab:hover {
   color: #eaf2ff;
-  background: rgba(154, 177, 214, 0.08);
+  background: rgba(154, 177, 214, 0.09);
+  transform: translateY(-1px);
 }
 
 .mode-tab.is-active {
   color: #fff;
-  background: linear-gradient(135deg, rgba(10, 132, 255, 0.94), rgba(74, 170, 255, 0.9));
-  box-shadow: none;
+  background: linear-gradient(140deg, rgba(14, 140, 255, 0.96), rgba(60, 155, 255, 0.92) 55%, rgba(10, 110, 230, 0.9));
+  box-shadow:
+    0 0 18px rgba(10, 132, 255, 0.44),
+    0 3px 10px rgba(10, 132, 255, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18);
+}
+
+.mode-tab.is-active::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.16) 0%, transparent 55%);
+  pointer-events: none;
 }
 
 .mode-tab-icon {
@@ -120,12 +122,17 @@
    Panel
    ---------------------------------------------------------------- */
 .panel {
-  background: var(--bg-surface);
+  background:
+    radial-gradient(ellipse at 0% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 55%),
+    var(--bg-surface);
   padding: var(--space-4);
   border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.28);
-  backdrop-filter: blur(14px);
+  border: 1px solid rgba(156, 177, 214, 0.2);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 12px 36px rgba(1, 5, 14, 0.36),
+    0 2px 6px rgba(1, 5, 14, 0.2);
+  backdrop-filter: blur(16px);
 }
 
 .panel-header h2 {
@@ -161,6 +168,13 @@
   font-weight: 600;
   letter-spacing: -0.005em;
   color: #acbcda;
+}
+
+.field .field-help {
+  font-size: 0.74rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text-muted-2);
 }
 
 .field input,
@@ -212,10 +226,13 @@
 }
 
 .primary {
-  background: var(--accent-primary);
-  border: 1px solid var(--accent-primary);
+  background: linear-gradient(140deg, #4090f8, #2563eb 60%, #1d54d8);
+  border: 1px solid rgba(59, 130, 246, 0.7);
   color: #ffffff;
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+    0 8px 22px rgba(37, 99, 235, 0.36),
+    0 2px 6px rgba(37, 99, 235, 0.24);
 }
 
 .primary::after {
@@ -237,13 +254,20 @@
 }
 
 .primary:not(:disabled):hover {
-  background: #2f73f2;
-  transform: translateY(-1px);
+  background: linear-gradient(140deg, #5099ff, #3471f2 60%, #2860e8);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+    0 12px 28px rgba(37, 99, 235, 0.44),
+    0 3px 8px rgba(37, 99, 235, 0.3);
+  transform: translateY(-2px);
 }
 
 .primary:not(:disabled):active {
-  background: var(--accent-primary-press);
+  background: linear-gradient(140deg, #2a68e8, #1d52cc 60%, #1645bb);
   transform: translateY(0);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 4px 12px rgba(37, 99, 235, 0.28);
 }
 
 .secondary:not(:disabled):hover {
@@ -296,19 +320,27 @@ select:focus-visible {
    Race card
    ---------------------------------------------------------------- */
 .race-card {
-  border: 1px solid var(--border-subtle);
+  border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: var(--radius-md);
   padding: var(--space-4);
   text-align: left;
   background: var(--bg-surface);
-  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.28);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 8px 24px rgba(1, 5, 14, 0.3);
   cursor: pointer;
   animation: rise 0.55s ease both;
-  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .race-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  border-color: rgba(10, 132, 255, 0.3);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 0 0 1px rgba(10, 132, 255, 0.12),
+    0 16px 36px rgba(1, 5, 14, 0.42),
+    0 4px 10px rgba(10, 132, 255, 0.1);
 }
 
 .race-card.is-selected {
@@ -403,6 +435,15 @@ select:focus-visible {
 }
 
 .report-actions .field {
+  width: 100%;
+}
+
+.report-actions-help {
+  margin: 0;
+  font-size: 0.74rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text-muted-2);
   width: 100%;
 }
 
@@ -509,11 +550,14 @@ select:focus-visible {
    ---------------------------------------------------------------- */
 .report-card {
   border-radius: 14px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid rgba(148, 163, 184, 0.2);
   padding: 14px;
   background: var(--bg-surface);
-  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.28);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 8px 24px rgba(1, 5, 14, 0.3);
   overflow-x: auto;
+  transition: box-shadow 0.2s ease;
 }
 
 .report-card h4 {
@@ -797,6 +841,51 @@ table tr:hover td {
 }
 
 /* ----------------------------------------------------------------
+   Percentile color zones (Whoop-style semantic coloring)
+   ---------------------------------------------------------------- */
+.perc-excellent {
+  color: #34d399;
+  font-weight: 600;
+}
+
+.perc-good {
+  color: #5ac8fa;
+  font-weight: 600;
+}
+
+.perc-average {
+  color: var(--ink);
+}
+
+.perc-below {
+  color: #ffc480;
+  font-weight: 600;
+}
+
+/* ----------------------------------------------------------------
+   Percentile callout banner
+   ---------------------------------------------------------------- */
+.percentile-callout {
+  padding: 14px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  line-height: 1.45;
+  color: var(--ink);
+  background:
+    radial-gradient(ellipse at 0% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 60%),
+    var(--bg-surface);
+  border: 1px solid rgba(156, 177, 214, 0.18);
+  border-left: 3px solid currentColor;
+  animation: float-in 0.6s ease both;
+  animation-delay: 0.15s;
+}
+
+.percentile-callout strong {
+  font-weight: 700;
+  font-size: 1.05em;
+}
+
+/* ----------------------------------------------------------------
    Stat grid
    ---------------------------------------------------------------- */
 .stat-grid {
@@ -832,11 +921,13 @@ table tr:hover td {
   display: grid;
   gap: var(--space-6);
   grid-template-columns: 1fr;
+  align-items: start;
 }
 
 .comparison-column {
   display: grid;
   gap: var(--space-4);
+  align-content: start;
 }
 
 .compare-hero {
@@ -939,8 +1030,15 @@ table tr:hover td {
   gap: 4px 10px;
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid rgba(156, 177, 214, 0.22);
+  border: 1px solid rgba(156, 177, 214, 0.18);
   background: rgba(7, 13, 23, 0.82);
+  transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+
+.rankings-list-item:hover {
+  border-color: rgba(10, 132, 255, 0.28);
+  background: rgba(10, 20, 40, 0.88);
+  transform: translateX(2px);
 }
 
 .rankings-rank {
@@ -969,39 +1067,6 @@ table tr:hover td {
   margin-top: var(--space-6);
 }
 
-/* ----------------------------------------------------------------
-   Flow steps (workflow helper)
-   ---------------------------------------------------------------- */
-.flow-steps {
-  list-style: none;
-  margin: 0 0 var(--space-5);
-  padding: 0;
-  display: grid;
-  gap: var(--space-2);
-}
-
-.flow-step {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--text-muted-2);
-  font-size: 0.84rem;
-}
-
-.flow-step-index {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-surface-soft);
-  color: #c7d5ed;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
 @keyframes skeleton-pulse {
   0% {
     background-position: 0 50%;
@@ -1009,4 +1074,530 @@ table tr:hover td {
   100% {
     background-position: 200% 50%;
   }
+}
+
+/* ----------------------------------------------------------------
+   Profile — Hero card
+   ---------------------------------------------------------------- */
+.profile-hero-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: var(--bg-surface);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 12px 36px rgba(1, 5, 14, 0.42),
+    0 2px 8px rgba(1, 5, 14, 0.24);
+  animation: float-in 0.7s ease both;
+}
+
+.profile-hero-mesh {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 8% 0%, rgba(10, 132, 255, 0.18) 0%, transparent 52%),
+    radial-gradient(ellipse at 92% 100%, rgba(90, 200, 250, 0.12) 0%, transparent 48%);
+  pointer-events: none;
+}
+
+.profile-hero-content {
+  position: relative;
+  z-index: 1;
+  padding: var(--space-6);
+}
+
+.profile-identity-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.profile-avatar {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1e90ff, #0a84ff 50%, #5ac8fa);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 0 0 2px rgba(10, 132, 255, 0.36),
+    0 0 0 5px rgba(10, 132, 255, 0.1),
+    0 0 18px rgba(10, 132, 255, 0.36),
+    0 8px 24px rgba(10, 132, 255, 0.28);
+}
+
+.profile-avatar-initials {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.profile-identity-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-name {
+  margin: 0 0 3px;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text-strong);
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.profile-change-btn {
+  flex-shrink: 0;
+  border: 1px solid var(--border-subtle);
+  background: rgba(15, 23, 42, 0.7);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.16s ease, border-color 0.16s ease;
+  white-space: nowrap;
+}
+
+.profile-change-btn:hover {
+  color: var(--ink);
+  border-color: rgba(10, 132, 255, 0.5);
+}
+
+/* ----------------------------------------------------------------
+   Profile — Stats strip
+   ---------------------------------------------------------------- */
+.profile-stats-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--hairline);
+}
+
+.profile-stat {
+  display: grid;
+  gap: 3px;
+}
+
+.profile-stat-value {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text-strong);
+  line-height: 1;
+}
+
+.profile-stat-time {
+  color: #ffc480;
+}
+
+.profile-stat-label {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 600;
+}
+
+/* ----------------------------------------------------------------
+   Profile — Sections
+   ---------------------------------------------------------------- */
+.profile-section {
+  animation: float-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.profile-section:nth-child(2) {
+  animation-delay: 0.06s;
+}
+
+.profile-section:nth-child(3) {
+  animation-delay: 0.12s;
+}
+
+.profile-section:nth-child(4) {
+  animation-delay: 0.18s;
+}
+
+.profile-section:nth-child(5) {
+  animation-delay: 0.24s;
+}
+
+.profile-section-title {
+  margin: 0 0 var(--space-3);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #8fa5c8;
+}
+
+.profile-division-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-division-filter-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #8fa5c8;
+}
+
+.profile-division-filter-select {
+  min-width: 180px;
+  max-width: 260px;
+  min-height: 36px;
+  border-radius: 10px;
+}
+
+/* ----------------------------------------------------------------
+   Profile — Personal Bests grid
+   ---------------------------------------------------------------- */
+.profile-pb-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.profile-pb-card {
+  display: grid;
+  gap: 4px;
+  padding: 13px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-left: 3px solid var(--pb-accent, var(--accent));
+  background: var(--bg-surface);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.03) inset,
+    0 4px 14px rgba(1, 5, 14, 0.26);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.profile-pb-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(148, 163, 184, 0.28);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 0 0 1px rgba(var(--pb-accent, 10, 132, 255), 0.1),
+    0 10px 28px rgba(1, 5, 14, 0.38);
+}
+
+.profile-pb-label {
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.profile-pb-time {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-strong);
+  line-height: 1.1;
+}
+
+.profile-pb-where {
+  font-size: 0.74rem;
+  color: var(--text-muted-2);
+}
+
+/* ----------------------------------------------------------------
+   Profile — Race history list
+   ---------------------------------------------------------------- */
+.profile-race-list {
+  display: grid;
+  gap: 8px;
+}
+
+.profile-race-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: var(--bg-surface);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.03) inset,
+    0 4px 12px rgba(1, 5, 14, 0.22);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  animation: rise 0.5s ease both;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.profile-race-row:hover {
+  transform: translateY(-2px);
+  border-color: rgba(10, 132, 255, 0.36);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 0 0 1px rgba(10, 132, 255, 0.1),
+    0 10px 26px rgba(1, 5, 14, 0.38),
+    0 3px 8px rgba(10, 132, 255, 0.1);
+}
+
+.profile-race-row-main {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-race-name {
+  font-weight: 650;
+  color: #f6faff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-race-year {
+  font-size: 0.82rem;
+  color: var(--text-muted-2);
+  white-space: nowrap;
+}
+
+.profile-race-row-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.profile-race-time {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #ffc480;
+}
+
+.profile-race-rank {
+  font-size: 0.78rem;
+  color: var(--text-muted-2);
+  white-space: nowrap;
+}
+
+.profile-race-arrow {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* ----------------------------------------------------------------
+   Profile — Setup panel
+   ---------------------------------------------------------------- */
+.profile-setup-panel {
+  text-align: center;
+  padding: var(--space-8) var(--space-6);
+  display: grid;
+  gap: var(--space-4);
+  justify-items: center;
+  animation: float-in 0.7s ease both;
+}
+
+.profile-setup-icon {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: rgba(10, 132, 255, 0.14);
+  border: 1px solid rgba(10, 132, 255, 0.28);
+  color: #0a84ff;
+}
+
+.profile-setup-icon svg {
+  width: 26px;
+  height: 26px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.profile-setup-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.profile-setup-desc {
+  margin: 0;
+  color: var(--text-muted-2);
+  font-size: 0.9rem;
+  line-height: 1.55;
+  max-width: 38ch;
+}
+
+.profile-setup-form {
+  width: 100%;
+  max-width: 400px;
+}
+
+/* ----------------------------------------------------------------
+   Profile — Search results (setup)
+   ---------------------------------------------------------------- */
+.profile-search-results {
+  width: 100%;
+  max-width: 400px;
+  display: grid;
+  gap: 8px;
+  text-align: left;
+}
+
+.profile-search-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-muted-2);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.profile-search-result-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: border-color 0.16s ease, transform 0.16s ease;
+}
+
+.profile-search-result-row:hover {
+  border-color: rgba(10, 132, 255, 0.45);
+  transform: translateX(3px);
+}
+
+.profile-search-result-info {
+  display: grid;
+  gap: 3px;
+}
+
+.profile-search-result-name {
+  font-weight: 650;
+  color: #f6faff;
+  font-size: 0.94rem;
+}
+
+.profile-search-result-meta {
+  font-size: 0.8rem;
+  color: var(--text-muted-2);
+}
+
+.profile-search-result-action {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+/* ----------------------------------------------------------------
+   Profile — Error actions
+   ---------------------------------------------------------------- */
+.profile-error-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: var(--space-4);
+}
+
+/* ----------------------------------------------------------------
+   Profile — Loading skeleton
+   ---------------------------------------------------------------- */
+.profile-skeleton {
+  min-height: 200px;
+}
+
+/* ----------------------------------------------------------------
+   Season progression chart
+   ---------------------------------------------------------------- */
+.season-chart-wrap {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.season-chart-trend {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 18px;
+}
+
+.season-trend-improving {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #78d8ff;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.season-trend-flat {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.season-chart-svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  display: block;
+}
+
+.season-axis-label {
+  font-size: 10px;
+  fill: #8fa5c8;
+  font-family: var(--font-body);
+}
+
+.season-tooltip-label {
+  font-size: 10px;
+  fill: #acbcda;
+  font-family: var(--font-body);
+}
+
+.season-tooltip-value {
+  font-size: 11px;
+  font-weight: 700;
+  fill: #ffc480;
+  font-family: var(--font-body);
 }

@@ -1,5 +1,10 @@
+import { useEffect, useState } from "react";
 import { formatMinutes, formatPercent } from "../utils/formatters.js";
 import { toNumber } from "../utils/parsers.js";
+
+function easeOutCubic(t) {
+  return 1 - Math.pow(1 - t, 3);
+}
 
 export const WorkRunSplitPieChart = ({ title, subtitle, split, emptyMessage }) => {
   const workPct = toNumber(split?.work_pct);
@@ -25,9 +30,31 @@ export const WorkRunSplitPieChart = ({ title, subtitle, split, emptyMessage }) =
 
   const safeWorkPct = Math.min(1, Math.max(0, workPct));
   const safeRunPct = Math.min(1, Math.max(0, runPct));
-  const workDegrees = safeWorkPct * 360;
+  const targetDegrees = safeWorkPct * 360;
+
+  const [animatedDeg, setAnimatedDeg] = useState(0);
+  useEffect(() => {
+    const prefersReduced =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) {
+      setAnimatedDeg(targetDegrees);
+      return;
+    }
+    let start = null;
+    let raf;
+    const duration = 600;
+    const animate = (ts) => {
+      if (!start) start = ts;
+      const progress = Math.min((ts - start) / duration, 1);
+      setAnimatedDeg(easeOutCubic(progress) * targetDegrees);
+      if (progress < 1) raf = requestAnimationFrame(animate);
+    };
+    raf = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(raf);
+  }, [targetDegrees]);
+
   const pieStyle = {
-    background: `conic-gradient(var(--accent-cool) 0deg ${workDegrees}deg, var(--accent-strong) ${workDegrees}deg 360deg)`,
+    background: `conic-gradient(var(--accent-cool) 0deg ${animatedDeg}deg, var(--accent-strong) ${animatedDeg}deg 360deg)`,
   };
 
   return (

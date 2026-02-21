@@ -1,10 +1,7 @@
 import { useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
-import {
-  FlowSteps,
-  ProgressiveSection,
-} from "../components/UiPrimitives.jsx";
+import { ProgressiveSection } from "../components/UiPrimitives.jsx";
 import {
   RUN_SEGMENTS,
   STATION_SEGMENTS,
@@ -21,7 +18,7 @@ import {
   pickSegmentValue,
 } from "../utils/parsers.js";
 import { buildComparisonFilename } from "../utils/pdf.js";
-import { searchAthletes, fetchReport } from "../api/client.js";
+import { fetchFilterOptions, searchAthletes, fetchReport } from "../api/client.js";
 import { triggerSelectionHaptic } from "../utils/haptics.js";
 import { GroupedBarChart } from "../charts/GroupedBarChart.jsx";
 
@@ -37,7 +34,6 @@ export default function CompareMode({ isIosMobile }) {
     match: "best",
     gender: "",
     division: "",
-    nationality: "",
     requireUnique: false,
   });
   const [baseRaces, setBaseRaces] = useState([]);
@@ -53,7 +49,6 @@ export default function CompareMode({ isIosMobile }) {
     match: "best",
     gender: "",
     division: "",
-    nationality: "",
     requireUnique: false,
   });
   const [compareRaces, setCompareRaces] = useState([]);
@@ -72,6 +67,16 @@ export default function CompareMode({ isIosMobile }) {
     () => compareRaces.find((race) => race.result_id === selectedCompareRaceId),
     [compareRaces, selectedCompareRaceId]
   );
+  const filterOptionsQuery = useQuery({
+    queryKey: ["filter-options"],
+    queryFn: () => fetchFilterOptions(),
+  });
+  const divisionOptions = Array.isArray(filterOptionsQuery.data?.divisions)
+    ? filterOptionsQuery.data.divisions
+    : [];
+  const genderOptions = Array.isArray(filterOptionsQuery.data?.genders)
+    ? filterOptionsQuery.data.genders
+    : [];
 
   const comparisonRows = useMemo(() => {
     if (!baseReport || !compareReport) {
@@ -177,7 +182,6 @@ export default function CompareMode({ isIosMobile }) {
           baseFilters.match,
           baseFilters.gender.trim(),
           baseFilters.division.trim(),
-          baseFilters.nationality.trim(),
           baseFilters.requireUnique,
         ],
         queryFn: () => searchAthletes(baseName, baseFilters),
@@ -234,7 +238,6 @@ export default function CompareMode({ isIosMobile }) {
           compareFilters.match,
           compareFilters.gender.trim(),
           compareFilters.division.trim(),
-          compareFilters.nationality.trim(),
           compareFilters.requireUnique,
         ],
         queryFn: () => searchAthletes(compareName, compareFilters),
@@ -314,7 +317,6 @@ export default function CompareMode({ isIosMobile }) {
               <h2>Base race</h2>
               <p>Select the race you want to compare from.</p>
             </div>
-            <FlowSteps steps={["Search athlete", "Select base race", "Confirm base race"]} />
             <form className="search-form" onSubmit={handleBaseSearch}>
               <label className="field">
                 <span>Athlete name</span>
@@ -330,9 +332,7 @@ export default function CompareMode({ isIosMobile }) {
                 <div className="grid-2">
                   <label className="field">
                     <span>Division</span>
-                    <input
-                      type="text"
-                      placeholder="open, pro, doubles"
+                    <select
                       value={baseFilters.division}
                       onChange={(event) =>
                         setBaseFilters((prev) => ({
@@ -340,14 +340,22 @@ export default function CompareMode({ isIosMobile }) {
                           division: event.target.value,
                         }))
                       }
-                    />
+                      disabled={filterOptionsQuery.isFetching}
+                    >
+                      <option value="">
+                        {filterOptionsQuery.isFetching ? "Loading divisions..." : "Any division"}
+                      </option>
+                      {divisionOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
                   </label>
 
                   <label className="field">
                     <span>Gender</span>
-                    <input
-                      type="text"
-                      placeholder="male or female or mixed"
+                    <select
                       value={baseFilters.gender}
                       onChange={(event) =>
                         setBaseFilters((prev) => ({
@@ -355,24 +363,19 @@ export default function CompareMode({ isIosMobile }) {
                           gender: event.target.value,
                         }))
                       }
-                    />
+                      disabled={filterOptionsQuery.isFetching}
+                    >
+                      <option value="">
+                        {filterOptionsQuery.isFetching ? "Loading genders..." : "Any gender"}
+                      </option>
+                      {genderOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
                   </label>
                 </div>
-
-                <label className="field">
-                  <span>Nationality</span>
-                  <input
-                    type="text"
-                    placeholder="GBR"
-                    value={baseFilters.nationality}
-                    onChange={(event) =>
-                      setBaseFilters((prev) => ({
-                        ...prev,
-                        nationality: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
               </ProgressiveSection>
 
               <button
@@ -453,9 +456,6 @@ export default function CompareMode({ isIosMobile }) {
               <h2>Compare against</h2>
               <p>Search and confirm the race you want to compare.</p>
             </div>
-            <FlowSteps
-              steps={["Search comparison athlete", "Select comparison race", "Confirm comparison"]}
-            />
             <form className="search-form" onSubmit={handleCompareSearch}>
               <label className="field">
                 <span>Athlete name</span>
@@ -471,9 +471,7 @@ export default function CompareMode({ isIosMobile }) {
                 <div className="grid-2">
                   <label className="field">
                     <span>Division</span>
-                    <input
-                      type="text"
-                      placeholder="open, pro, doubles"
+                    <select
                       value={compareFilters.division}
                       onChange={(event) =>
                         setCompareFilters((prev) => ({
@@ -481,14 +479,22 @@ export default function CompareMode({ isIosMobile }) {
                           division: event.target.value,
                         }))
                       }
-                    />
+                      disabled={filterOptionsQuery.isFetching}
+                    >
+                      <option value="">
+                        {filterOptionsQuery.isFetching ? "Loading divisions..." : "Any division"}
+                      </option>
+                      {divisionOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
                   </label>
 
                   <label className="field">
                     <span>Gender</span>
-                    <input
-                      type="text"
-                      placeholder="male or female or mixed"
+                    <select
                       value={compareFilters.gender}
                       onChange={(event) =>
                         setCompareFilters((prev) => ({
@@ -496,24 +502,19 @@ export default function CompareMode({ isIosMobile }) {
                           gender: event.target.value,
                         }))
                       }
-                    />
+                      disabled={filterOptionsQuery.isFetching}
+                    >
+                      <option value="">
+                        {filterOptionsQuery.isFetching ? "Loading genders..." : "Any gender"}
+                      </option>
+                      {genderOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
                   </label>
                 </div>
-
-                <label className="field">
-                  <span>Nationality</span>
-                  <input
-                    type="text"
-                    placeholder="GBR"
-                    value={compareFilters.nationality}
-                    onChange={(event) =>
-                      setCompareFilters((prev) => ({
-                        ...prev,
-                        nationality: event.target.value,
-                      }))
-                    }
-                  />
-                </label>
               </ProgressiveSection>
 
               <button

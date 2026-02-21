@@ -42,7 +42,7 @@ export const StatBarChart = ({ title, subtitle, items = [], emptyMessage, infoTo
         </div>
       </div>
       <div className="stat-bars">
-        {items.map((item) => {
+        {items.map((item, idx) => {
           const value = Number.isFinite(item.value) ? item.value : 0;
           const height = maxValue > 0 ? (value / maxValue) * 100 : 0;
           return (
@@ -51,7 +51,7 @@ export const StatBarChart = ({ title, subtitle, items = [], emptyMessage, infoTo
                 className={`stat-bar${item.accent ? " is-accent" : ""}${
                   Number.isFinite(item.value) ? "" : " is-empty"
                 }`}
-                style={{ height: `${height}%` }}
+                style={{ height: `${height}%`, "--bar-delay": `${idx * 40}ms` }}
               >
                 <span>{formatMinutes(item.value)}</span>
               </div>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { FlowSteps, ProgressiveSection } from "../components/UiPrimitives.jsx";
-import { fetchRankings, fetchRankingsFilters } from "../api/client.js";
+import { ProgressiveSection } from "../components/UiPrimitives.jsx";
+import { fetchFilterOptions, fetchRankings, fetchRankingsFilters } from "../api/client.js";
 import { formatLabel, formatMinutes } from "../utils/formatters.js";
 import { triggerSelectionHaptic } from "../utils/haptics.js";
 
@@ -25,6 +25,19 @@ export default function RankingsMode({ isIosMobile }) {
   const [rankingData, setRankingData] = useState(null);
   const [rankingLoading, setRankingLoading] = useState(false);
   const [rankingError, setRankingError] = useState("");
+  const filterOptionsQuery = useQuery({
+    queryKey: ["filter-options"],
+    queryFn: () => fetchFilterOptions(),
+  });
+  const seasonOptions = Array.isArray(filterOptionsQuery.data?.seasons)
+    ? filterOptionsQuery.data.seasons
+    : [];
+  const divisionOptions = Array.isArray(filterOptionsQuery.data?.divisions)
+    ? filterOptionsQuery.data.divisions
+    : [];
+  const genderOptions = Array.isArray(filterOptionsQuery.data?.genders)
+    ? filterOptionsQuery.data.genders
+    : [];
 
   const requiredFiltersReady = Boolean(
     rankingFilters.season.trim() &&
@@ -128,26 +141,11 @@ export default function RankingsMode({ isIosMobile }) {
   return (
     <main className="rankings-page">
       <section className="panel">
-        <div className="panel-header">
-          <h2>Rankings</h2>
-          <p>Find the fastest athletes by season, division, and gender.</p>
-        </div>
-
-        <FlowSteps
-          steps={[
-            "Set season, division, and gender",
-            "Optionally refine by age group, athlete name, and target time",
-            "Run rankings to view full leaderboard and placement",
-          ]}
-        />
-
         <form className="search-form" onSubmit={handleRunRankings}>
           <div className="grid-3">
             <label className="field">
               <span>Season *</span>
-              <input
-                type="number"
-                placeholder="8"
+              <select
                 value={rankingFilters.season}
                 onChange={(event) =>
                   setRankingFilters((prev) => ({
@@ -155,14 +153,22 @@ export default function RankingsMode({ isIosMobile }) {
                     season: event.target.value,
                   }))
                 }
-              />
+                disabled={filterOptionsQuery.isFetching}
+              >
+                <option value="">
+                  {filterOptionsQuery.isFetching ? "Loading seasons..." : "Select season"}
+                </option>
+                {seasonOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label className="field">
               <span>Division *</span>
-              <input
-                type="text"
-                placeholder="open, pro, doubles"
+              <select
                 value={rankingFilters.division}
                 onChange={(event) =>
                   setRankingFilters((prev) => ({
@@ -170,14 +176,22 @@ export default function RankingsMode({ isIosMobile }) {
                     division: event.target.value,
                   }))
                 }
-              />
+                disabled={filterOptionsQuery.isFetching}
+              >
+                <option value="">
+                  {filterOptionsQuery.isFetching ? "Loading divisions..." : "Select division"}
+                </option>
+                {divisionOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label className="field">
               <span>Gender *</span>
-              <input
-                type="text"
-                placeholder="female, male, mixed"
+              <select
                 value={rankingFilters.gender}
                 onChange={(event) =>
                   setRankingFilters((prev) => ({
@@ -185,7 +199,17 @@ export default function RankingsMode({ isIosMobile }) {
                     gender: event.target.value,
                   }))
                 }
-              />
+                disabled={filterOptionsQuery.isFetching}
+              >
+                <option value="">
+                  {filterOptionsQuery.isFetching ? "Loading genders..." : "Select gender"}
+                </option>
+                {genderOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
 

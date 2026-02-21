@@ -2,6 +2,50 @@
    Final cascaded values after all overrides are resolved. */
 
 /* ----------------------------------------------------------------
+   Chart draw-on animations
+   ---------------------------------------------------------------- */
+@keyframes bar-grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes line-draw {
+  from {
+    stroke-dashoffset: var(--path-length);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes point-appear {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-bar,
+  .grouped-bar,
+  .stat-bar,
+  .percentile-line,
+  .run-change-path,
+  .percentile-point,
+  .run-change-point {
+    animation: none !important;
+  }
+}
+
+/* ----------------------------------------------------------------
    Chart grid (container)
    ---------------------------------------------------------------- */
 .chart-grid {
@@ -15,11 +59,14 @@
    ---------------------------------------------------------------- */
 .chart-card {
   border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid rgba(148, 163, 184, 0.2);
   padding: 12px;
-  background: var(--bg-surface);
+  background:
+    radial-gradient(ellipse at 50% -20%, rgba(10, 132, 255, 0.08) 0%, transparent 65%),
+    var(--bg-surface);
   box-shadow:
-    0 10px 30px rgba(2, 6, 23, 0.28);
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 10px 30px rgba(1, 5, 14, 0.34);
   display: grid;
   gap: var(--space-3);
 }
@@ -55,7 +102,9 @@
   position: relative;
   height: 154px;
   padding-top: 12px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.015), rgba(255, 255, 255, 0));
+  background:
+    linear-gradient(180deg, rgba(10, 132, 255, 0.04), transparent 40%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.01), rgba(255, 255, 255, 0));
   border-radius: 10px;
 }
 
@@ -68,36 +117,55 @@
 
 .chart-bar {
   border-radius: 8px 8px 4px 4px;
-  border: 1px solid rgba(178, 214, 255, 0.2);
-  background: linear-gradient(180deg, rgba(90, 200, 250, 0.92), rgba(10, 132, 255, 0.84));
+  border: none;
+  background: linear-gradient(
+    180deg,
+    rgba(140, 220, 255, 0.98) 0%,
+    rgba(60, 170, 255, 0.94) 40%,
+    rgba(10, 132, 255, 0.9) 75%,
+    rgba(6, 100, 210, 0.88) 100%
+  );
+  box-shadow:
+    0 0 0 1px rgba(90, 200, 250, 0.22) inset,
+    0 0 12px rgba(90, 200, 250, 0.12);
   position: relative;
   cursor: pointer;
-  transition: transform 0.15s ease, filter 0.15s ease;
+  transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease;
+  transform-origin: bottom center;
+  animation: bar-grow 0.5s ease-out both;
+  animation-delay: var(--bar-delay, 0ms);
 }
 
 .chart-bar::after {
   content: attr(data-label);
   position: absolute;
   left: 50%;
-  bottom: 100%;
-  transform: translate(-50%, -8px);
-  background: rgba(15, 23, 42, 0.95);
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  background: rgba(8, 13, 24, 0.97);
   color: var(--ink);
   font-size: 0.72rem;
-  padding: 4px 6px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
+  line-height: 1.4;
+  padding: 5px 8px;
+  border-radius: 9px;
+  border: 1px solid rgba(156, 177, 214, 0.22);
+  box-shadow: 0 8px 20px rgba(1, 5, 14, 0.5);
   white-space: normal;
   max-width: 260px;
   text-align: center;
   opacity: 0;
   pointer-events: none;
   z-index: 2;
+  transition: opacity 0.14s ease;
 }
 
 .chart-bar:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.08);
+  transform: translateY(-3px) scaleX(1.04);
+  filter: brightness(1.12);
+  box-shadow:
+    0 0 0 1px rgba(120, 210, 255, 0.3) inset,
+    0 0 20px rgba(90, 200, 250, 0.36),
+    0 4px 12px rgba(10, 132, 255, 0.24);
 }
 
 .chart-bar:hover::after {
@@ -112,9 +180,10 @@
   top: 0;
   bottom: 0;
   width: 0;
-  border-left: 2px dashed rgba(255, 143, 56, 0.88);
+  border-left: 2px dashed rgba(255, 159, 70, 0.9);
   transform: translateX(-50%);
   color: #ffc480;
+  filter: drop-shadow(0 0 4px rgba(255, 143, 56, 0.4));
 }
 
 .chart-marker span {
@@ -122,12 +191,13 @@
   top: -4px;
   left: 0;
   transform: translateX(-50%);
-  background: rgba(10, 16, 30, 0.95);
+  background: rgba(14, 20, 36, 0.97);
   color: #ffc18e;
   font-size: 0.72rem;
-  padding: 2px 6px;
+  padding: 2px 8px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 143, 56, 0.5);
+  border: 1px solid rgba(255, 143, 56, 0.55);
+  box-shadow: 0 0 8px rgba(255, 143, 56, 0.22);
   white-space: nowrap;
 }
 
@@ -241,21 +311,37 @@
   border-radius: 6px 6px 3px 3px;
   background: rgba(148, 163, 184, 0.4);
   border: 1px solid rgba(148, 163, 184, 0.35);
-  transition: transform 0.15s ease, filter 0.15s ease;
+  transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease;
   position: relative;
+  transform-origin: bottom center;
+  animation: bar-grow 0.5s ease-out both;
+  animation-delay: var(--bar-delay, 0ms);
 }
 
 .grouped-bar.is-base {
-  opacity: 0.9;
-  background: linear-gradient(180deg, rgba(90, 200, 250, 0.92), rgba(10, 132, 255, 0.84));
-  border-color: rgba(59, 198, 255, 0.66);
+  background: linear-gradient(
+    180deg,
+    rgba(140, 220, 255, 0.98) 0%,
+    rgba(60, 170, 255, 0.94) 40%,
+    rgba(10, 132, 255, 0.9) 100%
+  );
+  border: none;
+  box-shadow:
+    0 0 0 1px rgba(90, 200, 250, 0.24) inset,
+    0 0 8px rgba(90, 200, 250, 0.14);
 }
 
 .grouped-bar.is-compare {
-  opacity: 0.5;
-  border-style: dashed;
-  background: linear-gradient(180deg, rgba(255, 176, 97, 0.78), rgba(255, 133, 51, 0.66));
-  border-color: rgba(255, 143, 56, 0.7);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 196, 120, 0.96) 0%,
+    rgba(255, 155, 60, 0.9) 40%,
+    rgba(240, 110, 30, 0.84) 100%
+  );
+  border: none;
+  box-shadow:
+    0 0 0 1px rgba(255, 170, 80, 0.24) inset,
+    0 0 8px rgba(255, 150, 60, 0.14);
 }
 
 .grouped-x-axis {
@@ -278,25 +364,36 @@
 }
 
 .grouped-bar:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.1);
+  transform: translateY(-3px);
+  filter: brightness(1.14);
+  box-shadow:
+    0 0 0 1px rgba(120, 210, 255, 0.3) inset,
+    0 0 14px rgba(90, 200, 250, 0.3);
+}
+
+.grouped-bar.is-compare:hover {
+  box-shadow:
+    0 0 0 1px rgba(255, 190, 100, 0.3) inset,
+    0 0 14px rgba(255, 150, 60, 0.3);
 }
 
 .grouped-bar::after {
   content: attr(data-value);
   position: absolute;
   left: 50%;
-  bottom: 100%;
-  transform: translate(-50%, -6px);
-  background: rgba(15, 23, 42, 0.95);
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  background: rgba(8, 13, 24, 0.97);
   color: var(--ink);
   font-size: 0.7rem;
-  padding: 3px 6px;
+  padding: 4px 7px;
   border-radius: 8px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(156, 177, 214, 0.22);
+  box-shadow: 0 6px 16px rgba(1, 5, 14, 0.48);
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
+  transition: opacity 0.14s ease;
 }
 
 .grouped-bar:hover::after,
@@ -339,8 +436,9 @@
 
 .stat-bar {
   position: relative;
-  background: linear-gradient(180deg, rgba(123, 148, 185, 0.38), rgba(89, 115, 158, 0.34));
-  border: 1px solid rgba(154, 177, 214, 0.3);
+  background: linear-gradient(180deg, rgba(130, 155, 195, 0.44), rgba(90, 115, 158, 0.38));
+  border: none;
+  box-shadow: 0 0 0 1px rgba(154, 177, 214, 0.22) inset;
   border-radius: 10px 10px 6px 6px;
   display: flex;
   align-items: flex-end;
@@ -348,12 +446,27 @@
   padding-bottom: var(--space-2);
   color: #f8fafc;
   font-size: 0.75rem;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, filter 0.2s ease;
+  transform-origin: bottom center;
+  animation: bar-grow 0.5s ease-out both;
+  animation-delay: var(--bar-delay, 0ms);
+}
+
+.stat-bar:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
 }
 
 .stat-bar.is-accent {
-  background: linear-gradient(180deg, rgba(90, 200, 250, 0.92), rgba(10, 132, 255, 0.84));
-  border-color: rgba(59, 198, 255, 0.72);
+  background: linear-gradient(
+    180deg,
+    rgba(140, 220, 255, 0.98) 0%,
+    rgba(60, 170, 255, 0.94) 40%,
+    rgba(10, 132, 255, 0.9) 100%
+  );
+  box-shadow:
+    0 0 0 1px rgba(90, 200, 250, 0.24) inset,
+    0 0 12px rgba(90, 200, 250, 0.2);
 }
 
 .stat-bar.is-empty {
@@ -431,27 +544,35 @@
 
 .percentile-line {
   fill: none;
-  stroke-width: 2.5;
+  stroke-width: 2.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .percentile-line.is-cohort {
   stroke: #42cbff;
   fill: none;
+  filter: drop-shadow(0 0 5px rgba(66, 203, 255, 0.55));
 }
 
 .percentile-line.is-window {
   stroke: #ff9550;
   fill: none;
+  filter: drop-shadow(0 0 5px rgba(255, 149, 80, 0.55));
 }
 
 .percentile-point.is-cohort {
   stroke: #42cbff;
-  fill: #42cbff;
+  fill: #0a1a2e;
+  stroke-width: 2;
+  filter: drop-shadow(0 0 4px rgba(66, 203, 255, 0.7));
 }
 
 .percentile-point.is-window {
   stroke: #ff9550;
-  fill: #ff9550;
+  fill: #1a0f04;
+  stroke-width: 2;
+  filter: drop-shadow(0 0 4px rgba(255, 149, 80, 0.7));
 }
 
 /* ----------------------------------------------------------------
@@ -639,15 +760,17 @@
 .run-change-path {
   fill: none;
   stroke: var(--accent-cool);
-  stroke-width: 2.6;
+  stroke-width: 2.8;
   stroke-linecap: round;
   stroke-linejoin: round;
+  filter: drop-shadow(0 0 5px rgba(90, 200, 250, 0.5));
 }
 
 .run-change-point {
   fill: var(--accent-strong);
   stroke: rgba(8, 14, 24, 0.95);
-  stroke-width: 1.3;
+  stroke-width: 2;
+  filter: drop-shadow(0 0 4px rgba(255, 159, 10, 0.7));
 }
 
 .run-change-labels text {

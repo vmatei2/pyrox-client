@@ -411,9 +411,16 @@ class ReportingClient:
             params.append(division)
         results = con.execute(
             f"""
-            SELECT r.*
+            SELECT
+                r.*,
+                ar.athlete_id,
+                COALESCE(NULLIF(r.name, ''), ai.canonical_name) AS athlete_name,
+                ai.canonical_name AS athlete_canonical_name,
+                ai.gender AS athlete_gender,
+                ai.nationality AS athlete_nationality
             FROM race_results r
             JOIN athlete_results ar ON ar.result_id = r.result_id
+            LEFT JOIN athlete_index ai ON ai.athlete_id = ar.athlete_id
             WHERE ar.athlete_id IN ({placeholders}){division_clause}
             ORDER BY r.season, r.year, r.location, r.event_id
             """,

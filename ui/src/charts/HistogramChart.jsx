@@ -94,7 +94,10 @@ export const HistogramChart = ({ title, subtitle, histogram, stats, emptyMessage
               <div
                 key={`${bin.start}-${index}`}
                 className="chart-bar"
-                style={{ height: `${(bin.count / maxCount) * 100}%` }}
+                style={{
+                  height: `${(bin.count / maxCount) * 100}%`,
+                  "--bar-delay": `${index * 30}ms`,
+                }}
                 data-label={label}
                 aria-label={label}
               />

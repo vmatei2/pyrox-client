@@ -1,4 +1,71 @@
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+// ── Animated number counter ──────────────────────────────────────
+// Deceleration ease-out curve matching Whoop-style data reveals.
+
+function easeOutCubic(t) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function useAnimatedValue(target, duration = 600) {
+  const [current, setCurrent] = useState(0);
+  const rafRef = useRef(null);
+  const startRef = useRef(null);
+  const fromRef = useRef(0);
+  const prevTargetRef = useRef(null);
+
+  useEffect(() => {
+    if (target === null || target === undefined || !Number.isFinite(target)) {
+      setCurrent(0);
+      prevTargetRef.current = null;
+      return;
+    }
+
+    // Skip animation if target hasn't changed
+    if (prevTargetRef.current === target) return;
+    prevTargetRef.current = target;
+
+    // Respect prefers-reduced-motion
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+    if (prefersReduced) {
+      setCurrent(target);
+      return;
+    }
+
+    fromRef.current = 0;
+    startRef.current = null;
+
+    const animate = (timestamp) => {
+      if (!startRef.current) startRef.current = timestamp;
+      const elapsed = timestamp - startRef.current;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = easeOutCubic(progress);
+      setCurrent(fromRef.current + (target - fromRef.current) * eased);
+
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    rafRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [target, duration]);
+
+  return current;
+}
+
+const AnimatedNumber = ({ value, formatter, duration = 600 }) => {
+  const animated = useAnimatedValue(value, duration);
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return formatter ? formatter(value) : "—";
+  }
+  return formatter ? formatter(animated) : String(Math.round(animated));
+};
 
 const CardHelpButton = ({ onClick }) => (
   <button type="button" className="card-help-button" onClick={onClick}>
@@ -70,22 +137,6 @@ const ProgressiveSection = ({ enabled, summary, children, defaultOpen = false })
   );
 };
 
-const FlowSteps = ({ steps = [] }) => {
-  if (!steps.length) {
-    return null;
-  }
-  return (
-    <ol className="flow-steps" aria-label="Workflow steps">
-      {steps.map((step, index) => (
-        <li key={step} className="flow-step">
-          <span className="flow-step-index">{index + 1}</span>
-          <span>{step}</span>
-        </li>
-      ))}
-    </ol>
-  );
-};
-
 const ModeTabIcon = ({ kind }) => {
   if (kind === "report") {
     return (
@@ -123,6 +174,14 @@ const ModeTabIcon = ({ kind }) => {
       </svg>
     );
   }
+  if (kind === "profile") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+      </svg>
+    );
+  }
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M5 18h14" />
@@ -133,4 +192,4 @@ const ModeTabIcon = ({ kind }) => {
   );
 };
 
-export { FlowSteps, HelpSheet, ModeTabIcon, ProgressiveSection, ReportCardHeader };
+export { AnimatedNumber, HelpSheet, ModeTabIcon, ProgressiveSection, ReportCardHeader };

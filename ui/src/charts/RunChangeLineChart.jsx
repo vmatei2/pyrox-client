@@ -1,7 +1,25 @@
+import { useEffect, useRef } from "react";
 import { formatMinutes, formatDeltaMinutes } from "../utils/formatters.js";
 import { toNumber } from "../utils/parsers.js";
 
 export const RunChangeLineChart = ({ title, subtitle, series, emptyMessage }) => {
+  const pathRef = useRef(null);
+
+  useEffect(() => {
+    const prefersReduced =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) return;
+
+    const path = pathRef.current;
+    if (!path || typeof path.getTotalLength !== "function") return;
+    const length = path.getTotalLength();
+    path.style.strokeDasharray = length;
+    path.style.strokeDashoffset = length;
+    path.style.transition = "none";
+    path.getBoundingClientRect();
+    path.style.transition = "stroke-dashoffset 0.8s ease-out";
+    path.style.strokeDashoffset = "0";
+  }, [series]);
   const points = Array.isArray(series?.points) ? series.points : [];
   const validDeltas = points
     .map((point) => toNumber(point?.delta_from_median_min))
@@ -105,7 +123,7 @@ export const RunChangeLineChart = ({ title, subtitle, series, emptyMessage }) =>
             </text>
           ))}
         </g>
-        <path className="run-change-path" d={path} />
+        <path ref={pathRef} className="run-change-path" d={path} />
         {points.map((point, index) => {
           const value = toNumber(point?.delta_from_median_min);
           const runTime = toNumber(point?.run_time_min);

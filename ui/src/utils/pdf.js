@@ -68,7 +68,7 @@ export const buildReportHelpContent = (timeWindowValue) => {
       summary: "Each point is your percentile for one split. Higher percentile means faster relative performance.",
       bullets: [
         "Cohort line uses the age-group cohort at the same location.",
-        "Time-window line uses the same location + season and similar finish times.",
+        "Comparison-window line uses the same location + season and similar finish times.",
         "Missing split values are left blank and lines break across gaps.",
       ],
       formula: "percentile = 1 - (rank - 1) / (cohort_size - 1)",
@@ -79,7 +79,7 @@ export const buildReportHelpContent = (timeWindowValue) => {
       bullets: [
         "Rank is your position within the split cohort (lower split time ranks higher).",
         "Percentile is your standing vs the age-group split cohort.",
-        `Window percentile uses ${timeWindowLabel} around your total time.`,
+        `Comparison-window percentile uses ${timeWindowLabel} around your total time.`,
       ],
     },
     age_group_stats: {
@@ -92,8 +92,8 @@ export const buildReportHelpContent = (timeWindowValue) => {
       ],
     },
     time_window_stats: {
-      title: "How time window stats are calculated",
-      summary: `Summary stats are computed on athletes within ${timeWindowLabel}.`,
+      title: "How comparison-window stats are calculated",
+      summary: `Additional comparison stats are computed on athletes within ${timeWindowLabel}.`,
       bullets: [
         "Scope: same location + season.",
         "Filter: total_time_min between athlete_time - window and athlete_time + window.",

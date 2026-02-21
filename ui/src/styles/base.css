@@ -13,8 +13,10 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-tap-highlight-color: transparent;
   background:
-    radial-gradient(circle at 20% -10%, rgba(59, 130, 246, 0.12), transparent 45%),
-    linear-gradient(180deg, #0a0f1a 0%, #0b1220 100%);
+    radial-gradient(ellipse at 18% -8%, rgba(59, 130, 246, 0.14) 0%, transparent 48%),
+    radial-gradient(ellipse at 82% 110%, rgba(10, 132, 255, 0.07) 0%, transparent 42%),
+    radial-gradient(ellipse at 50% 50%, rgba(16, 24, 40, 0.6) 0%, transparent 80%),
+    linear-gradient(180deg, #09101d 0%, #0a1122 55%, #090e1a 100%);
 }
 
 body::before,

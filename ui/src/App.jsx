@@ -1,5 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
-import { Capacitor } from "@capacitor/core";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { ModeTabIcon } from "./components/UiPrimitives.jsx";
 import { API_BASE, getInitialMode, VALID_MODES } from "./constants/segments.js";
 import { useAppBootstrap } from "./hooks/useAppBootstrap.js";
@@ -10,9 +9,11 @@ const CompareMode = lazy(() => import("./pages/CompareMode.jsx"));
 const DeepdiveMode = lazy(() => import("./pages/DeepdiveMode.jsx"));
 const RankingsMode = lazy(() => import("./pages/RankingsMode.jsx"));
 const PlannerMode = lazy(() => import("./pages/PlannerMode.jsx"));
+const ProfileMode = lazy(() => import("./pages/ProfileMode.jsx"));
 
-const MODE_ORDER = ["report", "compare", "deepdive", "rankings", "planner"];
+const MODE_ORDER = ["profile", "report", "compare", "deepdive", "rankings", "planner"];
 const MODE_CONFIG = {
+  profile: { label: "Profile", component: ProfileMode },
   report: { label: "Race Report", component: ReportMode },
   compare: { label: "Compare", component: CompareMode },
   deepdive: { label: "Deep Dive", component: DeepdiveMode },
@@ -33,13 +34,11 @@ const ModeLoadingFallback = () => (
 );
 
 export default function App() {
-  const platform = Capacitor.getPlatform ? Capacitor.getPlatform() : "web";
-  const isNativeApp = Capacitor.isNativePlatform
-    ? Capacitor.isNativePlatform()
-    : platform !== "web";
   const isIosMobile = useIosMobile();
   const [mode, setMode] = useState(getInitialMode);
   const [mountedModes, setMountedModes] = useState(() => ({ [getInitialMode()]: true }));
+  const [pendingRaceJump, setPendingRaceJump] = useState(null);
+  const sectionRefs = useRef({});
   const {
     isBootstrapping,
     isReady,
@@ -68,6 +67,15 @@ export default function App() {
   }, [mode]);
 
   useEffect(() => {
+    const el = sectionRefs.current[mode];
+    if (el) {
+      el.style.animation = "none";
+      void el.offsetHeight;
+      el.style.animation = "";
+    }
+  }, [mode]);
+
+  useEffect(() => {
     if (typeof window === "undefined" || isBootstrapping || !isReady) {
       return;
     }
@@ -82,17 +90,17 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const handleOpenRace = (resultId) => {
+    setPendingRaceJump(resultId);
+    handleModeChange("report");
+  };
+
   return (
     <div className={`app-shell${isReady ? " is-ready" : ""}`}>
       <div className="app-shell-content">
         <div className={`app${isIosMobile ? " ios-mobile-shell" : ""}`}>
           <header className="hero">
-            <div className="hero-tag">Pyrox Race Analysis</div>
-            <h1>Find an athlete, pick a race, and build a Pyrox race report.</h1>
-            <p>
-              Search our race database, review your race, and generate a report.
-              {!isNativeApp ? " PDF export is available on desktop." : null}
-            </p>
+            <img src="/brand-wordmark.svg" alt="PYROX" className="hero-wordmark" width="140" height="41" />
           </header>
 
           {bootstrapWarning ? (
@@ -130,14 +138,25 @@ export default function App() {
               return null;
             }
             const ModeComponent = MODE_CONFIG[modeKey].component;
+            const extraProps =
+              modeKey === "profile"
+                ? { onOpenRace: handleOpenRace }
+                : modeKey === "report"
+                  ? {
+                      pendingRaceJump,
+                      onRaceJumpHandled: () => setPendingRaceJump(null),
+                    }
+                  : {};
             return (
               <section
                 key={modeKey}
+                ref={(el) => { sectionRefs.current[modeKey] = el; }}
                 aria-hidden={mode !== modeKey}
+                className="mode-section"
                 style={{ display: mode === modeKey ? "block" : "none" }}
               >
                 <Suspense fallback={<ModeLoadingFallback />}>
-                  <ModeComponent isIosMobile={isIosMobile} />
+                  <ModeComponent isIosMobile={isIosMobile} {...extraProps} />
                 </Suspense>
               </section>
             );

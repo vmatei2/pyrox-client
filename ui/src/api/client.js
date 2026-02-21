@@ -65,6 +65,14 @@ export function fetchDeepdiveFilters(options = {}) {
   return apiFetch("/api/deepdive/filters", params);
 }
 
+export function fetchFilterOptions(options = {}) {
+  const params = {};
+  if (options.season?.toString().trim()) params.season = options.season.toString().trim();
+  if (options.division?.trim()) params.division = options.division.trim();
+  if (options.gender?.trim()) params.gender = options.gender.trim();
+  return apiFetch("/api/filter-options", params);
+}
+
 export function fetchPlanner(filters = {}) {
   const params = {};
   if (filters.season?.trim()) params.season = filters.season.trim();
@@ -84,6 +92,35 @@ export function fetchRankingsFilters(options = {}) {
   if (options.gender?.trim()) params.gender = options.gender.trim();
   if (options.ageGroup?.trim()) params.age_group = options.ageGroup.trim();
   return apiFetch("/api/rankings/filters", params);
+}
+
+export function fetchAthleteProfile(identityOrName) {
+  if (typeof identityOrName === "string") {
+    const name = identityOrName.trim();
+    return apiFetch("/api/athletes/profile", { name });
+  }
+
+  const division =
+    typeof identityOrName?.division === "string" ? identityOrName.division.trim() : "";
+  const athleteId =
+    typeof identityOrName?.athleteId === "string"
+      ? identityOrName.athleteId.trim()
+      : "";
+  if (athleteId) {
+    const params = {};
+    if (division) params.division = division;
+    return apiFetch(`/api/athletes/${encodeURIComponent(athleteId)}/profile`, params);
+  }
+
+  const name =
+    typeof identityOrName?.name === "string" ? identityOrName.name.trim() : "";
+  if (name) {
+    const params = { name };
+    if (division) params.division = division;
+    return apiFetch("/api/athletes/profile", params);
+  }
+
+  throw new Error("athleteId or name is required.");
 }
 
 export function fetchRankings(filters = {}) {

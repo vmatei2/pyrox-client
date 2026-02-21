@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
 import {
-  FlowSteps,
+  AnimatedNumber,
   HelpSheet,
   ProgressiveSection,
   ReportCardHeader,
@@ -15,17 +15,23 @@ import {
   formatMinutes,
   formatPercent,
   formatLabel,
+  formatTimeWindowLabel,
+  getPercentileColorClass,
 } from "../utils/formatters.js";
 import { toNumber, normalizeSplitKey } from "../utils/parsers.js";
 import { buildReportFilename, buildReportHelpContent } from "../utils/pdf.js";
-import { searchAthletes, fetchReport } from "../api/client.js";
+import { fetchFilterOptions, searchAthletes, fetchReport } from "../api/client.js";
 import { triggerSelectionHaptic } from "../utils/haptics.js";
 import { HistogramChart } from "../charts/HistogramChart.jsx";
 import { PercentileLineChart } from "../charts/PercentileLineChart.jsx";
 import { WorkRunSplitPieChart } from "../charts/WorkRunSplitPieChart.jsx";
 import { RunChangeLineChart } from "../charts/RunChangeLineChart.jsx";
 
-export default function ReportMode({ isIosMobile }) {
+export default function ReportMode({
+  isIosMobile,
+  pendingRaceJump = null,
+  onRaceJumpHandled = () => {},
+}) {
   const platform = Capacitor.getPlatform ? Capacitor.getPlatform() : "web";
   const isNativeApp = Capacitor.isNativePlatform
     ? Capacitor.isNativePlatform()
@@ -37,7 +43,6 @@ export default function ReportMode({ isIosMobile }) {
     match: "best",
     gender: "",
     division: "",
-    nationality: "",
     requireUnique: false,
     timeWindow: "5",
   });
@@ -85,6 +90,16 @@ export default function ReportMode({ isIosMobile }) {
     report?.cohort_time_window_min !== null && report?.cohort_time_window_min !== undefined
       ? ` (+/- ${report.cohort_time_window_min} min)`
       : "";
+  const filterOptionsQuery = useQuery({
+    queryKey: ["filter-options"],
+    queryFn: () => fetchFilterOptions(),
+  });
+  const divisionOptions = Array.isArray(filterOptionsQuery.data?.divisions)
+    ? filterOptionsQuery.data.divisions
+    : [];
+  const genderOptions = Array.isArray(filterOptionsQuery.data?.genders)
+    ? filterOptionsQuery.data.genders
+    : [];
 
   const percentileSeries = useMemo(() => {
     if (!report?.splits || report.splits.length === 0) {
@@ -133,6 +148,63 @@ export default function ReportMode({ isIosMobile }) {
     };
   }, [activeHelpContent]);
 
+  useEffect(() => {
+    if (!pendingRaceJump) {
+      return;
+    }
+
+    let active = true;
+    setView("report");
+    setReport(null);
+    setSelectedSplit("");
+    setSelectedRaceId(pendingRaceJump);
+    setReportLoading(true);
+    setReportError("");
+    setSearchError("");
+
+    const loadPendingRace = async () => {
+      try {
+        const payload = await queryClient.fetchQuery({
+          queryKey: ["report", pendingRaceJump, filters.timeWindow.trim(), ""],
+          queryFn: () =>
+            fetchReport(pendingRaceJump, {
+              timeWindow: filters.timeWindow,
+            }),
+        });
+        if (!active) {
+          return;
+        }
+        setReport(payload);
+        if (payload?.race?.result_id) {
+          setRaces((prev) => {
+            if (prev.some((race) => race.result_id === payload.race.result_id)) {
+              return prev;
+            }
+            return [payload.race, ...prev];
+          });
+        }
+        void triggerSelectionHaptic();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch (error) {
+        if (!active) {
+          return;
+        }
+        setReportError(error.message || "Report generation failed.");
+      } finally {
+        if (!active) {
+          return;
+        }
+        setReportLoading(false);
+        onRaceJumpHandled();
+      }
+    };
+
+    void loadPendingRace();
+    return () => {
+      active = false;
+    };
+  }, [pendingRaceJump, onRaceJumpHandled, queryClient]);
+
   const handleSearch = async (event) => {
     event.preventDefault();
     if (!name.trim()) {
@@ -155,7 +227,6 @@ export default function ReportMode({ isIosMobile }) {
           filters.match,
           filters.gender.trim(),
           filters.division.trim(),
-          filters.nationality.trim(),
           filters.requireUnique,
         ],
         queryFn: () => searchAthletes(name, filters),
@@ -232,18 +303,16 @@ export default function ReportMode({ isIosMobile }) {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const comparisonWindowText = formatTimeWindowLabel(filters.timeWindow);
+  const comparisonWindowDescription =
+    "Additional comparison cohort: athletes in the same location and season " +
+    `finishing within ${comparisonWindowText} of your total time.`;
+
   return (
     <>
       {view === "search" ? (
         <main className="layout is-single">
           <section className="panel">
-            <FlowSteps
-              steps={[
-                "Search for an athlete",
-                "Select the exact race result",
-                "Generate race report",
-              ]}
-            />
             <form className="search-form" onSubmit={handleSearch}>
               <label className="field">
                 <span>Athlete name</span>
@@ -259,40 +328,44 @@ export default function ReportMode({ isIosMobile }) {
                 <div className="grid-2">
                   <label className="field">
                     <span>Division</span>
-                    <input
-                      type="text"
-                      placeholder="open, pro, doubles"
+                    <select
                       value={filters.division}
                       onChange={(event) =>
                         setFilters((prev) => ({ ...prev, division: event.target.value }))
                       }
-                    />
+                      disabled={filterOptionsQuery.isFetching}
+                    >
+                      <option value="">
+                        {filterOptionsQuery.isFetching ? "Loading divisions..." : "Any division"}
+                      </option>
+                      {divisionOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
                   </label>
 
                   <label className="field">
                     <span>Gender</span>
-                    <input
-                      type="text"
-                      placeholder="male or female or mixed"
+                    <select
                       value={filters.gender}
                       onChange={(event) =>
                         setFilters((prev) => ({ ...prev, gender: event.target.value }))
                       }
-                    />
+                      disabled={filterOptionsQuery.isFetching}
+                    >
+                      <option value="">
+                        {filterOptionsQuery.isFetching ? "Loading genders..." : "Any gender"}
+                      </option>
+                      {genderOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
                   </label>
                 </div>
-
-                <label className="field">
-                  <span>Nationality</span>
-                  <input
-                    type="text"
-                    placeholder="GBR"
-                    value={filters.nationality}
-                    onChange={(event) =>
-                      setFilters((prev) => ({ ...prev, nationality: event.target.value }))
-                    }
-                  />
-                </label>
               </ProgressiveSection>
 
               <button
@@ -353,7 +426,7 @@ export default function ReportMode({ isIosMobile }) {
 
               <div className="report-actions">
                 <label className="field">
-                  <span>Time window (+/- minutes)</span>
+                  <span>Time Window for Comparison (+/- minutes)</span>
                   <input
                     type="number"
                     min="1"
@@ -371,6 +444,7 @@ export default function ReportMode({ isIosMobile }) {
                 >
                   {reportLoading ? "Building report..." : "Generate report"}
                 </button>
+                <p className="report-actions-help">{comparisonWindowDescription}</p>
                 {reportError ? <p className="error">{reportError}</p> : null}
               </div>
             </div>
@@ -379,9 +453,6 @@ export default function ReportMode({ isIosMobile }) {
       ) : (
         <main className="report-page">
           <div className="report-toolbar">
-            <button className="secondary" type="button" onClick={handleBackToSearch}>
-              Back to search
-            </button>
             <div className="toolbar-actions">
               <label className="field">
                 <span>Station split</span>
@@ -395,7 +466,17 @@ export default function ReportMode({ isIosMobile }) {
                 </select>
               </label>
               <label className="field">
-                <span>Time window (+/- minutes)</span>
+                <span>
+                  Time Window for Comparison (+/- minutes)
+                  <span
+                    className="info-tooltip"
+                    data-tooltip={comparisonWindowDescription}
+                    aria-label={comparisonWindowDescription}
+                    tabIndex={0}
+                  >
+                    i
+                  </span>
+                </span>
                 <input
                   type="number"
                   min="1"
@@ -419,6 +500,9 @@ export default function ReportMode({ isIosMobile }) {
                 </button>
               ) : null}
             </div>
+            <button className="secondary" type="button" onClick={handleBackToSearch}>
+              Back to search
+            </button>
           </div>
           {reportError ? <p className="error">{reportError}</p> : null}
 
@@ -437,9 +521,28 @@ export default function ReportMode({ isIosMobile }) {
                 </div>
                 <div className="report-time">
                   <span>Total time</span>
-                  <strong>{formatMinutes(report.race?.total_time_min)}</strong>
+                  <strong>
+                    <AnimatedNumber value={report.race?.total_time_min} formatter={formatMinutes} />
+                  </strong>
                 </div>
               </div>
+
+              {Number.isFinite(report.race?.event_percentile) &&
+                report.race.event_percentile >= 0.5 && (
+                  <div
+                    className={`percentile-callout ${getPercentileColorClass(report.race.event_percentile)}`}
+                    aria-label={`You finished ahead of ${(report.race.event_percentile * 100).toFixed(1)}% of athletes in your age group`}
+                  >
+                    You finished ahead of{" "}
+                    <strong>
+                      <AnimatedNumber
+                        value={report.race.event_percentile * 100}
+                        formatter={(v) => `${v.toFixed(1)}%`}
+                      />
+                    </strong>{" "}
+                    of athletes in your age group
+                  </div>
+                )}
 
               <div className="report-grid">
                 <div className="report-card">
@@ -540,7 +643,9 @@ export default function ReportMode({ isIosMobile }) {
                           i
                         </span>
                       </span>
-                      <strong>{formatPercent(report.race?.event_percentile)}</strong>
+                      <strong className={getPercentileColorClass(report.race?.event_percentile)}>
+                        {formatPercent(report.race?.event_percentile)}
+                      </strong>
                     </div>
                     <div>
                       <span>
@@ -594,8 +699,8 @@ export default function ReportMode({ isIosMobile }) {
                     stats={cohortStats}
                   />
                   <HistogramChart
-                    title={`Time window total time${windowLabel}`}
-                    subtitle="Athletes finishing near the selected total time."
+                    title={`Comparison-window total time${windowLabel}`}
+                    subtitle="Additional cohort around similar finish times."
                     histogram={distributions?.time_window_total_time}
                     stats={windowStats}
                   />
@@ -607,11 +712,11 @@ export default function ReportMode({ isIosMobile }) {
                     emptyMessage="Select a station split to see its distribution."
                   />
                   <HistogramChart
-                    title={`Station window${windowLabel}`}
-                    subtitle="Station split distribution inside the time window."
+                    title={`Comparison-window station split${windowLabel}`}
+                    subtitle="Station split distribution for the additional comparison cohort."
                     histogram={selectedSplitDistribution?.time_window}
                     stats={selectedSplitDistribution?.stats?.time_window}
-                    emptyMessage="Select a station split to see its time window."
+                    emptyMessage="Select a station split to see its comparison-window distribution."
                   />
                 </div>
               </div>
@@ -672,7 +777,7 @@ export default function ReportMode({ isIosMobile }) {
                             <th>Time</th>
                             <th>Rank</th>
                             <th>Percentile</th>
-                            <th>Window percentile</th>
+                            <th>Comparison-window percentile</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -686,7 +791,7 @@ export default function ReportMode({ isIosMobile }) {
                               <td data-label="Percentile">
                                 {formatPercent(split.split_percentile)}
                               </td>
-                              <td data-label="Window percentile">
+                              <td data-label="Comparison-window percentile">
                                 {formatPercent(split.split_percentile_time_window)}
                               </td>
                             </tr>
@@ -733,7 +838,7 @@ export default function ReportMode({ isIosMobile }) {
 
                 <div className="report-card">
                   <ReportCardHeader
-                    title={`Time window stats${windowLabel}`}
+                    title={`Comparison-window stats${windowLabel}`}
                     helpKey="time_window_stats"
                     onOpenHelp={setActiveHelpKey}
                   />
@@ -757,7 +862,7 @@ export default function ReportMode({ isIosMobile }) {
                       </div>
                     </div>
                   ) : (
-                    <p className="empty">Time window stats unavailable.</p>
+                    <p className="empty">Comparison-window stats unavailable.</p>
                   )}
                 </div>
               </div>
