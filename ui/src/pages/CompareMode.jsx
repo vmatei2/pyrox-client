@@ -1,10 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
-import {
-  FlowSteps,
-  ProgressiveSection,
-} from "../components/UiPrimitives.jsx";
+import { ProgressiveSection } from "../components/UiPrimitives.jsx";
 import {
   RUN_SEGMENTS,
   STATION_SEGMENTS,
@@ -314,7 +311,6 @@ export default function CompareMode({ isIosMobile }) {
               <h2>Base race</h2>
               <p>Select the race you want to compare from.</p>
             </div>
-            <FlowSteps steps={["Search athlete", "Select base race", "Confirm base race"]} />
             <form className="search-form" onSubmit={handleBaseSearch}>
               <label className="field">
                 <span>Athlete name</span>
@@ -453,9 +449,6 @@ export default function CompareMode({ isIosMobile }) {
               <h2>Compare against</h2>
               <p>Search and confirm the race you want to compare.</p>
             </div>
-            <FlowSteps
-              steps={["Search comparison athlete", "Select comparison race", "Confirm comparison"]}
-            />
             <form className="search-form" onSubmit={handleCompareSearch}>
               <label className="field">
                 <span>Athlete name</span>

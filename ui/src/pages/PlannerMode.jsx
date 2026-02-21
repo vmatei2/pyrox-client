@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { FlowSteps, ProgressiveSection } from "../components/UiPrimitives.jsx";
+import { ProgressiveSection } from "../components/UiPrimitives.jsx";
 import { formatLabel } from "../utils/formatters.js";
 import { fetchPlanner } from "../api/client.js";
 import { triggerSelectionHaptic } from "../utils/haptics.js";
@@ -96,13 +96,6 @@ export default function PlannerMode({ isIosMobile }) {
   return (
     <main className="planner-page">
       <section className="panel">
-        <div className="panel-header">
-          <h2>Race planner</h2>
-          <p>Filter the cohort and review split distributions before race day.</p>
-        </div>
-        <FlowSteps
-          steps={["Set core filters", "Add advanced constraints (optional)", "Run planner"]}
-        />
         <form className="search-form" onSubmit={handlePlannerSearch}>
           <div className="grid-3">
             <label className="field">

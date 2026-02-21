@@ -60,6 +60,12 @@
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
+.deepdive-page .deepdive-primary-grid {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 1fr;
+}
+
 /* ----------------------------------------------------------------
    Report grid
    ---------------------------------------------------------------- */
@@ -148,6 +154,10 @@
     min-width: 220px;
   }
 
+  .deepdive-page .deepdive-primary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .report-toolbar {
     display: flex;
     flex-wrap: wrap;
@@ -197,16 +207,7 @@
   }
 
   .hero {
-    padding: var(--space-5);
-    border-radius: 22px;
-  }
-
-  .hero h1 {
-    font-size: clamp(1.5rem, 8vw, 2rem);
-  }
-
-  .hero p {
-    font-size: 0.92rem;
+    padding: var(--space-4) var(--space-3);
   }
 
   .mode-tabs {
@@ -360,8 +361,7 @@
   }
 
   .hero {
-    padding: 32px;
-    border-radius: 30px;
+    padding: var(--space-5) var(--space-4);
   }
 
   .grouped-chart-wrap {
@@ -397,6 +397,17 @@
 
   .deepdive-page .results-grid {
     max-height: 360px;
+  }
+
+  /* Keep both Deep Dive column forms aligned even when header copy wraps differently. */
+  .deepdive-page .comparison-column .panel-header {
+    min-height: 96px;
+    display: grid;
+    align-content: start;
+  }
+
+  .deepdive-page .comparison-column .panel-header p {
+    min-height: 2.8em;
   }
 
   table {
@@ -445,7 +456,6 @@ body.ios-mobile .app {
   overflow-x: clip;
 }
 
-body.ios-mobile .hero,
 body.ios-mobile .panel,
 body.ios-mobile .report,
 body.ios-mobile .report-card,
@@ -457,14 +467,10 @@ body.ios-mobile .race-card {
 }
 
 body.ios-mobile .hero {
-  margin-bottom: 14px;
+  margin-bottom: 10px;
+  padding: var(--space-3) var(--space-2);
 }
 
-body.ios-mobile .hero h1 {
-  font-size: clamp(1.42rem, 7.3vw, 1.92rem);
-}
-
-body.ios-mobile .hero p,
 body.ios-mobile .report-subtitle,
 body.ios-mobile .race-title,
 body.ios-mobile .race-location,

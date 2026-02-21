@@ -137,22 +137,6 @@ const ProgressiveSection = ({ enabled, summary, children, defaultOpen = false })
   );
 };
 
-const FlowSteps = ({ steps = [] }) => {
-  if (!steps.length) {
-    return null;
-  }
-  return (
-    <ol className="flow-steps" aria-label="Workflow steps">
-      {steps.map((step, index) => (
-        <li key={step} className="flow-step">
-          <span className="flow-step-index">{index + 1}</span>
-          <span>{step}</span>
-        </li>
-      ))}
-    </ol>
-  );
-};
-
 const ModeTabIcon = ({ kind }) => {
   if (kind === "report") {
     return (
@@ -208,4 +192,4 @@ const ModeTabIcon = ({ kind }) => {
   );
 };
 
-export { AnimatedNumber, FlowSteps, HelpSheet, ModeTabIcon, ProgressiveSection, ReportCardHeader };
+export { AnimatedNumber, HelpSheet, ModeTabIcon, ProgressiveSection, ReportCardHeader };

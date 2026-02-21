@@ -3,7 +3,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
 import {
   AnimatedNumber,
-  FlowSteps,
   HelpSheet,
   ProgressiveSection,
   ReportCardHeader,
@@ -16,6 +15,7 @@ import {
   formatMinutes,
   formatPercent,
   formatLabel,
+  formatTimeWindowLabel,
   getPercentileColorClass,
 } from "../utils/formatters.js";
 import { toNumber, normalizeSplitKey } from "../utils/parsers.js";
@@ -295,18 +295,16 @@ export default function ReportMode({
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const comparisonWindowText = formatTimeWindowLabel(filters.timeWindow);
+  const comparisonWindowDescription =
+    "Additional comparison cohort: athletes in the same location and season " +
+    `finishing within ${comparisonWindowText} of your total time.`;
+
   return (
     <>
       {view === "search" ? (
         <main className="layout is-single">
           <section className="panel">
-            <FlowSteps
-              steps={[
-                "Search for an athlete",
-                "Select the exact race result",
-                "Generate race report",
-              ]}
-            />
             <form className="search-form" onSubmit={handleSearch}>
               <label className="field">
                 <span>Athlete name</span>
@@ -416,7 +414,7 @@ export default function ReportMode({
 
               <div className="report-actions">
                 <label className="field">
-                  <span>Time window (+/- minutes)</span>
+                  <span>Time Window for Comparison (+/- minutes)</span>
                   <input
                     type="number"
                     min="1"
@@ -425,6 +423,9 @@ export default function ReportMode({
                       setFilters((prev) => ({ ...prev, timeWindow: event.target.value }))
                     }
                   />
+                  <span className="field-help">
+                    {comparisonWindowDescription}
+                  </span>
                 </label>
                 <button
                   className="primary"
@@ -442,9 +443,6 @@ export default function ReportMode({
       ) : (
         <main className="report-page">
           <div className="report-toolbar">
-            <button className="secondary" type="button" onClick={handleBackToSearch}>
-              Back to search
-            </button>
             <div className="toolbar-actions">
               <label className="field">
                 <span>Station split</span>
@@ -458,7 +456,17 @@ export default function ReportMode({
                 </select>
               </label>
               <label className="field">
-                <span>Time window (+/- minutes)</span>
+                <span>
+                  Time Window for Comparison (+/- minutes)
+                  <span
+                    className="info-tooltip"
+                    data-tooltip={comparisonWindowDescription}
+                    aria-label={comparisonWindowDescription}
+                    tabIndex={0}
+                  >
+                    i
+                  </span>
+                </span>
                 <input
                   type="number"
                   min="1"
@@ -482,6 +490,9 @@ export default function ReportMode({
                 </button>
               ) : null}
             </div>
+            <button className="secondary" type="button" onClick={handleBackToSearch}>
+              Back to search
+            </button>
           </div>
           {reportError ? <p className="error">{reportError}</p> : null}
 
@@ -678,8 +689,8 @@ export default function ReportMode({
                     stats={cohortStats}
                   />
                   <HistogramChart
-                    title={`Time window total time${windowLabel}`}
-                    subtitle="Athletes finishing near the selected total time."
+                    title={`Comparison-window total time${windowLabel}`}
+                    subtitle="Additional cohort around similar finish times."
                     histogram={distributions?.time_window_total_time}
                     stats={windowStats}
                   />
@@ -691,11 +702,11 @@ export default function ReportMode({
                     emptyMessage="Select a station split to see its distribution."
                   />
                   <HistogramChart
-                    title={`Station window${windowLabel}`}
-                    subtitle="Station split distribution inside the time window."
+                    title={`Comparison-window station split${windowLabel}`}
+                    subtitle="Station split distribution for the additional comparison cohort."
                     histogram={selectedSplitDistribution?.time_window}
                     stats={selectedSplitDistribution?.stats?.time_window}
-                    emptyMessage="Select a station split to see its time window."
+                    emptyMessage="Select a station split to see its comparison-window distribution."
                   />
                 </div>
               </div>
@@ -756,7 +767,7 @@ export default function ReportMode({
                             <th>Time</th>
                             <th>Rank</th>
                             <th>Percentile</th>
-                            <th>Window percentile</th>
+                            <th>Comparison-window percentile</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -770,7 +781,7 @@ export default function ReportMode({
                               <td data-label="Percentile">
                                 {formatPercent(split.split_percentile)}
                               </td>
-                              <td data-label="Window percentile">
+                              <td data-label="Comparison-window percentile">
                                 {formatPercent(split.split_percentile_time_window)}
                               </td>
                             </tr>
@@ -817,7 +828,7 @@ export default function ReportMode({
 
                 <div className="report-card">
                   <ReportCardHeader
-                    title={`Time window stats${windowLabel}`}
+                    title={`Comparison-window stats${windowLabel}`}
                     helpKey="time_window_stats"
                     onOpenHelp={setActiveHelpKey}
                   />
@@ -841,7 +852,7 @@ export default function ReportMode({
                       </div>
                     </div>
                   ) : (
-                    <p className="empty">Time window stats unavailable.</p>
+                    <p className="empty">Comparison-window stats unavailable.</p>
                   )}
                 </div>
               </div>

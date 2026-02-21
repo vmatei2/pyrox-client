@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { FlowSteps, ProgressiveSection } from "../components/UiPrimitives.jsx";
+import { ProgressiveSection } from "../components/UiPrimitives.jsx";
 import {
   DEEPDIVE_METRIC_OPTIONS,
   DEEPDIVE_STAT_OPTIONS,
@@ -33,7 +33,6 @@ export default function DeepdiveMode({ isIosMobile }) {
     match: "best",
     division: "",
     gender: "",
-    nationality: "",
     requireUnique: false,
   });
   const [deepdiveRaces, setDeepdiveRaces] = useState([]);
@@ -180,7 +179,6 @@ export default function DeepdiveMode({ isIosMobile }) {
           deepdiveFilters.match,
           deepdiveFilters.gender.trim(),
           deepdiveFilters.division.trim(),
-          deepdiveFilters.nationality.trim(),
           deepdiveFilters.requireUnique,
         ],
         queryFn: () => searchAthletes(deepdiveName, deepdiveFilters),
@@ -240,66 +238,46 @@ export default function DeepdiveMode({ isIosMobile }) {
               <h2>Base race</h2>
               <p>Select the race you want to deepdive.</p>
             </div>
-            <FlowSteps steps={["Search athlete", "Select base race", "Configure deepdive"]} />
             <form className="search-form" onSubmit={handleDeepdiveSearch}>
-              <label className="field">
-                <span>Athlete name</span>
-                <input
-                  type="text"
-                  placeholder="Athlete Name"
-                  value={deepdiveName}
-                  onChange={(event) => setDeepdiveName(event.target.value)}
-                />
-              </label>
-
-              <ProgressiveSection enabled={isIosMobile} summary="More search filters">
-                <div className="grid-2">
-                  <label className="field">
-                    <span>Division</span>
-                    <input
-                      type="text"
-                      placeholder="open, pro, doubles"
-                      value={deepdiveFilters.division}
-                      onChange={(event) =>
-                        setDeepdiveFilters((prev) => ({
-                          ...prev,
-                          division: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-
-                  <label className="field">
-                    <span>Gender</span>
-                    <input
-                      type="text"
-                      placeholder="male or female or mixed"
-                      value={deepdiveFilters.gender}
-                      onChange={(event) =>
-                        setDeepdiveFilters((prev) => ({
-                          ...prev,
-                          gender: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                </div>
-
+              <div className="deepdive-primary-grid">
                 <label className="field">
-                  <span>Nationality</span>
+                  <span>Athlete name</span>
                   <input
                     type="text"
-                    placeholder="GBR"
-                    value={deepdiveFilters.nationality}
+                    placeholder="Athlete Name"
+                    value={deepdiveName}
+                    onChange={(event) => setDeepdiveName(event.target.value)}
+                  />
+                </label>
+                <label className="field">
+                  <span>Division</span>
+                  <input
+                    type="text"
+                    placeholder="open, pro, doubles"
+                    value={deepdiveFilters.division}
                     onChange={(event) =>
                       setDeepdiveFilters((prev) => ({
                         ...prev,
-                        nationality: event.target.value,
+                        division: event.target.value,
                       }))
                     }
                   />
                 </label>
-              </ProgressiveSection>
+                <label className="field">
+                  <span>Gender</span>
+                  <input
+                    type="text"
+                    placeholder="male or female or mixed"
+                    value={deepdiveFilters.gender}
+                    onChange={(event) =>
+                      setDeepdiveFilters((prev) => ({
+                        ...prev,
+                        gender: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+              </div>
 
               <button
                 className={deepdiveRaces.length ? "secondary" : "primary"}
@@ -389,9 +367,6 @@ export default function DeepdiveMode({ isIosMobile }) {
               <h2>Deepdive filters</h2>
               <p>Compare your time against the season-wide field.</p>
             </div>
-            <FlowSteps
-              steps={["Set season + cohort filters", "Choose metric and stat focus", "Run deepdive"]}
-            />
             <form
               className="search-form"
               onSubmit={(event) => {
@@ -399,7 +374,7 @@ export default function DeepdiveMode({ isIosMobile }) {
                 handleRunDeepdive();
               }}
             >
-              <div className="grid-3">
+              <div className="deepdive-primary-grid">
                 <label className="field">
                   <span>Season *</span>
                   <input
@@ -747,4 +722,3 @@ export default function DeepdiveMode({ isIosMobile }) {
     </main>
   );
 }
-

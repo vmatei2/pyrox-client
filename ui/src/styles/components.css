@@ -5,53 +5,28 @@
    Hero
    ---------------------------------------------------------------- */
 .hero {
-  margin-bottom: 20px;
-  animation: float-in 0.8s ease both;
-  padding: var(--space-6);
-  border-radius: var(--radius-lg);
-  background:
-    radial-gradient(ellipse at 0% 0%, rgba(59, 130, 246, 0.1) 0%, transparent 55%),
-    var(--bg-surface);
-  border: 1px solid rgba(156, 177, 214, 0.2);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.04) inset,
-    0 12px 36px rgba(1, 5, 14, 0.38),
-    0 2px 8px rgba(1, 5, 14, 0.22);
-}
-
-.hero-tag {
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: var(--space-2);
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: rgba(148, 163, 184, 0.12);
-  border: 1px solid rgba(148, 163, 184, 0.24);
-  color: #dbe7ff;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: 0.66rem;
+  text-align: center;
+  margin-bottom: 20px;
+  padding: var(--space-5) var(--space-4);
+  animation: float-in 0.8s ease both;
 }
 
-.hero h1 {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: clamp(1.55rem, 7.5vw, 2rem);
-  line-height: 1.07;
-  margin: 12px 0 10px;
-  letter-spacing: -0.03em;
-  color: var(--text-strong);
-  background-image: none;
-  -webkit-text-fill-color: currentColor;
+.hero-wordmark {
+  opacity: 0.85;
+  pointer-events: none;
+  user-select: none;
 }
 
-.hero p {
+.hero-tagline {
+  margin: var(--space-1) 0 0;
+  font-size: 0.8rem;
   color: var(--text-muted-2);
-  max-width: 52ch;
-  margin: 0;
-  font-size: 0.95rem;
-  line-height: 1.5;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 500;
 }
 
 /* ----------------------------------------------------------------
@@ -193,6 +168,13 @@
   font-weight: 600;
   letter-spacing: -0.005em;
   color: #acbcda;
+}
+
+.field .field-help {
+  font-size: 0.74rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text-muted-2);
 }
 
 .field input,
@@ -930,11 +912,13 @@ table tr:hover td {
   display: grid;
   gap: var(--space-6);
   grid-template-columns: 1fr;
+  align-items: start;
 }
 
 .comparison-column {
   display: grid;
   gap: var(--space-4);
+  align-content: start;
 }
 
 .compare-hero {
@@ -1072,39 +1056,6 @@ table tr:hover td {
   display: grid;
   gap: var(--space-5);
   margin-top: var(--space-6);
-}
-
-/* ----------------------------------------------------------------
-   Flow steps (workflow helper)
-   ---------------------------------------------------------------- */
-.flow-steps {
-  list-style: none;
-  margin: 0 0 var(--space-5);
-  padding: 0;
-  display: grid;
-  gap: var(--space-2);
-}
-
-.flow-step {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--text-muted-2);
-  font-size: 0.84rem;
-}
-
-.flow-step-index {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-surface-soft);
-  color: #c7d5ed;
-  font-size: 0.75rem;
-  font-weight: 700;
 }
 
 @keyframes skeleton-pulse {

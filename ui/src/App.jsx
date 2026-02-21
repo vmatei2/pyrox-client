@@ -1,5 +1,4 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import { Capacitor } from "@capacitor/core";
 import { ModeTabIcon } from "./components/UiPrimitives.jsx";
 import { API_BASE, getInitialMode, VALID_MODES } from "./constants/segments.js";
 import { useAppBootstrap } from "./hooks/useAppBootstrap.js";
@@ -35,10 +34,6 @@ const ModeLoadingFallback = () => (
 );
 
 export default function App() {
-  const platform = Capacitor.getPlatform ? Capacitor.getPlatform() : "web";
-  const isNativeApp = Capacitor.isNativePlatform
-    ? Capacitor.isNativePlatform()
-    : platform !== "web";
   const isIosMobile = useIosMobile();
   const [mode, setMode] = useState(getInitialMode);
   const [mountedModes, setMountedModes] = useState(() => ({ [getInitialMode()]: true }));
@@ -105,12 +100,7 @@ export default function App() {
       <div className="app-shell-content">
         <div className={`app${isIosMobile ? " ios-mobile-shell" : ""}`}>
           <header className="hero">
-            <div className="hero-tag">Pyrox Race Analysis</div>
-            <h1>Find an athlete, pick a race, and build a Pyrox race report.</h1>
-            <p>
-              Search our race database, review your race, and generate a report.
-              {!isNativeApp ? " PDF export is available on desktop." : null}
-            </p>
+            <img src="/brand-wordmark.svg" alt="PYROX" className="hero-wordmark" width="140" height="41" />
           </header>
 
           {bootstrapWarning ? (

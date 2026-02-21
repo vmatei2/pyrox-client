@@ -116,8 +116,8 @@ function SetupView({ onClaim }) {
         Set up your profile
       </h2>
       <p className="profile-setup-desc">
-        Search for your name in our race database. Your personal bests, average
-        times, and full race history will be tracked automatically.
+        Search for your name in our race database and find your PBs, average
+        times, and race history.
       </p>
 
       <form className="search-form profile-setup-form" onSubmit={handleSearch}>

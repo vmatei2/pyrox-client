@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { FlowSteps, ProgressiveSection } from "../components/UiPrimitives.jsx";
+import { ProgressiveSection } from "../components/UiPrimitives.jsx";
 import { fetchRankings, fetchRankingsFilters } from "../api/client.js";
 import { formatLabel, formatMinutes } from "../utils/formatters.js";
 import { triggerSelectionHaptic } from "../utils/haptics.js";
@@ -128,19 +128,6 @@ export default function RankingsMode({ isIosMobile }) {
   return (
     <main className="rankings-page">
       <section className="panel">
-        <div className="panel-header">
-          <h2>Rankings</h2>
-          <p>Find the fastest athletes by season, division, and gender.</p>
-        </div>
-
-        <FlowSteps
-          steps={[
-            "Set season, division, and gender",
-            "Optionally refine by age group, athlete name, and target time",
-            "Run rankings to view full leaderboard and placement",
-          ]}
-        />
-
         <form className="search-form" onSubmit={handleRunRankings}>
           <div className="grid-3">
             <label className="field">

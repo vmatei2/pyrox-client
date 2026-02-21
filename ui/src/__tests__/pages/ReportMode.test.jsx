@@ -16,7 +16,6 @@ vi.mock("../../components/UiPrimitives.jsx", () => ({
     if (value === null || value === undefined || !Number.isFinite(value)) return "—";
     return formatter ? formatter(value) : String(value);
   },
-  FlowSteps: () => null,
   HelpSheet: () => null,
   ProgressiveSection: ({ children }) => <>{children}</>,
   ReportCardHeader: ({ title }) => <h4>{title}</h4>,
@@ -97,6 +96,23 @@ describe("ReportMode pending race jump", () => {
     await waitFor(() => {
       expect(screen.getByText("Race report")).toBeInTheDocument();
     });
+    expect(screen.getByText("Time Window for Comparison (+/- minutes)")).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/Additional comparison cohort: athletes in the same location and season/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Additional comparison cohort: athletes in the same location and season/i)
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("ReportMode time-window copy", () => {
+  it("explains time window as an additional comparison cohort in search view", () => {
+    renderReportMode();
+    expect(screen.getByText("Time Window for Comparison (+/- minutes)")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Additional comparison cohort: athletes in the same location and season/i)
+    ).toBeInTheDocument();
   });
 });
 
@@ -186,4 +202,3 @@ describe("Percentile callout banner", () => {
     expect(callout).toHaveClass("perc-good");
   });
 });
-
