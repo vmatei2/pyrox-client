@@ -243,6 +243,29 @@ export default function DeepdiveMode({ isIosMobile }) {
   return (
     <main className="deepdive-page">
       <section className="panel">
+        <section className="flow-steps" aria-label="How to use Deep Dive">
+          <p className="flow-steps-title">How to use Deep Dive</p>
+          <div className="flow-step">
+            <span className="flow-step-index">1</span>
+            <p>Find your athlete and choose a base race from the left column.</p>
+          </div>
+          <div className="flow-step">
+            <span className="flow-step-index">2</span>
+            <p>Set the season and optional scope filters on the right.</p>
+          </div>
+          <div className="flow-step">
+            <span className="flow-step-index">3</span>
+            <p>
+              Pick your metric and stat focus to compare against Top 5%, Podium,
+              Mean, or Bottom 10%.
+            </p>
+          </div>
+          <div className="flow-step">
+            <span className="flow-step-index">4</span>
+            <p>Run deepdive to see distributions, targets, and location gaps.</p>
+          </div>
+        </section>
+
         <div className="comparison-grid">
           <div className="comparison-column">
             <div className="panel-header">

@@ -115,6 +115,22 @@ export default function PlannerMode({ isIosMobile }) {
   return (
     <main className="planner-page">
       <section className="panel">
+        <section className="flow-steps" aria-label="How to use Race Planner">
+          <p className="flow-steps-title">How to use Race Planner</p>
+          <div className="flow-step">
+            <span className="flow-step-index">1</span>
+            <p>Choose your planning scope with season, location, and year.</p>
+          </div>
+          <div className="flow-step">
+            <span className="flow-step-index">2</span>
+            <p>Add optional filters for division, gender, and total time range.</p>
+          </div>
+          <div className="flow-step">
+            <span className="flow-step-index">3</span>
+            <p>Run planner to view overall, run, and station distributions.</p>
+          </div>
+        </section>
+
         <form className="search-form" onSubmit={handlePlannerSearch}>
           <div className="grid-3">
             <label className="field">
