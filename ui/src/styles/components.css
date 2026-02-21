@@ -850,6 +850,51 @@ table tr:hover td {
 }
 
 /* ----------------------------------------------------------------
+   Percentile color zones (Whoop-style semantic coloring)
+   ---------------------------------------------------------------- */
+.perc-excellent {
+  color: #34d399;
+  font-weight: 600;
+}
+
+.perc-good {
+  color: #5ac8fa;
+  font-weight: 600;
+}
+
+.perc-average {
+  color: var(--ink);
+}
+
+.perc-below {
+  color: #ffc480;
+  font-weight: 600;
+}
+
+/* ----------------------------------------------------------------
+   Percentile callout banner
+   ---------------------------------------------------------------- */
+.percentile-callout {
+  padding: 14px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  line-height: 1.45;
+  color: var(--ink);
+  background:
+    radial-gradient(ellipse at 0% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 60%),
+    var(--bg-surface);
+  border: 1px solid rgba(156, 177, 214, 0.18);
+  border-left: 3px solid currentColor;
+  animation: float-in 0.6s ease both;
+  animation-delay: 0.15s;
+}
+
+.percentile-callout strong {
+  font-weight: 700;
+  font-size: 1.05em;
+}
+
+/* ----------------------------------------------------------------
    Stat grid
    ---------------------------------------------------------------- */
 .stat-grid {
@@ -1244,6 +1289,28 @@ table tr:hover td {
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: #8fa5c8;
+}
+
+.profile-division-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-division-filter-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #8fa5c8;
+}
+
+.profile-division-filter-select {
+  min-width: 180px;
+  max-width: 260px;
+  min-height: 36px;
+  border-radius: 10px;
 }
 
 /* ----------------------------------------------------------------

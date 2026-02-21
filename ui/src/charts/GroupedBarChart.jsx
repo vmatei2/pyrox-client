@@ -72,7 +72,7 @@ export const GroupedBarChart = ({
               })}
             </div>
             <div className="grouped-chart-bars">
-              {segments.map((segment) => {
+              {segments.map((segment, segIdx) => {
                 const baseValue = Number.isFinite(segment.baseValue) ? segment.baseValue : 0;
                 const compareValue = Number.isFinite(segment.compareValue)
                   ? segment.compareValue
@@ -84,14 +84,22 @@ export const GroupedBarChart = ({
                     <div className="grouped-bars">
                       <div
                         className="grouped-bar is-base"
-                        style={{ height: `${baseHeight}%`, background: segment.color }}
+                        style={{
+                          height: `${baseHeight}%`,
+                          background: segment.color,
+                          "--bar-delay": `${segIdx * 50}ms`,
+                        }}
                         title={`${baseLabel} ${segment.label}: ${formatMinutes(baseValue)}`}
                         data-value={formatMinutes(baseValue)}
                         aria-label={`${segment.label} ${baseLabel}: ${formatMinutes(baseValue)}`}
                       />
                       <div
                         className="grouped-bar is-compare"
-                        style={{ height: `${compareHeight}%`, background: segment.color }}
+                        style={{
+                          height: `${compareHeight}%`,
+                          background: segment.color,
+                          "--bar-delay": `${segIdx * 50 + 25}ms`,
+                        }}
                         title={`${compareLabel} ${segment.label}: ${formatMinutes(compareValue)}`}
                         data-value={formatMinutes(compareValue)}
                         aria-label={`${segment.label} ${compareLabel}: ${formatMinutes(compareValue)}`}

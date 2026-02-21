@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
 import {
+  AnimatedNumber,
   FlowSteps,
   HelpSheet,
   ProgressiveSection,
@@ -15,6 +16,7 @@ import {
   formatMinutes,
   formatPercent,
   formatLabel,
+  getPercentileColorClass,
 } from "../utils/formatters.js";
 import { toNumber, normalizeSplitKey } from "../utils/parsers.js";
 import { buildReportFilename, buildReportHelpContent } from "../utils/pdf.js";
@@ -25,7 +27,11 @@ import { PercentileLineChart } from "../charts/PercentileLineChart.jsx";
 import { WorkRunSplitPieChart } from "../charts/WorkRunSplitPieChart.jsx";
 import { RunChangeLineChart } from "../charts/RunChangeLineChart.jsx";
 
-export default function ReportMode({ isIosMobile }) {
+export default function ReportMode({
+  isIosMobile,
+  pendingRaceJump = null,
+  onRaceJumpHandled = () => {},
+}) {
   const platform = Capacitor.getPlatform ? Capacitor.getPlatform() : "web";
   const isNativeApp = Capacitor.isNativePlatform
     ? Capacitor.isNativePlatform()
@@ -132,6 +138,63 @@ export default function ReportMode({ isIosMobile }) {
       document.body.style.overflow = previousOverflow;
     };
   }, [activeHelpContent]);
+
+  useEffect(() => {
+    if (!pendingRaceJump) {
+      return;
+    }
+
+    let active = true;
+    setView("report");
+    setReport(null);
+    setSelectedSplit("");
+    setSelectedRaceId(pendingRaceJump);
+    setReportLoading(true);
+    setReportError("");
+    setSearchError("");
+
+    const loadPendingRace = async () => {
+      try {
+        const payload = await queryClient.fetchQuery({
+          queryKey: ["report", pendingRaceJump, filters.timeWindow.trim(), ""],
+          queryFn: () =>
+            fetchReport(pendingRaceJump, {
+              timeWindow: filters.timeWindow,
+            }),
+        });
+        if (!active) {
+          return;
+        }
+        setReport(payload);
+        if (payload?.race?.result_id) {
+          setRaces((prev) => {
+            if (prev.some((race) => race.result_id === payload.race.result_id)) {
+              return prev;
+            }
+            return [payload.race, ...prev];
+          });
+        }
+        void triggerSelectionHaptic();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch (error) {
+        if (!active) {
+          return;
+        }
+        setReportError(error.message || "Report generation failed.");
+      } finally {
+        if (!active) {
+          return;
+        }
+        setReportLoading(false);
+        onRaceJumpHandled();
+      }
+    };
+
+    void loadPendingRace();
+    return () => {
+      active = false;
+    };
+  }, [pendingRaceJump, onRaceJumpHandled, queryClient]);
 
   const handleSearch = async (event) => {
     event.preventDefault();
@@ -437,9 +500,28 @@ export default function ReportMode({ isIosMobile }) {
                 </div>
                 <div className="report-time">
                   <span>Total time</span>
-                  <strong>{formatMinutes(report.race?.total_time_min)}</strong>
+                  <strong>
+                    <AnimatedNumber value={report.race?.total_time_min} formatter={formatMinutes} />
+                  </strong>
                 </div>
               </div>
+
+              {Number.isFinite(report.race?.event_percentile) &&
+                report.race.event_percentile >= 0.5 && (
+                  <div
+                    className={`percentile-callout ${getPercentileColorClass(report.race.event_percentile)}`}
+                    aria-label={`You finished ahead of ${(report.race.event_percentile * 100).toFixed(1)}% of athletes in your age group`}
+                  >
+                    You finished ahead of{" "}
+                    <strong>
+                      <AnimatedNumber
+                        value={report.race.event_percentile * 100}
+                        formatter={(v) => `${v.toFixed(1)}%`}
+                      />
+                    </strong>{" "}
+                    of athletes in your age group
+                  </div>
+                )}
 
               <div className="report-grid">
                 <div className="report-card">
@@ -540,7 +622,9 @@ export default function ReportMode({ isIosMobile }) {
                           i
                         </span>
                       </span>
-                      <strong>{formatPercent(report.race?.event_percentile)}</strong>
+                      <strong className={getPercentileColorClass(report.race?.event_percentile)}>
+                        {formatPercent(report.race?.event_percentile)}
+                      </strong>
                     </div>
                     <div>
                       <span>

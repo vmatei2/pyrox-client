@@ -42,8 +42,8 @@ SEGMENT_CONFIG = [
     {"key": "wallBalls_time_min", "label": "Wall Balls", "group": "stations"},
 ]
 
-# Athlete-profile: maps frontend PB key → race_results column name
-_PROFILE_STATION_MAP = {
+# Athlete-profile: maps frontend metric key -> race_results column name
+_PROFILE_TIME_COLUMN_MAP = {
     "overall":         "total_time_min",
     "skierg":          "skiErg_time_min",
     "sledpush":        "sledPush_time_min",
@@ -54,6 +54,7 @@ _PROFILE_STATION_MAP = {
     "sandbaglunges":   "sandbagLunges_time_min",
     "wallballs":       "wallBalls_time_min",
 }
+_PROFILE_RUN_ROXZONE_KEY = "runplusroxzone"
 
 
 def _parse_origins(value: str) -> list[str]:
@@ -96,6 +97,13 @@ def _normalize_optional_text(value: Optional[str]) -> Optional[str]:
         return None
     text = str(value).strip()
     return text if text else None
+
+
+def _normalize_profile_division_filter(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    trimmed = str(value).strip()
+    return trimmed if trimmed else None
 
 
 def _clean_distinct_values(df: pd.DataFrame, column: str) -> list[str]:
@@ -966,7 +974,27 @@ def rankings(
     return payload
 
 
-def _load_profile_rows_for_athlete_id(con, athlete_id: str) -> pd.DataFrame:
+def _load_profile_divisions_for_athlete_id(con, athlete_id: str) -> list[str]:
+    rows = con.execute(
+        """
+        SELECT DISTINCT trim(CAST(rr.division AS VARCHAR)) AS division
+        FROM athlete_results ar
+        JOIN race_results rr ON rr.result_id = ar.result_id
+        WHERE ar.athlete_id = ?
+          AND rr.division IS NOT NULL
+          AND trim(CAST(rr.division AS VARCHAR)) <> ''
+        ORDER BY lower(trim(CAST(rr.division AS VARCHAR))), trim(CAST(rr.division AS VARCHAR))
+        """,
+        [athlete_id],
+    ).fetchall()
+    return [str(row[0]) for row in rows if row and row[0] is not None and str(row[0]).strip()]
+
+
+def _load_profile_rows_for_athlete_id(
+    con,
+    athlete_id: str,
+    division: Optional[str] = None,
+) -> pd.DataFrame:
     tables = {
         str(row[0])
         for row in con.execute("SHOW TABLES").fetchall()
@@ -994,9 +1022,15 @@ def _load_profile_rows_for_athlete_id(con, athlete_id: str) -> pd.DataFrame:
         "age_group",
         "total_time_min",
     }.issubset(race_columns)
+    normalized_division = _normalize_profile_division_filter(division)
+    division_clause = ""
+    params: list[object] = [athlete_id]
+    if normalized_division is not None:
+        division_clause = " AND lower(rr.division) = ?"
+        params.append(normalized_division.casefold())
 
     if has_race_rankings:
-        sql = """
+        sql = f"""
             SELECT
                 rr.*,
                 ar.athlete_id,
@@ -1010,10 +1044,11 @@ def _load_profile_rows_for_athlete_id(con, athlete_id: str) -> pd.DataFrame:
             LEFT JOIN athlete_index ai ON ai.athlete_id = ar.athlete_id
             LEFT JOIN race_rankings rk ON rk.result_id = rr.result_id
             WHERE ar.athlete_id = ?
+            {division_clause}
             ORDER BY rr.year DESC NULLS LAST, rr.location ASC NULLS LAST, rr.result_id ASC
         """
     elif can_compute_ag_rank_fallback:
-        sql = """
+        sql = f"""
             WITH athlete_rows AS (
                 SELECT
                     rr.*,
@@ -1026,6 +1061,7 @@ def _load_profile_rows_for_athlete_id(con, athlete_id: str) -> pd.DataFrame:
                 JOIN race_results rr ON rr.result_id = ar.result_id
                 LEFT JOIN athlete_index ai ON ai.athlete_id = ar.athlete_id
                 WHERE ar.athlete_id = ?
+                {division_clause}
             ),
             cohort_keys AS (
                 SELECT DISTINCT
@@ -1061,7 +1097,7 @@ def _load_profile_rows_for_athlete_id(con, athlete_id: str) -> pd.DataFrame:
                 athlete_rows.result_id ASC
         """
     else:
-        sql = """
+        sql = f"""
             SELECT
                 rr.*,
                 ar.athlete_id,
@@ -1074,15 +1110,47 @@ def _load_profile_rows_for_athlete_id(con, athlete_id: str) -> pd.DataFrame:
             JOIN race_results rr ON rr.result_id = ar.result_id
             LEFT JOIN athlete_index ai ON ai.athlete_id = ar.athlete_id
             WHERE ar.athlete_id = ?
+            {division_clause}
             ORDER BY rr.year DESC NULLS LAST, rr.location ASC NULLS LAST, rr.result_id ASC
         """
 
-    return con.execute(sql, [athlete_id]).fetchdf()
+    return con.execute(sql, params).fetchdf()
 
 
-def _build_athlete_profile_payload(con, athlete_id: str) -> dict:
-    df = _load_profile_rows_for_athlete_id(con, athlete_id)
+def _build_profile_metric_series(df: pd.DataFrame) -> dict[str, pd.Series]:
+    metrics: dict[str, pd.Series] = {}
+    for metric_key, column_name in _PROFILE_TIME_COLUMN_MAP.items():
+        if column_name in df.columns:
+            metrics[metric_key] = pd.to_numeric(df[column_name], errors="coerce")
+
+    if {"run_time_min", "roxzone_time_min"}.issubset(df.columns):
+        run_values = pd.to_numeric(df["run_time_min"], errors="coerce")
+        roxzone_values = pd.to_numeric(df["roxzone_time_min"], errors="coerce")
+        combined = run_values + roxzone_values
+        metrics[_PROFILE_RUN_ROXZONE_KEY] = combined.where(
+            (run_values > 0) & (roxzone_values > 0)
+        )
+
+    return metrics
+
+
+def _build_athlete_profile_payload(
+    con,
+    athlete_id: str,
+    division: Optional[str] = None,
+) -> dict:
+    division_filter = _normalize_profile_division_filter(division)
+    available_divisions = _load_profile_divisions_for_athlete_id(con, athlete_id)
+    df = _load_profile_rows_for_athlete_id(con, athlete_id, division_filter)
     if df.empty:
+        if division_filter is not None:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    f"No races found for athlete_id '{athlete_id}' in division "
+                    f"'{division_filter}'."
+                ),
+            )
         raise HTTPException(status_code=404, detail=f"No races found for athlete_id '{athlete_id}'.")
 
     recent = df.iloc[0]
@@ -1119,18 +1187,23 @@ def _build_athlete_profile_payload(con, athlete_id: str) -> dict:
     )
 
     personal_bests: dict = {}
-    for pb_key, col in _PROFILE_STATION_MAP.items():
-        if col not in df.columns:
-            continue
-        series = pd.to_numeric(df[col], errors="coerce")
-        valid = series[series > 0].dropna()
+    average_times: dict = {}
+    metric_series = _build_profile_metric_series(df)
+    for metric_key, series in metric_series.items():
+        valid = pd.to_numeric(series, errors="coerce")
+        valid = valid[valid > 0].dropna()
         if valid.empty:
             continue
+
+        average_times[metric_key] = {
+            "time": float(valid.mean()),
+        }
+
         idx = valid.idxmin()
         pb_row = df.loc[idx]
         pb_year = pb_row.get("year")
         pb_location = pb_row.get("location")
-        personal_bests[pb_key] = {
+        personal_bests[metric_key] = {
             "time": float(valid[idx]),
             "result_id": pb_row["result_id"],
             "location": (
@@ -1183,16 +1256,23 @@ def _build_athlete_profile_payload(con, athlete_id: str) -> dict:
 
     profile_name = _row_text("name") or _row_text("athlete_name") or "Athlete"
     profile_gender = _row_text("gender") or _row_text("athlete_index_gender")
+    profile_division = _row_text("division")
+    if division_filter is None and len(available_divisions) > 1:
+        profile_division = None
 
     return {
         "athlete": {
             "athlete_id": athlete_id,
             "name": profile_name,
             "gender": profile_gender,
-            "division": _row_text("division"),
+            "division": profile_division,
             "age_group": _row_text("age_group"),
             "nationality": nationality,
         },
+        "filters": {
+            "division": division_filter,
+        },
+        "available_divisions": available_divisions,
         "summary": {
             "total_races": int(len(df)),
             "best_overall_time": float(valid_times.min()) if not valid_times.empty else None,
@@ -1200,34 +1280,51 @@ def _build_athlete_profile_payload(con, athlete_id: str) -> dict:
             "first_season": str(int(years.min())) if not years.empty else None,
         },
         "personal_bests": personal_bests,
+        "average_times": average_times,
         "seasons": seasons,
         "races": races,
     }
 
 
 @app.get("/api/athletes/{athlete_id}/profile")
-def athlete_profile_by_id(athlete_id: str) -> dict:
+def athlete_profile_by_id(
+    athlete_id: str,
+    division: Optional[str] = Query(None),
+) -> dict:
     start = time.perf_counter()
     athlete_id_trimmed = athlete_id.strip()
     if not athlete_id_trimmed:
         raise HTTPException(status_code=400, detail="athlete_id is required.")
+    division_filter = _normalize_profile_division_filter(division)
 
-    logger.info("athlete_profile start athlete_id=%s", athlete_id_trimmed)
+    logger.info(
+        "athlete_profile start athlete_id=%s division=%s",
+        athlete_id_trimmed,
+        division_filter,
+    )
     reporting = _get_reporting()
     con = reporting._ensure_connection()
-    payload = _build_athlete_profile_payload(con, athlete_id_trimmed)
+    payload = _build_athlete_profile_payload(con, athlete_id_trimmed, division_filter)
     logger.info("athlete_profile ready in %.3fs", time.perf_counter() - start)
     return payload
 
 
 @app.get("/api/athletes/profile")
-def athlete_profile(name: str = Query(..., min_length=1)) -> dict:
+def athlete_profile(
+    name: str = Query(..., min_length=1),
+    division: Optional[str] = Query(None),
+) -> dict:
     start = time.perf_counter()
     name_trimmed = name.strip()
     if not name_trimmed:
         raise HTTPException(status_code=400, detail="name is required.")
+    division_filter = _normalize_profile_division_filter(division)
 
-    logger.info("athlete_profile by-name start name=%s", name_trimmed)
+    logger.info(
+        "athlete_profile by-name start name=%s division=%s",
+        name_trimmed,
+        division_filter,
+    )
     reporting = _get_reporting()
     con = reporting._ensure_connection()
     athlete_id_rows = con.execute(
@@ -1259,6 +1356,6 @@ def athlete_profile(name: str = Query(..., min_length=1)) -> dict:
             ),
         )
 
-    payload = _build_athlete_profile_payload(con, athlete_ids[0])
+    payload = _build_athlete_profile_payload(con, athlete_ids[0], division_filter)
     logger.info("athlete_profile by-name ready in %.3fs", time.perf_counter() - start)
     return payload

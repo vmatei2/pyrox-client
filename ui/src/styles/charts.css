@@ -2,6 +2,50 @@
    Final cascaded values after all overrides are resolved. */
 
 /* ----------------------------------------------------------------
+   Chart draw-on animations
+   ---------------------------------------------------------------- */
+@keyframes bar-grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes line-draw {
+  from {
+    stroke-dashoffset: var(--path-length);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes point-appear {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-bar,
+  .grouped-bar,
+  .stat-bar,
+  .percentile-line,
+  .run-change-path,
+  .percentile-point,
+  .run-change-point {
+    animation: none !important;
+  }
+}
+
+/* ----------------------------------------------------------------
    Chart grid (container)
    ---------------------------------------------------------------- */
 .chart-grid {
@@ -87,6 +131,9 @@
   position: relative;
   cursor: pointer;
   transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease;
+  transform-origin: bottom center;
+  animation: bar-grow 0.5s ease-out both;
+  animation-delay: var(--bar-delay, 0ms);
 }
 
 .chart-bar::after {
@@ -266,6 +313,9 @@
   border: 1px solid rgba(148, 163, 184, 0.35);
   transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease;
   position: relative;
+  transform-origin: bottom center;
+  animation: bar-grow 0.5s ease-out both;
+  animation-delay: var(--bar-delay, 0ms);
 }
 
 .grouped-bar.is-base {
@@ -397,6 +447,9 @@
   color: #f8fafc;
   font-size: 0.75rem;
   transition: transform 0.2s ease, filter 0.2s ease;
+  transform-origin: bottom center;
+  animation: bar-grow 0.5s ease-out both;
+  animation-delay: var(--bar-delay, 0ms);
 }
 
 .stat-bar:hover {

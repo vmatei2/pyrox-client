@@ -92,18 +92,24 @@ export function fetchAthleteProfile(identityOrName) {
     return apiFetch("/api/athletes/profile", { name });
   }
 
+  const division =
+    typeof identityOrName?.division === "string" ? identityOrName.division.trim() : "";
   const athleteId =
     typeof identityOrName?.athleteId === "string"
       ? identityOrName.athleteId.trim()
       : "";
   if (athleteId) {
-    return apiFetch(`/api/athletes/${encodeURIComponent(athleteId)}/profile`);
+    const params = {};
+    if (division) params.division = division;
+    return apiFetch(`/api/athletes/${encodeURIComponent(athleteId)}/profile`, params);
   }
 
   const name =
     typeof identityOrName?.name === "string" ? identityOrName.name.trim() : "";
   if (name) {
-    return apiFetch("/api/athletes/profile", { name });
+    const params = { name };
+    if (division) params.division = division;
+    return apiFetch("/api/athletes/profile", params);
   }
 
   throw new Error("athleteId or name is required.");

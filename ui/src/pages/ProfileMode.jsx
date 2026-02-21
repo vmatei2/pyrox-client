@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ModeTabIcon } from "../components/UiPrimitives.jsx";
+import { AnimatedNumber, ModeTabIcon } from "../components/UiPrimitives.jsx";
 import { STATION_SEGMENTS } from "../constants/segments.js";
 import { formatMinutes } from "../utils/formatters.js";
 import { fetchAthleteProfile, searchAthletes } from "../api/client.js";
 import { useAthleteIdentity } from "../hooks/useAthleteIdentity.js";
 import { triggerSelectionHaptic } from "../utils/haptics.js";
-import { SeasonProgressionChart } from "../charts/SeasonProgressionChart.jsx";
 
 // ── Helpers ───────────────────────────────────────────────────────
 
@@ -30,9 +29,10 @@ function ordinal(n) {
   return `${num}th`;
 }
 
-// Segments whose PBs we surface (overall + every station)
-const PB_SEGMENTS = [
+// Segments surfaced in profile time cards.
+const PROFILE_TIME_SEGMENTS = [
   { key: "overall", label: "Overall Time", color: "#0a84ff" },
+  { key: "runplusroxzone", label: "Run + Roxzone", color: "#f97316" },
   ...STATION_SEGMENTS.map((s) => ({ key: s.key, label: s.label, color: s.color })),
 ];
 
@@ -116,8 +116,8 @@ function SetupView({ onClaim }) {
         Set up your profile
       </h2>
       <p className="profile-setup-desc">
-        Search for your name in our race database. Your personal bests, season
-        progression, and full race history will be tracked automatically.
+        Search for your name in our race database. Your personal bests, average
+        times, and full race history will be tracked automatically.
       </p>
 
       <form className="search-form profile-setup-form" onSubmit={handleSearch}>
@@ -227,12 +227,14 @@ function ProfileHero({ athlete, summary, onChangeIdentity }) {
         <dl className="profile-stats-strip">
           <div className="profile-stat">
             <dt className="profile-stat-label">Races</dt>
-            <dd className="profile-stat-value">{summary?.total_races ?? "—"}</dd>
+            <dd className="profile-stat-value">
+              <AnimatedNumber value={summary?.total_races} />
+            </dd>
           </div>
           <div className="profile-stat">
             <dt className="profile-stat-label">Personal Best</dt>
             <dd className="profile-stat-value profile-stat-time">
-              {formatMinutes(summary?.best_overall_time)}
+              <AnimatedNumber value={summary?.best_overall_time} formatter={formatMinutes} />
             </dd>
           </div>
           <div className="profile-stat">
@@ -253,39 +255,85 @@ function ProfileHero({ athlete, summary, onChangeIdentity }) {
   );
 }
 
-// ── Personal bests grid ───────────────────────────────────────────
+function DivisionFilter({ divisions, selectedDivision, onChange }) {
+  const options = Array.isArray(divisions) ? divisions.filter(Boolean) : [];
+  if (options.length <= 1) {
+    return null;
+  }
 
-function PersonalBests({ personalBests }) {
-  const entries = PB_SEGMENTS.filter((seg) => personalBests?.[seg.key]);
+  return (
+    <section className="profile-section" aria-label="Division filter">
+      <div className="profile-division-filter">
+        <label htmlFor="profile-division-select" className="profile-division-filter-label">
+          Division view
+        </label>
+        <select
+          id="profile-division-select"
+          className="profile-division-filter-select"
+          value={selectedDivision}
+          onChange={onChange}
+        >
+          <option value="">All divisions</option>
+          {options.map((division) => (
+            <option key={division} value={division}>
+              {division}
+            </option>
+          ))}
+        </select>
+      </div>
+    </section>
+  );
+}
+
+// ── Time card grids ───────────────────────────────────────────────
+
+function TimeCards({ metrics, emptyMessage, showContext = false }) {
+  const entries = PROFILE_TIME_SEGMENTS.filter((seg) => metrics?.[seg.key]);
 
   if (!entries.length) {
-    return (
-      <p className="empty">
-        Station personal bests will appear here once the profile endpoint is
-        available.
-      </p>
-    );
+    return <p className="empty">{emptyMessage}</p>;
   }
 
   return (
     <div className="profile-pb-grid">
       {entries.map((seg) => {
-        const pb = personalBests[seg.key];
-        const where = [pb.location, pb.year].filter(Boolean).join(" · ");
+        const metric = metrics[seg.key];
+        const where = showContext ? [metric.location, metric.year].filter(Boolean).join(" · ") : "";
         return (
           <article
             key={seg.key}
             className="profile-pb-card"
             style={{ "--pb-accent": seg.color }}
-            aria-label={`${seg.label}: ${formatMinutes(pb.time)}`}
+            aria-label={`${seg.label}: ${formatMinutes(metric.time)}`}
           >
             <span className="profile-pb-label">{seg.label}</span>
-            <span className="profile-pb-time">{formatMinutes(pb.time)}</span>
+            <span className="profile-pb-time">
+              <AnimatedNumber value={metric.time} formatter={formatMinutes} />
+            </span>
             {where && <span className="profile-pb-where">{where}</span>}
           </article>
         );
       })}
     </div>
+  );
+}
+
+function PersonalBests({ personalBests }) {
+  return (
+    <TimeCards
+      metrics={personalBests}
+      showContext
+      emptyMessage="No personal best times available for this athlete yet."
+    />
+  );
+}
+
+function AverageTimes({ averageTimes }) {
+  return (
+    <TimeCards
+      metrics={averageTimes}
+      emptyMessage="Average times are unavailable for this athlete."
+    />
   );
 }
 
@@ -343,6 +391,7 @@ export default function ProfileMode({ onOpenRace }) {
 
   const [view, setView] = useState(() => (identity ? "loading" : "setup"));
   const [profile, setProfile] = useState(null);
+  const [selectedDivision, setSelectedDivision] = useState("");
   const [error, setError] = useState("");
 
   const mountedRef = useRef(true);
@@ -362,7 +411,7 @@ export default function ProfileMode({ onOpenRace }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function loadProfile(identityInput) {
+  async function loadProfile(identityInput, divisionInput = selectedDivision) {
     const identityPayload =
       typeof identityInput === "string" ? { name: identityInput } : identityInput || {};
     const athleteId =
@@ -371,6 +420,8 @@ export default function ProfileMode({ onOpenRace }) {
         : "";
     const athleteName =
       typeof identityPayload?.name === "string" ? identityPayload.name.trim() : "";
+    const division =
+      typeof divisionInput === "string" ? divisionInput.trim() : "";
     if (!athleteId && !athleteName) {
       setError("Missing athlete identity. Search and claim your profile again.");
       setView("error");
@@ -381,14 +432,20 @@ export default function ProfileMode({ onOpenRace }) {
     setError("");
     try {
       const data = await queryClient.fetchQuery({
-        queryKey: ["athlete-profile", athleteId || `name:${athleteName}`],
+        queryKey: [
+          "athlete-profile",
+          athleteId || `name:${athleteName}`,
+          division || "all-divisions",
+        ],
         queryFn: () =>
           fetchAthleteProfile({
             athleteId: athleteId || undefined,
             name: athleteName || undefined,
+            division: division || undefined,
           }),
       });
       if (!mountedRef.current) return;
+      setSelectedDivision(division);
       setProfile(data);
       setView("profile");
     } catch (err) {
@@ -408,14 +465,23 @@ export default function ProfileMode({ onOpenRace }) {
       setAt: new Date().toISOString(),
     };
     setIdentity(newIdentity);
-    loadProfile(newIdentity);
+    setSelectedDivision("");
+    loadProfile(newIdentity, "");
   }
 
   function handleChangeIdentity() {
     clearIdentity();
     setProfile(null);
+    setSelectedDivision("");
     setError("");
     setView("setup");
+  }
+
+  function handleDivisionChange(event) {
+    const nextDivision = event.target.value;
+    setSelectedDivision(nextDivision);
+    if (!identity) return;
+    loadProfile(identity, nextDivision);
   }
 
   // ── Setup ────────────────────────────────────────────────────────
@@ -486,8 +552,11 @@ export default function ProfileMode({ onOpenRace }) {
   const athlete = profile?.athlete ?? {};
   const summary = profile?.summary ?? {};
   const personalBests = profile?.personal_bests ?? {};
-  const seasons = profile?.seasons ?? [];
+  const averageTimes = profile?.average_times ?? {};
   const races = profile?.races ?? [];
+  const availableDivisions = Array.isArray(profile?.available_divisions)
+    ? profile.available_divisions
+    : [];
 
   return (
     <main className="layout is-single">
@@ -498,6 +567,12 @@ export default function ProfileMode({ onOpenRace }) {
           onChangeIdentity={handleChangeIdentity}
         />
 
+        <DivisionFilter
+          divisions={availableDivisions}
+          selectedDivision={selectedDivision}
+          onChange={handleDivisionChange}
+        />
+
         <section className="profile-section" aria-labelledby="pb-heading">
           <h3 id="pb-heading" className="profile-section-title">
             Personal Bests
@@ -505,16 +580,12 @@ export default function ProfileMode({ onOpenRace }) {
           <PersonalBests personalBests={personalBests} />
         </section>
 
-        {seasons.length > 0 && (
-          <section className="profile-section" aria-labelledby="season-heading">
-            <h3 id="season-heading" className="profile-section-title">
-              Season Progression
-            </h3>
-            <div className="report-card">
-              <SeasonProgressionChart seasons={seasons} />
-            </div>
-          </section>
-        )}
+        <section className="profile-section" aria-labelledby="avg-heading">
+          <h3 id="avg-heading" className="profile-section-title">
+            Average Times
+          </h3>
+          <AverageTimes averageTimes={averageTimes} />
+        </section>
 
         <section className="profile-section" aria-labelledby="history-heading">
           <h3 id="history-heading" className="profile-section-title">

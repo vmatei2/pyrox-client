@@ -31,6 +31,7 @@ const MOCK_IDENTITY = {
 
 const MOCK_PROFILE = {
   athlete: {
+    athlete_id: "ath_sarah",
     name: "Sarah Johnson",
     gender: "Female",
     division: "Open",
@@ -45,7 +46,13 @@ const MOCK_PROFILE = {
   },
   personal_bests: {
     skierg: { time: 4.35, result_id: "r1", location: "Vienna", year: 2025 },
+    runplusroxzone: { time: 43.8, result_id: "r1", location: "Vienna", year: 2025 },
     overall: { time: 84.55, result_id: "r1", location: "Vienna", year: 2025 },
+  },
+  average_times: {
+    overall: { time: 85.375 },
+    runplusroxzone: { time: 44.55 },
+    skierg: { time: 4.425 },
   },
   seasons: [
     { season: "2024", best_time: 86.2, race_count: 5 },
@@ -67,6 +74,10 @@ const MOCK_PROFILE = {
       age_group_rank: 7,
     },
   ],
+  filters: {
+    division: null,
+  },
+  available_divisions: ["Open"],
 };
 
 const SEARCH_RESULTS = [
@@ -347,15 +358,49 @@ describe("ProfileMode — profile view", () => {
   it("renders PB cards for segments present in personal_bests", async () => {
     renderProfile();
     await waitFor(() => {
-      expect(screen.getByText("SkiErg")).toBeInTheDocument();
-      expect(screen.getByText("Overall Time")).toBeInTheDocument();
+      expect(screen.getAllByText("SkiErg").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Overall Time").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("Run + Roxzone").length).toBeGreaterThan(0);
     });
   });
 
-  it("renders the Season Progression section when seasons are present", async () => {
+  it("renders the Average Times section", async () => {
     renderProfile();
     await waitFor(() =>
-      expect(screen.getByText("Season Progression")).toBeInTheDocument()
+      expect(screen.getByText("Average Times")).toBeInTheDocument()
+    );
+  });
+
+  it("does not show division selector for single-division athlete data", async () => {
+    renderProfile();
+    await waitFor(() =>
+      expect(screen.getByText("Race History")).toBeInTheDocument()
+    );
+    expect(screen.queryByLabelText(/division view/i)).not.toBeInTheDocument();
+  });
+
+  it("refetches profile when division selector changes", async () => {
+    fetchAthleteProfile.mockResolvedValue({
+      ...MOCK_PROFILE,
+      athlete: {
+        ...MOCK_PROFILE.athlete,
+        division: null,
+      },
+      available_divisions: ["Open", "Pro"],
+    });
+    renderProfile();
+
+    const divisionSelect = await screen.findByLabelText(/division view/i);
+    fireEvent.change(divisionSelect, { target: { value: "Pro" } });
+
+    await waitFor(() =>
+      expect(fetchAthleteProfile).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          athleteId: "ath_sarah",
+          name: "Sarah Johnson",
+          division: "Pro",
+        })
+      )
     );
   });
 
@@ -489,7 +534,7 @@ describe("ProfileMode — profile with no PBs", () => {
 
     await waitFor(() =>
       expect(
-        screen.getByText(/station personal bests will appear here/i)
+        screen.getByText(/no personal best times available/i)
       ).toBeInTheDocument()
     );
   });
@@ -515,14 +560,14 @@ describe("ProfileMode — profile with no races", () => {
   });
 });
 
-describe("ProfileMode — season progression section", () => {
-  it("does not render the Season Progression section when seasons is empty", async () => {
+describe("ProfileMode — average times section", () => {
+  it("shows fallback message when average_times is empty", async () => {
     useAthleteIdentity.mockReturnValue(
       makeMockIdentityHook({ identity: MOCK_IDENTITY })
     );
     fetchAthleteProfile.mockResolvedValueOnce({
       ...MOCK_PROFILE,
-      seasons: [],
+      average_times: {},
     });
 
     renderProfile();
@@ -531,6 +576,8 @@ describe("ProfileMode — season progression section", () => {
       expect(screen.getByText("Race History")).toBeInTheDocument()
     );
 
-    expect(screen.queryByText("Season Progression")).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/average times are unavailable for this athlete/i)
+    ).toBeInTheDocument();
   });
 });

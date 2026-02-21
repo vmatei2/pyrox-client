@@ -77,6 +77,15 @@ export const formatLabel = (value) => {
   return String(value);
 };
 
+export const getPercentileColorClass = (value) => {
+  const v = Number(value);
+  if (!Number.isFinite(v)) return "";
+  if (v >= 0.9) return "perc-excellent";
+  if (v >= 0.75) return "perc-good";
+  if (v >= 0.25) return "perc-average";
+  return "perc-below";
+};
+
 export const sumTimes = (...values) => {
   const numbers = values.map(toNumber);
   if (numbers.some((number) => number === null)) {

@@ -1,8 +1,29 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export const PercentileLineChart = ({ title, subtitle, series, emptyMessage }) => {
   const containerRef = useRef(null);
+  const cohortPathRef = useRef(null);
+  const windowPathRef = useRef(null);
   const [tooltip, setTooltip] = useState(null);
+
+  useEffect(() => {
+    const prefersReduced =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) return;
+
+    [cohortPathRef, windowPathRef].forEach((ref, i) => {
+      const path = ref.current;
+      if (!path || typeof path.getTotalLength !== "function") return;
+      const length = path.getTotalLength();
+      path.style.strokeDasharray = length;
+      path.style.strokeDashoffset = length;
+      path.style.transition = "none";
+      // Force reflow
+      path.getBoundingClientRect();
+      path.style.transition = `stroke-dashoffset 0.8s ease-out ${i * 0.15}s`;
+      path.style.strokeDashoffset = "0";
+    });
+  }, [series]);
   const hasData = series.some(
     (item) => Number.isFinite(item.cohort) || Number.isFinite(item.window)
   );
@@ -147,6 +168,7 @@ export const PercentileLineChart = ({ title, subtitle, series, emptyMessage }) =
             })}
           </g>
           <path
+            ref={cohortPathRef}
             className="percentile-line is-cohort"
             d={buildPath("cohort")}
             fill="none"
@@ -154,6 +176,7 @@ export const PercentileLineChart = ({ title, subtitle, series, emptyMessage }) =
             strokeLinejoin="round"
           />
           <path
+            ref={windowPathRef}
             className="percentile-line is-window"
             d={buildPath("window")}
             fill="none"

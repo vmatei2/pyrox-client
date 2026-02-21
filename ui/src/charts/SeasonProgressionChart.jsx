@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatMinutes } from "../utils/formatters.js";
 
 const VIEW_W = 400;
@@ -19,7 +19,24 @@ function computePoints(sorted, minTime, timeRange) {
 }
 
 export function SeasonProgressionChart({ seasons = [] }) {
+  const lineRef = useRef(null);
   const [hovered, setHovered] = useState(null);
+
+  useEffect(() => {
+    const prefersReduced =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced) return;
+
+    const path = lineRef.current;
+    if (!path || typeof path.getTotalLength !== "function") return;
+    const length = path.getTotalLength();
+    path.style.strokeDasharray = length;
+    path.style.strokeDashoffset = length;
+    path.style.transition = "none";
+    path.getBoundingClientRect();
+    path.style.transition = "stroke-dashoffset 0.8s ease-out";
+    path.style.strokeDashoffset = "0";
+  }, [seasons]);
 
   const validSeasons = (seasons || []).filter(
     (s) => s && typeof s.best_time === "number" && isFinite(s.best_time)
@@ -129,6 +146,7 @@ export function SeasonProgressionChart({ seasons = [] }) {
         {/* Line */}
         {points.length >= 2 && (
           <path
+            ref={lineRef}
             d={linePath}
             fill="none"
             stroke="#0a84ff"
