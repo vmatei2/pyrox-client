@@ -438,6 +438,15 @@ select:focus-visible {
   width: 100%;
 }
 
+.report-actions-help {
+  margin: 0;
+  font-size: 0.74rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--text-muted-2);
+  width: 100%;
+}
+
 .report-toolbar {
   display: grid;
   gap: 10px;

@@ -299,6 +299,33 @@ def _seed_deepdive_tables(con: duckdb.DuckDBPyConnection) -> None:
     )
 
 
+def _seed_filter_options_tables(con: duckdb.DuckDBPyConnection) -> None:
+    """Seed distinct-value variants for /api/filter-options endpoint tests."""
+    con.execute(
+        """
+        CREATE TABLE race_results (
+            result_id VARCHAR,
+            season INTEGER,
+            location VARCHAR,
+            year INTEGER,
+            division VARCHAR,
+            gender VARCHAR,
+            age_group VARCHAR
+        );
+        """
+    )
+    con.executemany(
+        "INSERT INTO race_results VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [
+            ("opt_1", 8, "london", 2024, "open", "F", "30-34"),
+            ("opt_2", 8, "paris", 2024, "open", "female", "30-34"),
+            ("opt_3", 8, "berlin", 2024, "pro", "M", "35-39"),
+            ("opt_4", 9, "newyork", 2025, "doubles", "mixed", "40-44"),
+            ("opt_5", 9, "", 2025, "", None, ""),
+        ],
+    )
+
+
 def test_healthcheck_lists_tables(tmp_path, monkeypatch):
     """Healthcheck should return table visibility for the configured DB."""
     db_path = tmp_path / "health.db"
@@ -625,6 +652,68 @@ def test_rankings_endpoint_name_search_returns_empty_rows_when_not_found(tmp_pat
     payload = resp.json()
     assert payload["count"] == 9
     assert payload["rows"] == []
+
+
+def test_filter_options_endpoint_returns_distinct_sorted_values(tmp_path, monkeypatch):
+    """Filter options should expose sorted distinct values from race_results."""
+    db_path = tmp_path / "filter-options.db"
+    con = _create_db(db_path)
+    _seed_filter_options_tables(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+
+    resp = client.get("/api/filter-options")
+    assert resp.status_code == 200
+    payload = resp.json()
+
+    assert payload["seasons"] == [9, 8]
+    assert payload["years"] == [2025, 2024]
+    assert payload["divisions"] == ["doubles", "open", "pro"]
+    assert payload["genders"] == ["F", "female", "M", "mixed"]
+    assert payload["locations"] == ["berlin", "london", "newyork", "paris"]
+    assert payload["age_groups"] == ["30-34", "35-39", "40-44"]
+
+
+def test_filter_options_endpoint_applies_season_division_gender_filters(tmp_path, monkeypatch):
+    """Filter options should honor season/division/gender query constraints."""
+    db_path = tmp_path / "filter-options-filtered.db"
+    con = _create_db(db_path)
+    _seed_filter_options_tables(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+
+    resp = client.get(
+        "/api/filter-options",
+        params={"season": 8, "division": "open", "gender": "female"},
+    )
+    assert resp.status_code == 200
+    payload = resp.json()
+
+    assert payload["filters"] == {"season": 8, "division": "open", "gender": "female"}
+    assert payload["seasons"] == [8]
+    assert payload["years"] == [2024]
+    assert payload["divisions"] == ["open"]
+    assert payload["genders"] == ["F", "female"]
+    assert payload["locations"] == ["london", "paris"]
+    assert payload["age_groups"] == ["30-34"]
+
+
+def test_filter_options_endpoint_rejects_invalid_season(tmp_path, monkeypatch):
+    """Season query should follow FastAPI validation constraints (>= 1)."""
+    db_path = tmp_path / "filter-options-invalid-season.db"
+    con = _create_db(db_path)
+    _seed_filter_options_tables(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+
+    resp = client.get("/api/filter-options", params={"season": 0})
+    assert resp.status_code == 422
 
 
 # ── Athlete Profile ────────────────────────────────────────────────────────────

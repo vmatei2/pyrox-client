@@ -121,6 +121,24 @@ def _clean_distinct_values(df: pd.DataFrame, column: str) -> list[str]:
     return sorted(values, key=lambda value: value.casefold())
 
 
+def _clean_distinct_numbers(
+    df: pd.DataFrame,
+    column: str,
+    *,
+    descending: bool = False,
+) -> list[int]:
+    if df.empty or column not in df.columns:
+        return []
+    numbers: set[int] = set()
+    for value in df[column].dropna().tolist():
+        try:
+            number = int(value)
+        except (TypeError, ValueError):
+            continue
+        numbers.add(number)
+    return sorted(numbers, reverse=descending)
+
+
 def _describe_times(
     df: pd.DataFrame, column: str = "total_time_min"
 ) -> Optional[dict]:
@@ -427,6 +445,81 @@ def search_athlete_races(
         "count": len(records),
         "total": total,
         "races": records,
+    }
+
+
+@app.get("/api/filter-options")
+def filter_options(
+    season: Optional[int] = Query(None, ge=1),
+    division: Optional[str] = Query(None),
+    gender: Optional[str] = Query(None),
+) -> dict:
+    reporting = _get_reporting()
+    con = reporting._ensure_connection()
+
+    clauses = []
+    params: list[object] = []
+    if season is not None:
+        clauses.append("season = ?")
+        params.append(int(season))
+
+    normalized_division = _normalize_optional_text(division)
+    if normalized_division is not None:
+        clauses.append("lower(division) = ?")
+        params.append(normalized_division.casefold())
+
+    normalized_gender = _normalize_optional_text(gender)
+    if normalized_gender is not None:
+        normalized_gender_key = normalized_gender.casefold()
+        if normalized_gender_key in {"m", "male"}:
+            clauses.append("lower(gender) IN (?, ?)")
+            params.extend(["m", "male"])
+        elif normalized_gender_key in {"f", "female"}:
+            clauses.append("lower(gender) IN (?, ?)")
+            params.extend(["f", "female"])
+        else:
+            clauses.append("lower(gender) = ?")
+            params.append(normalized_gender_key)
+
+    where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+
+    seasons_df = con.execute(
+        f"SELECT DISTINCT season FROM race_results {where_sql}",
+        params,
+    ).fetchdf()
+    years_df = con.execute(
+        f"SELECT DISTINCT year FROM race_results {where_sql}",
+        params,
+    ).fetchdf()
+    divisions_df = con.execute(
+        f"SELECT DISTINCT division FROM race_results {where_sql}",
+        params,
+    ).fetchdf()
+    genders_df = con.execute(
+        f"SELECT DISTINCT gender FROM race_results {where_sql}",
+        params,
+    ).fetchdf()
+    locations_df = con.execute(
+        f"SELECT DISTINCT location FROM race_results {where_sql}",
+        params,
+    ).fetchdf()
+    age_groups_df = con.execute(
+        f"SELECT DISTINCT age_group FROM race_results {where_sql}",
+        params,
+    ).fetchdf()
+
+    return {
+        "filters": {
+            "season": season,
+            "division": normalized_division,
+            "gender": normalized_gender,
+        },
+        "seasons": _clean_distinct_numbers(seasons_df, "season", descending=True),
+        "years": _clean_distinct_numbers(years_df, "year", descending=True),
+        "divisions": _clean_distinct_values(divisions_df, "division"),
+        "genders": _clean_distinct_values(genders_df, "gender"),
+        "locations": _clean_distinct_values(locations_df, "location"),
+        "age_groups": _clean_distinct_values(age_groups_df, "age_group"),
     }
 
 

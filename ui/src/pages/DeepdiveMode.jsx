@@ -14,6 +14,7 @@ import { toNumber } from "../utils/parsers.js";
 import {
   fetchDeepdive,
   fetchDeepdiveFilters,
+  fetchFilterOptions,
   searchAthletes,
 } from "../api/client.js";
 import { triggerSelectionHaptic } from "../utils/haptics.js";
@@ -72,6 +73,16 @@ export default function DeepdiveMode({ isIosMobile }) {
       }),
     enabled: Boolean(deepdiveParams.season.trim()),
   });
+  const filterOptionsQuery = useQuery({
+    queryKey: ["filter-options"],
+    queryFn: () => fetchFilterOptions(),
+  });
+  const divisionOptions = Array.isArray(filterOptionsQuery.data?.divisions)
+    ? filterOptionsQuery.data.divisions
+    : [];
+  const genderOptions = Array.isArray(filterOptionsQuery.data?.genders)
+    ? filterOptionsQuery.data.genders
+    : [];
   const deepdiveOptions = useMemo(() => buildOptions(filtersQuery.data), [filtersQuery.data]);
   const deepdiveOptionsLoading = filtersQuery.isFetching;
 
@@ -251,9 +262,7 @@ export default function DeepdiveMode({ isIosMobile }) {
                 </label>
                 <label className="field">
                   <span>Division</span>
-                  <input
-                    type="text"
-                    placeholder="open, pro, doubles"
+                  <select
                     value={deepdiveFilters.division}
                     onChange={(event) =>
                       setDeepdiveFilters((prev) => ({
@@ -261,13 +270,21 @@ export default function DeepdiveMode({ isIosMobile }) {
                         division: event.target.value,
                       }))
                     }
-                  />
+                    disabled={filterOptionsQuery.isFetching}
+                  >
+                    <option value="">
+                      {filterOptionsQuery.isFetching ? "Loading divisions..." : "Any division"}
+                    </option>
+                    {divisionOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label className="field">
                   <span>Gender</span>
-                  <input
-                    type="text"
-                    placeholder="male or female or mixed"
+                  <select
                     value={deepdiveFilters.gender}
                     onChange={(event) =>
                       setDeepdiveFilters((prev) => ({
@@ -275,7 +292,17 @@ export default function DeepdiveMode({ isIosMobile }) {
                         gender: event.target.value,
                       }))
                     }
-                  />
+                    disabled={filterOptionsQuery.isFetching}
+                  >
+                    <option value="">
+                      {filterOptionsQuery.isFetching ? "Loading genders..." : "Any gender"}
+                    </option>
+                    {genderOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
                 </label>
               </div>
 
@@ -391,9 +418,7 @@ export default function DeepdiveMode({ isIosMobile }) {
                 </label>
                 <label className="field">
                   <span>Division</span>
-                  <input
-                    type="text"
-                    placeholder="open, pro, doubles"
+                  <select
                     value={deepdiveParams.division}
                     onChange={(event) =>
                       setDeepdiveParams((prev) => ({
@@ -401,13 +426,21 @@ export default function DeepdiveMode({ isIosMobile }) {
                         division: event.target.value,
                       }))
                     }
-                  />
+                    disabled={filterOptionsQuery.isFetching}
+                  >
+                    <option value="">
+                      {filterOptionsQuery.isFetching ? "Loading divisions..." : "Any division"}
+                    </option>
+                    {divisionOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label className="field">
                   <span>Gender</span>
-                  <input
-                    type="text"
-                    placeholder="male or female or mixed"
+                  <select
                     value={deepdiveParams.gender}
                     onChange={(event) =>
                       setDeepdiveParams((prev) => ({
@@ -415,7 +448,17 @@ export default function DeepdiveMode({ isIosMobile }) {
                         gender: event.target.value,
                       }))
                     }
-                  />
+                    disabled={filterOptionsQuery.isFetching}
+                  >
+                    <option value="">
+                      {filterOptionsQuery.isFetching ? "Loading genders..." : "Any gender"}
+                    </option>
+                    {genderOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
                 </label>
               </div>
 

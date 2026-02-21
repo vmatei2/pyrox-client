@@ -143,6 +143,11 @@
     align-items: baseline;
   }
 
+  /* Deep Dive: keep "Base races" and status text on the same visual line. */
+  .deepdive-page .results-header {
+    align-items: center;
+  }
+
   .report-actions {
     display: flex;
     flex-wrap: wrap;

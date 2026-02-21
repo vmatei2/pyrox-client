@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ProgressiveSection } from "../components/UiPrimitives.jsx";
 import { formatLabel } from "../utils/formatters.js";
-import { fetchPlanner } from "../api/client.js";
+import { fetchFilterOptions, fetchPlanner } from "../api/client.js";
 import { triggerSelectionHaptic } from "../utils/haptics.js";
 import { HistogramChart } from "../charts/HistogramChart.jsx";
 
@@ -20,6 +20,25 @@ export default function PlannerMode({ isIosMobile }) {
   const [plannerData, setPlannerData] = useState(null);
   const [plannerLoading, setPlannerLoading] = useState(false);
   const [plannerError, setPlannerError] = useState("");
+  const filterOptionsQuery = useQuery({
+    queryKey: ["filter-options"],
+    queryFn: () => fetchFilterOptions(),
+  });
+  const seasonOptions = Array.isArray(filterOptionsQuery.data?.seasons)
+    ? filterOptionsQuery.data.seasons
+    : [];
+  const locationOptions = Array.isArray(filterOptionsQuery.data?.locations)
+    ? filterOptionsQuery.data.locations
+    : [];
+  const yearOptions = Array.isArray(filterOptionsQuery.data?.years)
+    ? filterOptionsQuery.data.years
+    : [];
+  const divisionOptions = Array.isArray(filterOptionsQuery.data?.divisions)
+    ? filterOptionsQuery.data.divisions
+    : [];
+  const genderOptions = Array.isArray(filterOptionsQuery.data?.genders)
+    ? filterOptionsQuery.data.genders
+    : [];
 
   const plannerSegments = plannerData?.segments || [];
   const plannerGroups = useMemo(() => {
@@ -100,36 +119,60 @@ export default function PlannerMode({ isIosMobile }) {
           <div className="grid-3">
             <label className="field">
               <span>Season</span>
-              <input
-                type="number"
-                placeholder="8"
+              <select
                 value={plannerFilters.season}
                 onChange={(event) =>
                   setPlannerFilters((prev) => ({ ...prev, season: event.target.value }))
                 }
-              />
+                disabled={filterOptionsQuery.isFetching}
+              >
+                <option value="">
+                  {filterOptionsQuery.isFetching ? "Loading seasons..." : "Any season"}
+                </option>
+                {seasonOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="field">
               <span>Location</span>
-              <input
-                type="text"
-                placeholder="london"
+              <select
                 value={plannerFilters.location}
                 onChange={(event) =>
                   setPlannerFilters((prev) => ({ ...prev, location: event.target.value }))
                 }
-              />
+                disabled={filterOptionsQuery.isFetching}
+              >
+                <option value="">
+                  {filterOptionsQuery.isFetching ? "Loading locations..." : "Any location"}
+                </option>
+                {locationOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="field">
               <span>Year</span>
-              <input
-                type="number"
-                placeholder="2024"
+              <select
                 value={plannerFilters.year}
                 onChange={(event) =>
                   setPlannerFilters((prev) => ({ ...prev, year: event.target.value }))
                 }
-              />
+                disabled={filterOptionsQuery.isFetching}
+              >
+                <option value="">
+                  {filterOptionsQuery.isFetching ? "Loading years..." : "Any year"}
+                </option>
+                {yearOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
 
@@ -137,25 +180,41 @@ export default function PlannerMode({ isIosMobile }) {
             <div className="grid-3">
               <label className="field">
                 <span>Division</span>
-                <input
-                  type="text"
-                  placeholder="open"
+                <select
                   value={plannerFilters.division}
                   onChange={(event) =>
                     setPlannerFilters((prev) => ({ ...prev, division: event.target.value }))
                   }
-                />
+                  disabled={filterOptionsQuery.isFetching}
+                >
+                  <option value="">
+                    {filterOptionsQuery.isFetching ? "Loading divisions..." : "Any division"}
+                  </option>
+                  {divisionOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label className="field">
                 <span>Gender</span>
-                <input
-                  type="text"
-                  placeholder="male or female or mixed"
+                <select
                   value={plannerFilters.gender}
                   onChange={(event) =>
                     setPlannerFilters((prev) => ({ ...prev, gender: event.target.value }))
                   }
-                />
+                  disabled={filterOptionsQuery.isFetching}
+                >
+                  <option value="">
+                    {filterOptionsQuery.isFetching ? "Loading genders..." : "Any gender"}
+                  </option>
+                  {genderOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label className="field">
                 <span>Time range (min)</span>
@@ -283,4 +342,3 @@ export default function PlannerMode({ isIosMobile }) {
     </main>
   );
 }
-

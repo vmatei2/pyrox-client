@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Capacitor } from "@capacitor/core";
 import {
   AnimatedNumber,
@@ -20,7 +20,7 @@ import {
 } from "../utils/formatters.js";
 import { toNumber, normalizeSplitKey } from "../utils/parsers.js";
 import { buildReportFilename, buildReportHelpContent } from "../utils/pdf.js";
-import { searchAthletes, fetchReport } from "../api/client.js";
+import { fetchFilterOptions, searchAthletes, fetchReport } from "../api/client.js";
 import { triggerSelectionHaptic } from "../utils/haptics.js";
 import { HistogramChart } from "../charts/HistogramChart.jsx";
 import { PercentileLineChart } from "../charts/PercentileLineChart.jsx";
@@ -43,7 +43,6 @@ export default function ReportMode({
     match: "best",
     gender: "",
     division: "",
-    nationality: "",
     requireUnique: false,
     timeWindow: "5",
   });
@@ -91,6 +90,16 @@ export default function ReportMode({
     report?.cohort_time_window_min !== null && report?.cohort_time_window_min !== undefined
       ? ` (+/- ${report.cohort_time_window_min} min)`
       : "";
+  const filterOptionsQuery = useQuery({
+    queryKey: ["filter-options"],
+    queryFn: () => fetchFilterOptions(),
+  });
+  const divisionOptions = Array.isArray(filterOptionsQuery.data?.divisions)
+    ? filterOptionsQuery.data.divisions
+    : [];
+  const genderOptions = Array.isArray(filterOptionsQuery.data?.genders)
+    ? filterOptionsQuery.data.genders
+    : [];
 
   const percentileSeries = useMemo(() => {
     if (!report?.splits || report.splits.length === 0) {
@@ -218,7 +227,6 @@ export default function ReportMode({
           filters.match,
           filters.gender.trim(),
           filters.division.trim(),
-          filters.nationality.trim(),
           filters.requireUnique,
         ],
         queryFn: () => searchAthletes(name, filters),
@@ -320,40 +328,44 @@ export default function ReportMode({
                 <div className="grid-2">
                   <label className="field">
                     <span>Division</span>
-                    <input
-                      type="text"
-                      placeholder="open, pro, doubles"
+                    <select
                       value={filters.division}
                       onChange={(event) =>
                         setFilters((prev) => ({ ...prev, division: event.target.value }))
                       }
-                    />
+                      disabled={filterOptionsQuery.isFetching}
+                    >
+                      <option value="">
+                        {filterOptionsQuery.isFetching ? "Loading divisions..." : "Any division"}
+                      </option>
+                      {divisionOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
                   </label>
 
                   <label className="field">
                     <span>Gender</span>
-                    <input
-                      type="text"
-                      placeholder="male or female or mixed"
+                    <select
                       value={filters.gender}
                       onChange={(event) =>
                         setFilters((prev) => ({ ...prev, gender: event.target.value }))
                       }
-                    />
+                      disabled={filterOptionsQuery.isFetching}
+                    >
+                      <option value="">
+                        {filterOptionsQuery.isFetching ? "Loading genders..." : "Any gender"}
+                      </option>
+                      {genderOptions.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
                   </label>
                 </div>
-
-                <label className="field">
-                  <span>Nationality</span>
-                  <input
-                    type="text"
-                    placeholder="GBR"
-                    value={filters.nationality}
-                    onChange={(event) =>
-                      setFilters((prev) => ({ ...prev, nationality: event.target.value }))
-                    }
-                  />
-                </label>
               </ProgressiveSection>
 
               <button
@@ -423,9 +435,6 @@ export default function ReportMode({
                       setFilters((prev) => ({ ...prev, timeWindow: event.target.value }))
                     }
                   />
-                  <span className="field-help">
-                    {comparisonWindowDescription}
-                  </span>
                 </label>
                 <button
                   className="primary"
@@ -435,6 +444,7 @@ export default function ReportMode({
                 >
                   {reportLoading ? "Building report..." : "Generate report"}
                 </button>
+                <p className="report-actions-help">{comparisonWindowDescription}</p>
                 {reportError ? <p className="error">{reportError}</p> : null}
               </div>
             </div>
