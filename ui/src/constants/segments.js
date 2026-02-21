@@ -44,11 +44,7 @@ export const isIosBrowserDevice = () => {
 };
 
 export const getInitialMode = () => {
-  if (typeof window === "undefined") {
-    return "report";
-  }
-  const stored = window.localStorage.getItem("pyrox.ui.last-mode");
-  return VALID_MODES.has(stored) ? stored : "report";
+  return "profile";
 };
 
 export const DEEPDIVE_STAT_OPTIONS = [

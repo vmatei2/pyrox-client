@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { ModeTabIcon } from "./components/UiPrimitives.jsx";
 import { API_BASE, getInitialMode, VALID_MODES } from "./constants/segments.js";
@@ -12,14 +12,14 @@ const RankingsMode = lazy(() => import("./pages/RankingsMode.jsx"));
 const PlannerMode = lazy(() => import("./pages/PlannerMode.jsx"));
 const ProfileMode = lazy(() => import("./pages/ProfileMode.jsx"));
 
-const MODE_ORDER = ["report", "compare", "deepdive", "rankings", "planner", "profile"];
+const MODE_ORDER = ["profile", "report", "compare", "deepdive", "rankings", "planner"];
 const MODE_CONFIG = {
+  profile: { label: "Profile", component: ProfileMode },
   report: { label: "Race Report", component: ReportMode },
   compare: { label: "Compare", component: CompareMode },
   deepdive: { label: "Deep Dive", component: DeepdiveMode },
   rankings: { label: "Rankings", component: RankingsMode },
   planner: { label: "Race Planner", component: PlannerMode },
-  profile: { label: "Profile", component: ProfileMode },
 };
 
 const ModeLoadingFallback = () => (
@@ -43,6 +43,7 @@ export default function App() {
   const [mode, setMode] = useState(getInitialMode);
   const [mountedModes, setMountedModes] = useState(() => ({ [getInitialMode()]: true }));
   const [pendingRaceJump, setPendingRaceJump] = useState(null);
+  const sectionRefs = useRef({});
   const {
     isBootstrapping,
     isReady,
@@ -67,6 +68,15 @@ export default function App() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       window.localStorage.setItem("pyrox.ui.last-mode", mode);
+    }
+  }, [mode]);
+
+  useEffect(() => {
+    const el = sectionRefs.current[mode];
+    if (el) {
+      el.style.animation = "none";
+      void el.offsetHeight;
+      el.style.animation = "";
     }
   }, [mode]);
 
@@ -150,7 +160,9 @@ export default function App() {
             return (
               <section
                 key={modeKey}
+                ref={(el) => { sectionRefs.current[modeKey] = el; }}
                 aria-hidden={mode !== modeKey}
+                className="mode-section"
                 style={{ display: mode === modeKey ? "block" : "none" }}
               >
                 <Suspense fallback={<ModeLoadingFallback />}>

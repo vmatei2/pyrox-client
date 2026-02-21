@@ -726,8 +726,8 @@ def _seed_profile_tables(con: duckdb.DuckDBPyConnection) -> None:
     con.executemany(
         "INSERT INTO race_rankings VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
-            ("r1", 5, 120, 0.96, 30, 600, 0.95, 100, 5000, 0.98),
-            ("r2", 7, 100, 0.93, 40, 550, 0.93, 120, 4800, 0.97),
+            ("r1", 2, 3, 0.5, 30, 600, 0.95, 100, 5000, 0.98),
+            ("r2", 1, 2, 1.0, 40, 550, 0.93, 120, 4800, 0.97),
         ],
     )
     con.executemany(
@@ -903,6 +903,23 @@ def test_profile_races_age_group_rank(tmp_path, monkeypatch):
     ranks = {r["result_id"]: r["age_group_rank"] for r in payload["races"]}
     assert ranks["r1"] == 2
     assert ranks["r2"] == 1
+
+
+def test_profile_ranks_are_sourced_from_race_rankings_table(tmp_path, monkeypatch):
+    db_path = tmp_path / "profile-rank-source.db"
+    con = _create_db(db_path)
+    _seed_profile_tables(con)
+    con.execute("UPDATE race_rankings SET event_rank = 42 WHERE result_id = 'r1'")
+    con.execute("UPDATE race_rankings SET event_rank = 99 WHERE result_id = 'r2'")
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+    payload = client.get("/api/athletes/profile", params={"name": "Sarah Johnson"}).json()
+    ranks = {r["result_id"]: r["age_group_rank"] for r in payload["races"]}
+    assert ranks["r1"] == 42
+    assert ranks["r2"] == 99
+    assert payload["summary"]["best_age_group_finish"] == 42
 
 
 def test_profile_name_match_is_case_insensitive(tmp_path, monkeypatch):

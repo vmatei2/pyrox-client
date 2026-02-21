@@ -9,9 +9,14 @@
   animation: float-in 0.8s ease both;
   padding: var(--space-6);
   border-radius: var(--radius-lg);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.28);
+  background:
+    radial-gradient(ellipse at 0% 0%, rgba(59, 130, 246, 0.1) 0%, transparent 55%),
+    var(--bg-surface);
+  border: 1px solid rgba(156, 177, 214, 0.2);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 12px 36px rgba(1, 5, 14, 0.38),
+    0 2px 8px rgba(1, 5, 14, 0.22);
 }
 
 .hero-tag {
@@ -60,18 +65,21 @@
   flex-wrap: nowrap;
   justify-content: flex-start;
   width: 100%;
-  gap: 6px;
+  gap: 5px;
   padding: 5px;
   margin-bottom: 18px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   border-radius: 14px;
-  background: rgba(15, 23, 36, 0.94);
-  border: 1px solid var(--border-subtle);
+  background: rgba(11, 17, 30, 0.96);
+  border: 1px solid rgba(156, 177, 214, 0.18);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.22);
+    0 8px 28px rgba(1, 5, 14, 0.44),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28);
 }
 
 .mode-tabs::-webkit-scrollbar {
@@ -80,6 +88,8 @@
 
 .mode-tab {
   flex: 0 0 auto;
+  position: relative;
+  overflow: hidden;
   border: none;
   background: transparent;
   color: var(--muted);
@@ -93,19 +103,36 @@
   line-height: 1.2;
   white-space: nowrap;
   cursor: pointer;
-  transition: transform 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease,
-    color 0.16s ease;
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease,
+    color 0.18s ease;
 }
 
 .mode-tab:hover {
   color: #eaf2ff;
-  background: rgba(154, 177, 214, 0.08);
+  background: rgba(154, 177, 214, 0.09);
+  transform: translateY(-1px);
 }
 
 .mode-tab.is-active {
   color: #fff;
-  background: linear-gradient(135deg, rgba(10, 132, 255, 0.94), rgba(74, 170, 255, 0.9));
-  box-shadow: none;
+  background: linear-gradient(140deg, rgba(14, 140, 255, 0.96), rgba(60, 155, 255, 0.92) 55%, rgba(10, 110, 230, 0.9));
+  box-shadow:
+    0 0 18px rgba(10, 132, 255, 0.44),
+    0 3px 10px rgba(10, 132, 255, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18);
+}
+
+.mode-tab.is-active::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.16) 0%, transparent 55%);
+  pointer-events: none;
 }
 
 .mode-tab-icon {
@@ -120,12 +147,17 @@
    Panel
    ---------------------------------------------------------------- */
 .panel {
-  background: var(--bg-surface);
+  background:
+    radial-gradient(ellipse at 0% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 55%),
+    var(--bg-surface);
   padding: var(--space-4);
   border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.28);
-  backdrop-filter: blur(14px);
+  border: 1px solid rgba(156, 177, 214, 0.2);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 12px 36px rgba(1, 5, 14, 0.36),
+    0 2px 6px rgba(1, 5, 14, 0.2);
+  backdrop-filter: blur(16px);
 }
 
 .panel-header h2 {
@@ -212,10 +244,13 @@
 }
 
 .primary {
-  background: var(--accent-primary);
-  border: 1px solid var(--accent-primary);
+  background: linear-gradient(140deg, #4090f8, #2563eb 60%, #1d54d8);
+  border: 1px solid rgba(59, 130, 246, 0.7);
   color: #ffffff;
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+    0 8px 22px rgba(37, 99, 235, 0.36),
+    0 2px 6px rgba(37, 99, 235, 0.24);
 }
 
 .primary::after {
@@ -237,13 +272,20 @@
 }
 
 .primary:not(:disabled):hover {
-  background: #2f73f2;
-  transform: translateY(-1px);
+  background: linear-gradient(140deg, #5099ff, #3471f2 60%, #2860e8);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+    0 12px 28px rgba(37, 99, 235, 0.44),
+    0 3px 8px rgba(37, 99, 235, 0.3);
+  transform: translateY(-2px);
 }
 
 .primary:not(:disabled):active {
-  background: var(--accent-primary-press);
+  background: linear-gradient(140deg, #2a68e8, #1d52cc 60%, #1645bb);
   transform: translateY(0);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 4px 12px rgba(37, 99, 235, 0.28);
 }
 
 .secondary:not(:disabled):hover {
@@ -296,19 +338,27 @@ select:focus-visible {
    Race card
    ---------------------------------------------------------------- */
 .race-card {
-  border: 1px solid var(--border-subtle);
+  border: 1px solid rgba(148, 163, 184, 0.2);
   border-radius: var(--radius-md);
   padding: var(--space-4);
   text-align: left;
   background: var(--bg-surface);
-  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.28);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 8px 24px rgba(1, 5, 14, 0.3);
   cursor: pointer;
   animation: rise 0.55s ease both;
-  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .race-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  border-color: rgba(10, 132, 255, 0.3);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 0 0 1px rgba(10, 132, 255, 0.12),
+    0 16px 36px rgba(1, 5, 14, 0.42),
+    0 4px 10px rgba(10, 132, 255, 0.1);
 }
 
 .race-card.is-selected {
@@ -509,11 +559,14 @@ select:focus-visible {
    ---------------------------------------------------------------- */
 .report-card {
   border-radius: 14px;
-  border: 1px solid var(--border-subtle);
+  border: 1px solid rgba(148, 163, 184, 0.2);
   padding: 14px;
   background: var(--bg-surface);
-  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.28);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 8px 24px rgba(1, 5, 14, 0.3);
   overflow-x: auto;
+  transition: box-shadow 0.2s ease;
 }
 
 .report-card h4 {
@@ -939,8 +992,15 @@ table tr:hover td {
   gap: 4px 10px;
   padding: 10px 12px;
   border-radius: 12px;
-  border: 1px solid rgba(156, 177, 214, 0.22);
+  border: 1px solid rgba(156, 177, 214, 0.18);
   background: rgba(7, 13, 23, 0.82);
+  transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+
+.rankings-list-item:hover {
+  border-color: rgba(10, 132, 255, 0.28);
+  background: rgba(10, 20, 40, 0.88);
+  transform: translateX(2px);
 }
 
 .rankings-rank {
@@ -1018,9 +1078,12 @@ table tr:hover td {
   position: relative;
   overflow: hidden;
   border-radius: var(--radius-lg);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid rgba(148, 163, 184, 0.2);
   background: var(--bg-surface);
-  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.28);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 12px 36px rgba(1, 5, 14, 0.42),
+    0 2px 8px rgba(1, 5, 14, 0.24);
   animation: float-in 0.7s ease both;
 }
 
@@ -1051,14 +1114,15 @@ table tr:hover td {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #0a84ff, #5ac8fa);
+  background: linear-gradient(135deg, #1e90ff, #0a84ff 50%, #5ac8fa);
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow:
-    0 0 0 3px rgba(10, 132, 255, 0.28),
-    0 0 0 6px rgba(10, 132, 255, 0.08),
-    0 8px 20px rgba(10, 132, 255, 0.28);
+    0 0 0 2px rgba(10, 132, 255, 0.36),
+    0 0 0 5px rgba(10, 132, 255, 0.1),
+    0 0 18px rgba(10, 132, 255, 0.36),
+    0 8px 24px rgba(10, 132, 255, 0.28);
 }
 
 .profile-avatar-initials {
@@ -1154,23 +1218,23 @@ table tr:hover td {
    Profile — Sections
    ---------------------------------------------------------------- */
 .profile-section {
-  animation: float-in 0.6s ease both;
+  animation: float-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .profile-section:nth-child(2) {
-  animation-delay: 0.07s;
+  animation-delay: 0.06s;
 }
 
 .profile-section:nth-child(3) {
-  animation-delay: 0.14s;
+  animation-delay: 0.12s;
 }
 
 .profile-section:nth-child(4) {
-  animation-delay: 0.21s;
+  animation-delay: 0.18s;
 }
 
 .profile-section:nth-child(5) {
-  animation-delay: 0.28s;
+  animation-delay: 0.24s;
 }
 
 .profile-section-title {
@@ -1196,16 +1260,22 @@ table tr:hover td {
   gap: 4px;
   padding: 13px 14px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid rgba(148, 163, 184, 0.18);
   border-left: 3px solid var(--pb-accent, var(--accent));
   background: var(--bg-surface);
-  box-shadow: 0 4px 12px rgba(2, 6, 23, 0.22);
-  transition: transform 0.16s ease, box-shadow 0.16s ease;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.03) inset,
+    0 4px 14px rgba(1, 5, 14, 0.26);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .profile-pb-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 22px rgba(2, 6, 23, 0.34);
+  transform: translateY(-3px);
+  border-color: rgba(148, 163, 184, 0.28);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 0 0 1px rgba(var(--pb-accent, 10, 132, 255), 0.1),
+    0 10px 28px rgba(1, 5, 14, 0.38);
 }
 
 .profile-pb-label {
@@ -1245,20 +1315,26 @@ table tr:hover td {
   gap: var(--space-3);
   padding: 12px 14px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid rgba(148, 163, 184, 0.18);
   background: var(--bg-surface);
-  box-shadow: 0 4px 12px rgba(2, 6, 23, 0.2);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.03) inset,
+    0 4px 12px rgba(1, 5, 14, 0.22);
   cursor: pointer;
   text-align: left;
   width: 100%;
   animation: rise 0.5s ease both;
-  transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .profile-race-row:hover {
   transform: translateY(-2px);
-  border-color: rgba(10, 132, 255, 0.35);
-  box-shadow: 0 8px 22px rgba(2, 6, 23, 0.34);
+  border-color: rgba(10, 132, 255, 0.36);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 0 0 1px rgba(10, 132, 255, 0.1),
+    0 10px 26px rgba(1, 5, 14, 0.38),
+    0 3px 8px rgba(10, 132, 255, 0.1);
 }
 
 .profile-race-row-main {
