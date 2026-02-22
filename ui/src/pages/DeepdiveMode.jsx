@@ -87,7 +87,11 @@ export default function DeepdiveMode({ isIosMobile }) {
   const deepdiveOptionsLoading = filtersQuery.isFetching;
 
   useEffect(() => {
-    if (!deepdiveParams.season.trim()) {
+    if (
+      !deepdiveParams.season.trim() ||
+      filtersQuery.isFetching ||
+      !filtersQuery.data
+    ) {
       return;
     }
     setDeepdiveParams((prev) => ({
@@ -101,6 +105,8 @@ export default function DeepdiveMode({ isIosMobile }) {
     deepdiveOptions.ageGroups,
     deepdiveOptions.locations,
     deepdiveParams.season,
+    filtersQuery.data,
+    filtersQuery.isFetching,
   ]);
 
   const deepdiveStatLabel = useMemo(() => {

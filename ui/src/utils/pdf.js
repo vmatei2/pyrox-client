@@ -48,7 +48,7 @@ export const buildReportHelpContent = (timeWindowValue) => {
       title: "How rankings are calculated",
       summary: "Lower time is better. Rankings and percentiles are computed on total time.",
       bullets: [
-        "Event cohort: same location + division + gender + age group.",
+        "Event cohort: same season + location + division + gender + age group.",
         "Season cohort: same season + division + gender + age group.",
         "Overall cohort: all seasons for the same division + gender + age group.",
       ],
@@ -67,7 +67,7 @@ export const buildReportHelpContent = (timeWindowValue) => {
       title: "How split percentile lines work",
       summary: "Each point is your percentile for one split. Higher percentile means faster relative performance.",
       bullets: [
-        "Cohort line uses the age-group cohort at the same location.",
+        "Cohort line uses the age-group cohort at the same season + location.",
         "Comparison-window line uses the same location + season and similar finish times.",
         "Missing split values are left blank and lines break across gaps.",
       ],

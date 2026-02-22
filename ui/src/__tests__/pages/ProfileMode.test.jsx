@@ -265,9 +265,12 @@ describe("ProfileMode — setup view (no identity)", () => {
 
     fireEvent.click(screen.getAllByText(/this is me/i)[0]);
 
-    expect(mockSetIdentity).toHaveBeenCalledWith(
-      expect.objectContaining({ athleteId: "ath_sarah", name: "Sarah Johnson" })
-    );
+    await waitFor(() => {
+      expect(mockSetIdentity).toHaveBeenCalledWith(
+        expect.objectContaining({ athleteId: "ath_sarah", name: "Sarah Johnson" })
+      );
+    });
+    await screen.findByText("Personal Bests");
   });
 
   it("limits displayed search results to 8", async () => {

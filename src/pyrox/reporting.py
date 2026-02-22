@@ -443,10 +443,10 @@ class ReportingClient:
         Returns:
             dict with keys:
               - race: single-row race_results + race_rankings fields
-              - cohort: all results in the same location/division/gender/age_group
+              - cohort: all results in the same season/location/division/gender/age_group
               - splits: split_percentiles rows for the athlete result (includes
                 split_percentile_time_window when time-window cohort is enabled)
-              - cohort_splits: split_percentiles rows for the cohort (location-level)
+              - cohort_splits: split_percentiles rows for the season/location cohort
               - cohort_time_window: results in the same location/season within the
                 +/- time window around the athlete total_time_min (when enabled)
               - cohort_time_window_splits: split_percentiles rows for the
@@ -472,11 +472,39 @@ class ReportingClient:
         start = time.perf_counter()
         race = con.execute(
             """
+            WITH picked AS (
+                SELECT season, location, division, gender, age_group
+                FROM race_results
+                WHERE result_id = ?
+            ),
+            event_rankings AS (
+                SELECT
+                    r.result_id,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY r.season, r.location, r.division, r.gender, r.age_group
+                        ORDER BY r.total_time_min
+                    ) AS event_rank,
+                    COUNT(*) OVER (
+                        PARTITION BY r.season, r.location, r.division, r.gender, r.age_group
+                    ) AS event_size,
+                    1.0 - PERCENT_RANK() OVER (
+                        PARTITION BY r.season, r.location, r.division, r.gender, r.age_group
+                        ORDER BY r.total_time_min
+                    ) AS event_percentile
+                FROM race_results r
+                JOIN picked p
+                  ON r.season IS NOT DISTINCT FROM p.season
+                 AND r.location IS NOT DISTINCT FROM p.location
+                 AND r.division IS NOT DISTINCT FROM p.division
+                 AND r.gender IS NOT DISTINCT FROM p.gender
+                 AND r.age_group IS NOT DISTINCT FROM p.age_group
+                WHERE r.total_time_min IS NOT NULL
+            )
             SELECT
                 r.*,
-                rr.event_rank,
-                rr.event_size,
-                rr.event_percentile,
+                er.event_rank,
+                er.event_size,
+                er.event_percentile,
                 rr.season_rank,
                 rr.season_size,
                 rr.season_percentile,
@@ -484,10 +512,11 @@ class ReportingClient:
                 rr.overall_size,
                 rr.overall_percentile
             FROM race_results r
+            LEFT JOIN event_rankings er ON er.result_id = r.result_id
             LEFT JOIN race_rankings rr ON rr.result_id = r.result_id
             WHERE r.result_id = ?
             """,
-            [result_id],
+            [result_id, result_id],
         ).fetchdf()
         _log_df_stats("race", race, start)
 
@@ -498,23 +527,45 @@ class ReportingClient:
         cohort = con.execute(
             """
             WITH picked AS (
-                SELECT location, division, gender, age_group
+                SELECT season, location, division, gender, age_group
                 FROM race_results
                 WHERE result_id = ?
+            ),
+            cohort_rows AS (
+                SELECT r.*
+                FROM race_results r
+                JOIN picked p
+                  ON r.season IS NOT DISTINCT FROM p.season
+                 AND r.location IS NOT DISTINCT FROM p.location
+                 AND r.division IS NOT DISTINCT FROM p.division
+                 AND r.gender IS NOT DISTINCT FROM p.gender
+                 AND r.age_group IS NOT DISTINCT FROM p.age_group
+            ),
+            event_rankings AS (
+                SELECT
+                    c.result_id,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY c.season, c.location, c.division, c.gender, c.age_group
+                        ORDER BY c.total_time_min
+                    ) AS event_rank,
+                    COUNT(*) OVER (
+                        PARTITION BY c.season, c.location, c.division, c.gender, c.age_group
+                    ) AS event_size,
+                    1.0 - PERCENT_RANK() OVER (
+                        PARTITION BY c.season, c.location, c.division, c.gender, c.age_group
+                        ORDER BY c.total_time_min
+                    ) AS event_percentile
+                FROM cohort_rows c
+                WHERE c.total_time_min IS NOT NULL
             )
             SELECT
-                r.*,
-                rr.event_rank,
-                rr.event_size,
-                rr.event_percentile
-            FROM race_results r
-            LEFT JOIN race_rankings rr ON rr.result_id = r.result_id
-            JOIN picked p
-              ON r.location IS NOT DISTINCT FROM p.location
-             AND r.division IS NOT DISTINCT FROM p.division
-             AND r.gender IS NOT DISTINCT FROM p.gender
-             AND r.age_group IS NOT DISTINCT FROM p.age_group
-            ORDER BY r.total_time_min
+                c.*,
+                er.event_rank,
+                er.event_size,
+                er.event_percentile
+            FROM cohort_rows c
+            LEFT JOIN event_rankings er ON er.result_id = c.result_id
+            ORDER BY c.total_time_min
             """,
             [result_id],
         ).fetchdf()
@@ -536,14 +587,15 @@ class ReportingClient:
         cohort_splits = con.execute(
             """
             WITH picked AS (
-                SELECT location, division, gender, age_group
+                SELECT season, location, division, gender, age_group
                 FROM race_results
                 WHERE result_id = ?
             )
             SELECT sp.*
             FROM split_percentiles sp
             JOIN picked p
-              ON sp.location IS NOT DISTINCT FROM p.location
+              ON sp.season IS NOT DISTINCT FROM p.season
+             AND sp.location IS NOT DISTINCT FROM p.location
              AND sp.division IS NOT DISTINCT FROM p.division
              AND sp.gender IS NOT DISTINCT FROM p.gender
              AND sp.age_group IS NOT DISTINCT FROM p.age_group

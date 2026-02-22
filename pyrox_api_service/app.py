@@ -1088,27 +1088,13 @@ def _load_profile_rows_for_athlete_id(
     athlete_id: str,
     division: Optional[str] = None,
 ) -> pd.DataFrame:
-    tables = {
-        str(row[0])
-        for row in con.execute("SHOW TABLES").fetchall()
-    }
     race_columns = {
         str(row[1])
         for row in con.execute("PRAGMA table_info('race_results')").fetchall()
     }
 
-    ranking_columns: set[str] = set()
-    if "race_rankings" in tables:
-        ranking_columns = {
-            str(row[1])
-            for row in con.execute("PRAGMA table_info('race_rankings')").fetchall()
-        }
-    has_race_rankings = {
-        "result_id",
-        "event_rank",
-    }.issubset(ranking_columns)
-
     can_compute_ag_rank_fallback = {
+        "season",
         "location",
         "division",
         "gender",
@@ -1122,25 +1108,7 @@ def _load_profile_rows_for_athlete_id(
         division_clause = " AND lower(rr.division) = ?"
         params.append(normalized_division.casefold())
 
-    if has_race_rankings:
-        sql = f"""
-            SELECT
-                rr.*,
-                ar.athlete_id,
-                COALESCE(NULLIF(rr.name, ''), ai.canonical_name) AS athlete_name,
-                ai.canonical_name AS athlete_canonical_name,
-                ai.gender AS athlete_index_gender,
-                ai.nationality AS athlete_index_nationality,
-                rk.event_rank AS age_group_rank
-            FROM athlete_results ar
-            JOIN race_results rr ON rr.result_id = ar.result_id
-            LEFT JOIN athlete_index ai ON ai.athlete_id = ar.athlete_id
-            LEFT JOIN race_rankings rk ON rk.result_id = rr.result_id
-            WHERE ar.athlete_id = ?
-            {division_clause}
-            ORDER BY rr.year DESC NULLS LAST, rr.location ASC NULLS LAST, rr.result_id ASC
-        """
-    elif can_compute_ag_rank_fallback:
+    if can_compute_ag_rank_fallback:
         sql = f"""
             WITH athlete_rows AS (
                 SELECT
@@ -1158,6 +1126,7 @@ def _load_profile_rows_for_athlete_id(
             ),
             cohort_keys AS (
                 SELECT DISTINCT
+                    season,
                     location,
                     division,
                     gender,
@@ -1168,12 +1137,18 @@ def _load_profile_rows_for_athlete_id(
                 SELECT
                     rr.result_id,
                     ROW_NUMBER() OVER (
-                        PARTITION BY rr.location, rr.division, rr.gender, rr.age_group
+                        PARTITION BY
+                            rr.season,
+                            rr.location,
+                            rr.division,
+                            rr.gender,
+                            rr.age_group
                         ORDER BY rr.total_time_min
                     ) AS age_group_rank
                 FROM race_results rr
                 JOIN cohort_keys ck
-                    ON rr.location IS NOT DISTINCT FROM ck.location
+                    ON rr.season IS NOT DISTINCT FROM ck.season
+                   AND rr.location IS NOT DISTINCT FROM ck.location
                    AND rr.division IS NOT DISTINCT FROM ck.division
                    AND rr.gender IS NOT DISTINCT FROM ck.gender
                    AND rr.age_group IS NOT DISTINCT FROM ck.age_group

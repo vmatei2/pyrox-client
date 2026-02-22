@@ -619,8 +619,8 @@ export default function ReportMode({
                         Event rank
                         <span
                           className="info-tooltip"
-                          data-tooltip="Rank within the same location, division, gender, and age group."
-                          aria-label="Rank within the same location, division, gender, and age group."
+                          data-tooltip="Rank within the same season, location, division, gender, and age group."
+                          aria-label="Rank within the same season, location, division, gender, and age group."
                           tabIndex={0}
                         >
                           i
@@ -636,8 +636,8 @@ export default function ReportMode({
                         Event percentile
                         <span
                           className="info-tooltip"
-                          data-tooltip="Percentile within the same location cohort (age group/division/gender)."
-                          aria-label="Percentile within the same location cohort (age group/division/gender)."
+                          data-tooltip="Percentile within the same season + location cohort (age group/division/gender)."
+                          aria-label="Percentile within the same season + location cohort (age group/division/gender)."
                           tabIndex={0}
                         >
                           i
@@ -694,7 +694,7 @@ export default function ReportMode({
                 <div className="chart-grid">
                   <HistogramChart
                     title="Age group total time"
-                    subtitle="All athletes in the same division, gender, and age group."
+                    subtitle="All athletes in the same season, location, division, gender, and age group."
                     histogram={distributions?.cohort_total_time}
                     stats={cohortStats}
                   />
@@ -706,7 +706,7 @@ export default function ReportMode({
                   />
                   <HistogramChart
                     title={`Station: ${selectedSplitLabel}`}
-                    subtitle="Compare your station split against the age group."
+                    subtitle="Compare your station split against the same season + location age group."
                     histogram={selectedSplitDistribution?.cohort}
                     stats={selectedSplitDistribution?.stats?.cohort}
                     emptyMessage="Select a station split to see its distribution."

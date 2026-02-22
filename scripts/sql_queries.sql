@@ -14,10 +14,10 @@ SELECT
 FROM race_results
 WHERE total_time_min IS NOT NULL;
 
--- Event-level cohort for a specific result_id (location/division/gender/age_group)
+-- Event-level cohort for a specific result_id (season/location/division/gender/age_group)
 -- Replace :result_id with a real value.
 WITH picked AS (
-  SELECT location, division, gender, age_group
+  SELECT season, location, division, gender, age_group
   FROM race_results
   WHERE result_id = :result_id
 )
@@ -26,19 +26,20 @@ SELECT
   r.name,
   r.total_time_min,
   row_number() OVER (
-    PARTITION BY r.location, r.division, r.gender, r.age_group
+    PARTITION BY r.season, r.location, r.division, r.gender, r.age_group
     ORDER BY r.total_time_min
   ) AS event_rank,
   count(*) OVER (
-    PARTITION BY r.location, r.division, r.gender, r.age_group
+    PARTITION BY r.season, r.location, r.division, r.gender, r.age_group
   ) AS event_size,
   1.0 - percent_rank() OVER (
-    PARTITION BY r.location, r.division, r.gender, r.age_group
+    PARTITION BY r.season, r.location, r.division, r.gender, r.age_group
     ORDER BY r.total_time_min
   ) AS event_percentile
 FROM race_results r
 JOIN picked p
-  ON r.location IS NOT DISTINCT FROM p.location
+  ON r.season IS NOT DISTINCT FROM p.season
+ AND r.location IS NOT DISTINCT FROM p.location
  AND r.division IS NOT DISTINCT FROM p.division
  AND r.gender IS NOT DISTINCT FROM p.gender
  AND r.age_group IS NOT DISTINCT FROM p.age_group

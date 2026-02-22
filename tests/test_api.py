@@ -143,6 +143,7 @@ def _seed_report_tables(con: duckdb.DuckDBPyConnection) -> None:
             split_rank INTEGER,
             split_size INTEGER,
             split_percentile DOUBLE,
+            season INTEGER,
             location VARCHAR,
             division VARCHAR,
             gender VARCHAR,
@@ -197,6 +198,28 @@ def _seed_report_tables(con: duckdb.DuckDBPyConnection) -> None:
                 3.7,
                 3.8,
             ),
+            (
+                "result_legacy",
+                "event_legacy",
+                7,
+                "london",
+                2023,
+                "open",
+                "F",
+                "30-34",
+                "Legacy Athlete",
+                55.0,
+                33.0,
+                18.0,
+                4.0,
+                3.0,
+                3.1,
+                3.2,
+                3.3,
+                3.4,
+                3.5,
+                3.6,
+            ),
         ],
     )
     con.executemany(
@@ -206,12 +229,13 @@ def _seed_report_tables(con: duckdb.DuckDBPyConnection) -> None:
         ],
     )
     con.executemany(
-        "INSERT INTO split_percentiles VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO split_percentiles VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
-            ("result_1", "run1", 0.5, 1, 2, 1.0, "london", "open", "F", "30-34"),
-            ("result_2", "run1", 2.0, 2, 2, 0.0, "london", "open", "F", "30-34"),
-            ("result_1", "rowErg", 4.0, 1, 2, 0.8, "london", "open", "F", "30-34"),
-            ("result_2", "rowErg", 5.0, 2, 2, 0.2, "london", "open", "F", "30-34"),
+            ("result_1", "run1", 0.5, 1, 2, 1.0, 8, "london", "open", "F", "30-34"),
+            ("result_2", "run1", 2.0, 2, 2, 0.0, 8, "london", "open", "F", "30-34"),
+            ("result_legacy", "run1", 0.4, 1, 1, 1.0, 7, "london", "open", "F", "30-34"),
+            ("result_1", "rowErg", 4.0, 1, 2, 0.8, 8, "london", "open", "F", "30-34"),
+            ("result_2", "rowErg", 5.0, 2, 2, 0.2, 8, "london", "open", "F", "30-34"),
         ],
     )
 
@@ -417,6 +441,25 @@ def test_report_endpoint_includes_plot_data_series(tmp_path, monkeypatch):
     assert run_change_series["count"] == 6
     assert run_change_series["min_delta_min"] == pytest.approx(-0.25)
     assert run_change_series["max_delta_min"] == pytest.approx(0.25)
+
+
+def test_report_endpoint_event_rank_is_scoped_to_same_season(tmp_path, monkeypatch):
+    """Event rank should not leak in results from other seasons at the same location."""
+    db_path = tmp_path / "report-event-rank-season.db"
+    con = _create_db(db_path)
+    _seed_report_tables(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+    resp = client.get("/api/reports/result_1")
+
+    assert resp.status_code == 200
+    race = resp.json()["race"]
+    assert race["season"] == 8
+    # season=7 "result_legacy" is faster but must not affect season=8 event rank.
+    assert race["event_rank"] == 1
+    assert race["event_size"] == 2
 
 
 def test_planner_endpoint_applies_time_and_run_filters(tmp_path, monkeypatch):
@@ -1069,21 +1112,32 @@ def test_profile_races_age_group_rank(tmp_path, monkeypatch):
     assert ranks["r2"] == 1
 
 
-def test_profile_ranks_are_sourced_from_race_rankings_table(tmp_path, monkeypatch):
-    db_path = tmp_path / "profile-rank-source.db"
+def test_profile_ranks_ignore_stale_table_values_and_cross_season_rows(tmp_path, monkeypatch):
+    db_path = tmp_path / "profile-rank-season-scope.db"
     con = _create_db(db_path)
     _seed_profile_tables(con)
+    # Simulate stale precomputed rank rows.
     con.execute("UPDATE race_rankings SET event_rank = 42 WHERE result_id = 'r1'")
     con.execute("UPDATE race_rankings SET event_rank = 99 WHERE result_id = 'r2'")
+    # Add a faster same-location row from a different season; this must not leak.
+    con.execute(
+        """
+        INSERT INTO race_results VALUES
+        (
+            'r7', 'evt7', 7, 'Vienna', 2023, 'Open', 'Female', 'F30-34',
+            'Legacy Vienna Rival', 80.00, 37.9, 4.3, 4.10, 4.8, 4.9, 3.5, 5.0, 3.6, 3.8, 3.5
+        )
+        """
+    )
     con.close()
 
     monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
     client = TestClient(api.app)
     payload = client.get("/api/athletes/profile", params={"name": "Sarah Johnson"}).json()
     ranks = {r["result_id"]: r["age_group_rank"] for r in payload["races"]}
-    assert ranks["r1"] == 42
-    assert ranks["r2"] == 99
-    assert payload["summary"]["best_age_group_finish"] == 42
+    assert ranks["r1"] == 2
+    assert ranks["r2"] == 1
+    assert payload["summary"]["best_age_group_finish"] == 1
 
 
 def test_profile_name_match_is_case_insensitive(tmp_path, monkeypatch):

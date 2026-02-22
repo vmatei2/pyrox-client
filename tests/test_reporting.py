@@ -1,5 +1,4 @@
 import matplotlib
-import pandas as pd
 import pytest
 
 from src.pyrox.errors import AthleteNotFound
@@ -275,6 +274,7 @@ def reporting_client_with_report_tables():
         CREATE TABLE split_percentiles (
             result_id VARCHAR,
             event_id VARCHAR,
+            season INTEGER,
             location VARCHAR,
             division VARCHAR,
             gender VARCHAR,
@@ -294,6 +294,7 @@ def reporting_client_with_report_tables():
             ("r2", "event_1", 8, "london", 2024, "open", "M", "30-34", "B Two", 70.0),
             ("r3", "event_1", 8, "london", 2024, "pro", "M", "30-34", "C Three", 65.0),
             ("r4", "event_2", 8, "london", 2024, "open", "M", "30-34", "D Four", 66.0),
+            ("r5", "event_3", 7, "london", 2023, "open", "M", "30-34", "E Five", 58.0),
         ],
     )
     con.executemany(
@@ -306,14 +307,15 @@ def reporting_client_with_report_tables():
         ],
     )
     con.executemany(
-        "INSERT INTO split_percentiles VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "INSERT INTO split_percentiles VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
-            ("r1", "event_1", "london", "open", "M", "30-34", "run_1", 5.0, 1, 2, 1.0),
-            ("r1", "event_1", "london", "open", "M", "30-34", "ski_erg", 3.0, 1, 2, 1.0),
-            ("r2", "event_1", "london", "open", "M", "30-34", "run_1", 6.0, 2, 2, 0.0),
-            ("r2", "event_1", "london", "open", "M", "30-34", "ski_erg", 4.0, 2, 2, 0.0),
-            ("r3", "event_1", "london", "pro", "M", "30-34", "run_1", 5.5, 1, 1, 1.0),
-            ("r4", "event_2", "london", "open", "M", "30-34", "run_1", 5.2, 1, 3, 0.8),
+            ("r1", "event_1", 8, "london", "open", "M", "30-34", "run_1", 5.0, 1, 2, 1.0),
+            ("r1", "event_1", 8, "london", "open", "M", "30-34", "ski_erg", 3.0, 1, 2, 1.0),
+            ("r2", "event_1", 8, "london", "open", "M", "30-34", "run_1", 6.0, 2, 2, 0.0),
+            ("r2", "event_1", 8, "london", "open", "M", "30-34", "ski_erg", 4.0, 2, 2, 0.0),
+            ("r3", "event_1", 8, "london", "pro", "M", "30-34", "run_1", 5.5, 1, 1, 1.0),
+            ("r4", "event_2", 8, "london", "open", "M", "30-34", "run_1", 5.2, 1, 3, 0.8),
+            ("r5", "event_3", 7, "london", "open", "M", "30-34", "run_1", 4.9, 1, 1, 1.0),
         ],
     )
     return reporting
