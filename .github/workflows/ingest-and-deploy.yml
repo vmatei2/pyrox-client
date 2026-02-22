@@ -3,7 +3,7 @@ name: Ingest DuckDB And Deploy API
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 3 * * *"
+    - cron: "0 18 * * 3"
   push:
     branches: [main]
     paths:

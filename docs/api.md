@@ -72,3 +72,30 @@ Clear cached items matching a glob pattern.
 ### `cache_info() -> dict`
 
 Return cache statistics and keys.
+
+## Reporting Service Note (Repository-Only)
+
+This repository also ships a FastAPI reporting service (`pyrox_api_service/`) that
+is separate from the published `pyrox-client` wheel.
+
+For athlete profile endpoints:
+
+- `GET /api/athletes/profile?name=<name>`
+- `GET /api/athletes/{athlete_id}/profile`
+
+`personal_bests` entries may include an optional `percentile` field (float in
+`[0, 1]`) per segment key (`overall`, `runplusroxzone`, `skierg`, `sledpush`,
+`sledpull`, `burpeebroadjump`, `rowerg`, `farmerscarry`, `sandbaglunges`,
+`wallballs`).
+
+`average_times` entries may also include optional `percentile` with the same
+range and segment keys.
+
+Percentile direction matches report split percentiles:
+- `1.0` means faster than 100% of the cohort.
+- `0.0` means slower than everyone in the cohort.
+- If percentile cannot be computed for a segment, the key is omitted for that
+  segment without failing the endpoint.
+
+Profile percentiles are computed against historical results in the same division
+and gender.

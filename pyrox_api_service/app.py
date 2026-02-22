@@ -55,6 +55,7 @@ _PROFILE_TIME_COLUMN_MAP = {
     "wallballs":       "wallBalls_time_min",
 }
 _PROFILE_RUN_ROXZONE_KEY = "runplusroxzone"
+_PROFILE_PERCENTILE_COHORT_COLUMNS = {"division", "gender"}
 
 
 def _parse_origins(value: str) -> list[str]:
@@ -104,6 +105,14 @@ def _normalize_profile_division_filter(value: Optional[str]) -> Optional[str]:
         return None
     trimmed = str(value).strip()
     return trimmed if trimmed else None
+
+
+def _load_race_results_columns(con) -> set[str]:
+    return {
+        str(row[1])
+        for row in con.execute("PRAGMA table_info('race_results')").fetchall()
+        if row and len(row) > 1
+    }
 
 
 def _clean_distinct_values(df: pd.DataFrame, column: str) -> list[str]:
@@ -1088,10 +1097,7 @@ def _load_profile_rows_for_athlete_id(
     athlete_id: str,
     division: Optional[str] = None,
 ) -> pd.DataFrame:
-    race_columns = {
-        str(row[1])
-        for row in con.execute("PRAGMA table_info('race_results')").fetchall()
-    }
+    race_columns = _load_race_results_columns(con)
 
     can_compute_ag_rank_fallback = {
         "season",
@@ -1202,6 +1208,92 @@ def _build_profile_metric_series(df: pd.DataFrame) -> dict[str, pd.Series]:
     return metrics
 
 
+def _resolve_profile_metric_sql(
+    metric_key: str,
+    race_columns: set[str],
+) -> Optional[tuple[str, str]]:
+    if metric_key == _PROFILE_RUN_ROXZONE_KEY:
+        required = {"run_time_min", "roxzone_time_min"}
+        if not required.issubset(race_columns):
+            return None
+        return (
+            "(rr.run_time_min + rr.roxzone_time_min)",
+            (
+                "rr.run_time_min IS NOT NULL AND rr.roxzone_time_min IS NOT NULL "
+                "AND rr.run_time_min > 0 AND rr.roxzone_time_min > 0"
+            ),
+        )
+
+    column_name = _PROFILE_TIME_COLUMN_MAP.get(metric_key)
+    if column_name is None or column_name not in race_columns:
+        return None
+    return (
+        f"rr.{column_name}",
+        f"rr.{column_name} IS NOT NULL AND rr.{column_name} > 0",
+    )
+
+
+def _compute_profile_metric_percentile(
+    con,
+    *,
+    cohort_row: pd.Series,
+    metric_key: str,
+    metric_time: float,
+    race_columns: set[str],
+) -> Optional[float]:
+    try:
+        metric_value = float(metric_time)
+    except (TypeError, ValueError):
+        return None
+    if not np.isfinite(metric_value) or metric_value <= 0:
+        return None
+
+    if not _PROFILE_PERCENTILE_COHORT_COLUMNS.issubset(race_columns):
+        return None
+    metric_sql = _resolve_profile_metric_sql(metric_key, race_columns)
+    if metric_sql is None:
+        return None
+    metric_expr, metric_predicate = metric_sql
+    cohort_params = [cohort_row.get("division"), cohort_row.get("gender")]
+
+    try:
+        row = con.execute(
+            f"""
+            SELECT
+                COUNT(*) AS cohort_size,
+                SUM(CASE WHEN {metric_expr} < ? THEN 1 ELSE 0 END) AS less_count
+            FROM race_results rr
+            WHERE rr.division IS NOT DISTINCT FROM ?
+              AND rr.gender IS NOT DISTINCT FROM ?
+              AND {metric_predicate}
+            """,
+            [
+                metric_value,
+                *cohort_params,
+            ],
+        ).fetchone()
+    except Exception:
+        logger.warning(
+            "profile percentile computation skipped metric=%s result_id=%s",
+            metric_key,
+            cohort_row.get("result_id"),
+            exc_info=True,
+        )
+        return None
+
+    if row is None:
+        return None
+    cohort_size = int(row[0] or 0)
+    if cohort_size <= 0:
+        return None
+    if cohort_size == 1:
+        return 1.0
+
+    less_count = int(row[1] or 0)
+    percentile = 1.0 - less_count / (cohort_size - 1)
+    return float(max(0.0, min(1.0, percentile)))
+
+
 def _build_athlete_profile_payload(
     con,
     athlete_id: str,
@@ -1257,6 +1349,7 @@ def _build_athlete_profile_payload(
     personal_bests: dict = {}
     average_times: dict = {}
     metric_series = _build_profile_metric_series(df)
+    race_columns = _load_race_results_columns(con)
     for metric_key, series in metric_series.items():
         valid = pd.to_numeric(series, errors="coerce")
         valid = valid[valid > 0].dropna()
@@ -1266,12 +1359,26 @@ def _build_athlete_profile_payload(
         average_times[metric_key] = {
             "time": float(valid.mean()),
         }
+        average_percentiles: list[float] = []
+        for value_idx, value in valid.items():
+            row = df.loc[value_idx]
+            percentile = _compute_profile_metric_percentile(
+                con,
+                cohort_row=row,
+                metric_key=metric_key,
+                metric_time=float(value),
+                race_columns=race_columns,
+            )
+            if percentile is not None:
+                average_percentiles.append(percentile)
+        if average_percentiles:
+            average_times[metric_key]["percentile"] = float(np.mean(average_percentiles))
 
         idx = valid.idxmin()
         pb_row = df.loc[idx]
         pb_year = pb_row.get("year")
         pb_location = pb_row.get("location")
-        personal_bests[metric_key] = {
+        personal_best = {
             "time": float(valid[idx]),
             "result_id": pb_row["result_id"],
             "location": (
@@ -1281,6 +1388,16 @@ def _build_athlete_profile_payload(
             ),
             "year": int(pb_year) if pb_year is not None and pd.notna(pb_year) else None,
         }
+        percentile = _compute_profile_metric_percentile(
+            con,
+            cohort_row=pb_row,
+            metric_key=metric_key,
+            metric_time=personal_best["time"],
+            race_columns=race_columns,
+        )
+        if percentile is not None:
+            personal_best["percentile"] = percentile
+        personal_bests[metric_key] = personal_best
 
     seasons = []
     if "year" in df.columns and "total_time_min" in df.columns:

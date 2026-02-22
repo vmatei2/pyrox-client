@@ -370,8 +370,19 @@ describe("ProfileMode — profile view", () => {
   it("renders the Average Times section", async () => {
     renderProfile();
     await waitFor(() =>
-      expect(screen.getByText("Average Times")).toBeInTheDocument()
+      expect(screen.getByText("Your Average Times")).toBeInTheDocument()
     );
+  });
+
+  it("shows percentile cohort note in profile sections", async () => {
+    renderProfile();
+    await waitFor(() => {
+      expect(
+        screen.getAllByText(
+          "Percentiles compare against historical results in your division and gender."
+        ).length
+      ).toBe(2);
+    });
   });
 
   it("does not show division selector for single-division athlete data", async () => {
@@ -439,7 +450,7 @@ describe("ProfileMode — profile view", () => {
     renderProfile();
     await waitFor(() =>
       expect(
-        screen.getByRole("button", { name: /change athlete profile/i })
+        screen.getByRole("button", { name: /switch to a different athlete profile/i })
       ).toBeInTheDocument()
     );
   });
@@ -456,10 +467,14 @@ describe("ProfileMode — profile view", () => {
 
     renderProfile();
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: /change athlete profile/i })).toBeInTheDocument()
+      expect(
+        screen.getByRole("button", { name: /switch to a different athlete profile/i })
+      ).toBeInTheDocument()
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /change athlete profile/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /switch to a different athlete profile/i })
+    );
 
     expect(mockClearIdentity).toHaveBeenCalledTimes(1);
     await waitFor(() =>

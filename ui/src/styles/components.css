@@ -1305,6 +1305,13 @@ table tr:hover td {
   color: #8fa5c8;
 }
 
+.profile-section-note {
+  margin: -8px 0 10px;
+  font-size: 0.73rem;
+  line-height: 1.35;
+  color: var(--text-muted-2);
+}
+
 .profile-division-filter {
   display: flex;
   flex-wrap: wrap;
@@ -1379,6 +1386,37 @@ table tr:hover td {
 .profile-pb-where {
   font-size: 0.74rem;
   color: var(--text-muted-2);
+}
+
+.profile-pb-perc-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 1px;
+}
+
+.profile-pb-perc-track {
+  flex: 1;
+  min-width: 0;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.14);
+  overflow: hidden;
+}
+
+.profile-pb-perc-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--pb-accent, var(--accent));
+  transition: width 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.profile-pb-perc-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* ----------------------------------------------------------------

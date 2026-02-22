@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatedNumber, ModeTabIcon } from "../components/UiPrimitives.jsx";
 import { STATION_SEGMENTS } from "../constants/segments.js";
-import { formatMinutes } from "../utils/formatters.js";
+import { formatMinutes, getPercentileColorClass } from "../utils/formatters.js";
 import { fetchAthleteProfile, searchAthletes } from "../api/client.js";
 import { useAthleteIdentity } from "../hooks/useAthleteIdentity.js";
 import { triggerSelectionHaptic } from "../utils/haptics.js";
@@ -27,6 +27,19 @@ function ordinal(n) {
   if (mod10 === 2) return `${num}nd`;
   if (mod10 === 3) return `${num}rd`;
   return `${num}th`;
+}
+
+function formatTopPercent(percentile) {
+  const val = Number(percentile);
+  if (!Number.isFinite(val)) return null;
+  const top = Math.round((1 - val) * 100);
+  return `Top ${Math.max(1, top)}%`;
+}
+
+function getPercFill(percentile) {
+  const val = Number(percentile);
+  if (!Number.isFinite(val)) return null;
+  return Math.min(100, Math.max(0, val * 100));
 }
 
 // Segments surfaced in profile time cards.
@@ -218,9 +231,9 @@ function ProfileHero({ athlete, summary, onChangeIdentity }) {
             type="button"
             className="profile-change-btn"
             onClick={onChangeIdentity}
-            aria-label="Change athlete profile"
+            aria-label="Switch to a different athlete profile"
           >
-            Change
+            Switch Athlete
           </button>
         </div>
 
@@ -287,7 +300,7 @@ function DivisionFilter({ divisions, selectedDivision, onChange }) {
 
 // ── Time card grids ───────────────────────────────────────────────
 
-function TimeCards({ metrics, emptyMessage, showContext = false }) {
+function TimeCards({ metrics, emptyMessage, showContext = false, showPercentile = false }) {
   const entries = PROFILE_TIME_SEGMENTS.filter((seg) => metrics?.[seg.key]);
 
   if (!entries.length) {
@@ -299,17 +312,30 @@ function TimeCards({ metrics, emptyMessage, showContext = false }) {
       {entries.map((seg) => {
         const metric = metrics[seg.key];
         const where = showContext ? [metric.location, metric.year].filter(Boolean).join(" · ") : "";
+        const percFill = showPercentile ? getPercFill(metric.percentile) : null;
+        const topLabel = percFill !== null ? formatTopPercent(metric.percentile) : null;
+        const percClass = percFill !== null ? getPercentileColorClass(metric.percentile) : "";
         return (
           <article
             key={seg.key}
             className="profile-pb-card"
             style={{ "--pb-accent": seg.color }}
-            aria-label={`${seg.label}: ${formatMinutes(metric.time)}`}
+            aria-label={`${seg.label}: ${formatMinutes(metric.time)}${topLabel ? `, ${topLabel}` : ""}`}
           >
             <span className="profile-pb-label">{seg.label}</span>
             <span className="profile-pb-time">
               <AnimatedNumber value={metric.time} formatter={formatMinutes} />
             </span>
+            {percFill !== null && (
+              <div className="profile-pb-perc-row" aria-hidden="true">
+                <div className="profile-pb-perc-track">
+                  <div className="profile-pb-perc-fill" style={{ width: `${percFill}%` }} />
+                </div>
+                {topLabel && (
+                  <span className={`profile-pb-perc-label ${percClass}`}>{topLabel}</span>
+                )}
+              </div>
+            )}
             {where && <span className="profile-pb-where">{where}</span>}
           </article>
         );
@@ -323,6 +349,7 @@ function PersonalBests({ personalBests }) {
     <TimeCards
       metrics={personalBests}
       showContext
+      showPercentile
       emptyMessage="No personal best times available for this athlete yet."
     />
   );
@@ -332,6 +359,7 @@ function AverageTimes({ averageTimes }) {
   return (
     <TimeCards
       metrics={averageTimes}
+      showPercentile
       emptyMessage="Average times are unavailable for this athlete."
     />
   );
@@ -577,6 +605,9 @@ export default function ProfileMode({ onOpenRace }) {
           <h3 id="pb-heading" className="profile-section-title">
             Personal Bests
           </h3>
+          <p className="profile-section-note">
+            Percentiles compare against historical results in your division and gender.
+          </p>
           <PersonalBests personalBests={personalBests} />
         </section>
 
@@ -584,6 +615,9 @@ export default function ProfileMode({ onOpenRace }) {
           <h3 id="avg-heading" className="profile-section-title">
             Your Average Times
           </h3>
+          <p className="profile-section-note">
+            Percentiles compare against historical results in your division and gender.
+          </p>
           <AverageTimes averageTimes={averageTimes} />
         </section>
 

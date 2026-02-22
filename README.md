@@ -75,6 +75,16 @@ The PyPI package is the `pyrox` client library.
 
 This repository also contains a reporting service and UI (`pyrox_api_service/`, `ui/`) used for project workflows. Those are not part of the published `pyrox-client` wheel.
 
+Reporting-service contract note:
+
+- Athlete profile endpoints (`/api/athletes/profile` and `/api/athletes/{athlete_id}/profile`)
+  may include optional `personal_bests[*].percentile` values in `[0, 1]`.
+- `average_times[*].percentile` may also be present with the same semantics.
+- Missing percentile data is non-fatal and returned by omitting the `percentile` key
+  for that segment.
+- Profile percentile cohorts are computed against historical results in the same
+  division and gender.
+
 Maintainer-only operational docs:
 
 - `docs/maintainers/README.md`

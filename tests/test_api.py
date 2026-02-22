@@ -808,6 +808,23 @@ def _seed_profile_tables(con: duckdb.DuckDBPyConnection) -> None:
     )
     con.execute(
         """
+        CREATE TABLE split_percentiles (
+            result_id VARCHAR,
+            split_name VARCHAR,
+            split_time_min DOUBLE,
+            split_rank INTEGER,
+            split_size INTEGER,
+            split_percentile DOUBLE,
+            season INTEGER,
+            location VARCHAR,
+            division VARCHAR,
+            gender VARCHAR,
+            age_group VARCHAR
+        );
+        """
+    )
+    con.execute(
+        """
         CREATE TABLE athlete_index (
             athlete_id     VARCHAR,
             canonical_name VARCHAR,
@@ -853,6 +870,14 @@ def _seed_profile_tables(con: duckdb.DuckDBPyConnection) -> None:
              "John Smith", 90.0, 41.5, 5.0, 4.8, 5.5, 5.6, 4.0, 6.0, 4.5, 4.8, 4.3),
             ("r4", "evt1", 8, "Vienna", 2025, "Open", "Female", "F30-34",
              "Faster Rival", 82.0, 38.2, 4.4, 4.2, 4.9, 5.0, 3.6, 5.2, 3.8, 4.0, 3.7),
+            ("r8", "evt1", 8, "Vienna", 2025, "Open", "Female", "F30-34",
+             "Steady Rival", 85.1, 40.1, 4.8, 4.45, 5.2, 5.3, 3.9, 5.7, 4.2, 4.4, 4.1),
+            ("r9", "evt1", 8, "Vienna", 2025, "Open", "Female", "F30-34",
+             "Endurance Rival", 86.9, 41.0, 5.0, 4.55, 5.4, 5.5, 4.0, 5.9, 4.3, 4.5, 4.2),
+            ("r10", "evt1", 8, "Vienna", 2025, "Open", "Female", "F30-34",
+             "Power Rival", 88.3, 42.2, 5.2, 4.65, 5.6, 5.7, 4.2, 6.1, 4.6, 4.8, 4.4),
+            ("r13", "evt9", 8, "Paris", 2025, "Open", "Female", "F30-34",
+             "Cross City Rival", 83.4, 38.8, 4.5, 4.28, 5.0, 5.1, 3.7, 5.4, 3.9, 4.1, 3.8),
             ("r5", "evt2", 7, "Berlin", 2024, "Open", "Female", "F30-34",
              "Slower Rival", 89.0, 42.0, 5.1, 4.8, 5.6, 5.7, 4.2, 6.1, 4.6, 4.9, 4.4),
         ],
@@ -860,8 +885,20 @@ def _seed_profile_tables(con: duckdb.DuckDBPyConnection) -> None:
     con.executemany(
         "INSERT INTO race_rankings VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [
-            ("r1", 2, 3, 0.5, 30, 600, 0.95, 100, 5000, 0.98),
+            ("r1", 2, 6, 0.75, 30, 600, 0.95, 100, 5000, 0.98),
             ("r2", 1, 2, 1.0, 40, 550, 0.93, 120, 4800, 0.97),
+        ],
+    )
+    con.executemany(
+        "INSERT INTO split_percentiles VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+            ("r4", "ski_erg", 4.20, 1, 5, 1.00, 8, "Vienna", "Open", "Female", "F30-34"),
+            ("r1", "ski_erg", 4.35, 2, 5, 0.75, 8, "Vienna", "Open", "Female", "F30-34"),
+            ("r8", "ski_erg", 4.45, 3, 5, 0.50, 8, "Vienna", "Open", "Female", "F30-34"),
+            ("r9", "ski_erg", 4.55, 4, 5, 0.25, 8, "Vienna", "Open", "Female", "F30-34"),
+            ("r10", "ski_erg", 4.65, 5, 5, 0.00, 8, "Vienna", "Open", "Female", "F30-34"),
+            ("r2", "ski_erg", 4.50, 1, 2, 1.00, 7, "Berlin", "Open", "Female", "F30-34"),
+            ("r5", "ski_erg", 4.80, 2, 2, 0.00, 7, "Berlin", "Open", "Female", "F30-34"),
         ],
     )
     con.executemany(
@@ -949,6 +986,24 @@ def test_profile_by_id_filters_by_division(tmp_path, monkeypatch):
         """
     )
     con.execute("INSERT INTO race_rankings VALUES ('r6', 1, 2, 1.0, 10, 200, 0.98, 50, 3000, 0.99)")
+    con.execute(
+        """
+        INSERT INTO race_results VALUES
+        (
+            'r11', 'evt3', 8, 'Paris', 2025, 'Pro', 'Female', 'F30-34',
+            'Pro Faster Rival', 82.80, 37.9, 4.2, 4.10, 4.8, 4.9, 3.4, 5.0, 3.6, 3.8, 3.5
+        )
+        """
+    )
+    con.execute(
+        """
+        INSERT INTO race_results VALUES
+        (
+            'r12', 'evt3', 8, 'Paris', 2025, 'Pro', 'Female', 'F30-34',
+            'Pro Slower Rival', 84.20, 38.9, 4.5, 4.30, 5.1, 5.2, 3.7, 5.3, 3.9, 4.1, 3.8
+        )
+        """
+    )
     con.execute("INSERT INTO athlete_results VALUES ('ath_sarah', 'r6')")
     con.close()
 
@@ -969,6 +1024,7 @@ def test_profile_by_id_filters_by_division(tmp_path, monkeypatch):
     assert open_payload["athlete"]["division"] == "Open"
     assert {race["result_id"] for race in open_payload["races"]} == {"r1", "r2"}
     assert open_payload["summary"]["best_overall_time"] == pytest.approx(84.55)
+    assert open_payload["personal_bests"]["overall"]["percentile"] == pytest.approx(5 / 7)
 
     pro_payload = client.get(
         "/api/athletes/ath_sarah/profile",
@@ -979,6 +1035,7 @@ def test_profile_by_id_filters_by_division(tmp_path, monkeypatch):
     assert pro_payload["athlete"]["division"] == "Pro"
     assert {race["result_id"] for race in pro_payload["races"]} == {"r6"}
     assert pro_payload["summary"]["best_overall_time"] == pytest.approx(83.10)
+    assert pro_payload["personal_bests"]["overall"]["percentile"] == pytest.approx(0.5)
 
 
 def test_profile_by_id_returns_404_for_missing_division(tmp_path, monkeypatch):
@@ -1017,6 +1074,22 @@ def test_profile_personal_bests_overall(tmp_path, monkeypatch):
     assert pb["overall"]["year"] == 2025
 
 
+def test_profile_personal_bests_include_percentile_with_cohort_size_at_least_five(tmp_path, monkeypatch):
+    client = _make_profile_client(tmp_path, monkeypatch)
+    payload = client.get("/api/athletes/profile", params={"name": "Sarah Johnson"}).json()
+    pb = payload["personal_bests"]
+    assert pb["overall"]["percentile"] == pytest.approx(5 / 7)
+    assert pb["skierg"]["percentile"] == pytest.approx(5 / 7)
+
+
+def test_profile_percentile_uses_historical_division_gender_cohort(tmp_path, monkeypatch):
+    client = _make_profile_client(tmp_path, monkeypatch)
+    profile_payload = client.get("/api/athletes/profile", params={"name": "Sarah Johnson"}).json()
+    # Cohort includes same division+gender rows across seasons/locations.
+    assert profile_payload["personal_bests"]["overall"]["percentile"] == pytest.approx(5 / 7)
+    assert profile_payload["personal_bests"]["skierg"]["percentile"] == pytest.approx(5 / 7)
+
+
 def test_profile_personal_bests_station_present(tmp_path, monkeypatch):
     client = _make_profile_client(tmp_path, monkeypatch)
     payload = client.get("/api/athletes/profile", params={"name": "Sarah Johnson"}).json()
@@ -1042,6 +1115,8 @@ def test_profile_average_times_include_run_plus_roxzone(tmp_path, monkeypatch):
     assert averages["overall"]["time"] == pytest.approx((84.55 + 86.20) / 2)
     assert averages["runplusroxzone"]["time"] == pytest.approx((43.8 + 45.3) / 2)
     assert averages["skierg"]["time"] == pytest.approx((4.35 + 4.50) / 2)
+    assert averages["overall"]["percentile"] == pytest.approx(4 / 7)
+    assert averages["skierg"]["percentile"] == pytest.approx(4 / 7)
 
 
 def test_profile_personal_bests_empty_when_no_station_data(tmp_path, monkeypatch):
@@ -1082,6 +1157,40 @@ def test_profile_personal_bests_empty_when_no_station_data(tmp_path, monkeypatch
     # Only the overall key (from total_time_min) should appear; no station keys
     assert set(pb.keys()) == {"overall"}
     assert set(averages.keys()) == {"overall"}
+
+
+def test_profile_personal_best_percentile_computed_with_minimal_columns(tmp_path, monkeypatch):
+    db_path = tmp_path / "profile-missing-cohort-columns.db"
+    con = _create_db(db_path)
+    con.execute(
+        """
+        CREATE TABLE race_results (
+            result_id VARCHAR, event_id VARCHAR, season INTEGER,
+            location VARCHAR, year INTEGER, division VARCHAR,
+            gender VARCHAR, name VARCHAR, total_time_min DOUBLE
+        );
+        """
+    )
+    con.execute("CREATE TABLE race_rankings (result_id VARCHAR)")
+    con.execute("CREATE TABLE athlete_results (athlete_id VARCHAR, result_id VARCHAR)")
+    con.execute(
+        "CREATE TABLE athlete_index (athlete_id VARCHAR, canonical_name VARCHAR, "
+        "name_lc VARCHAR, gender VARCHAR, nationality VARCHAR, race_count INTEGER)"
+    )
+    con.execute(
+        "INSERT INTO race_results VALUES "
+        "('r1', 'e1', 8, 'Vienna', 2025, 'Open', 'F', 'Mini Athlete', 84.0)"
+    )
+    con.execute("INSERT INTO athlete_results VALUES ('ath_mini', 'r1')")
+    con.execute(
+        "INSERT INTO athlete_index VALUES ('ath_mini', 'mini athlete', 'mini athlete', 'F', 'USA', 1)"
+    )
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+    payload = client.get("/api/athletes/profile", params={"name": "Mini Athlete"}).json()
+    assert payload["personal_bests"]["overall"]["percentile"] == pytest.approx(1.0)
 
 
 def test_profile_seasons_grouped_by_year_ascending(tmp_path, monkeypatch):
