@@ -45,6 +45,7 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.S3_REGION }}
+          role-duration-seconds: 43200  # 12 hours -- by default expires after 1 hour of running! (aslo required updating on IAM portal
 
       - name: Sync dependencies
         run: uv sync --all-extras
