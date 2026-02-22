@@ -582,7 +582,7 @@ export default function ProfileMode({ onOpenRace }) {
 
         <section className="profile-section" aria-labelledby="avg-heading">
           <h3 id="avg-heading" className="profile-section-title">
-            Average Times
+            Your Average Times
           </h3>
           <AverageTimes averageTimes={averageTimes} />
         </section>

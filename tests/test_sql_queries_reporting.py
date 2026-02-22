@@ -31,6 +31,7 @@ def test_create_race_rankings_percentiles():
             ("r3", "event_1", 8, "london", 2024, "open", "M", "30-34", 80.0),
             ("r4", "event_2", 8, "london", 2024, "open", "M", "30-34", 65.0),
             ("r5", "event_3", 7, "paris", 2023, "open", "M", "30-34", 75.0),
+            ("r6", "event_4", 7, "london", 2023, "open", "M", "30-34", 55.0),
         ],
     )
 
@@ -56,8 +57,8 @@ def test_create_race_rankings_percentiles():
     assert row_r1["event_size"] == 4
     assert row_r1["event_percentile"] == pytest.approx(1.0)
     assert row_r1["season_size"] == 4
-    assert row_r1["overall_size"] == 5
-    assert row_r1["overall_percentile"] == pytest.approx(1.0)
+    assert row_r1["overall_size"] == 6
+    assert row_r1["overall_percentile"] == pytest.approx(0.8)
 
     row_r3 = results[results["result_id"] == "r3"].iloc[0]
     assert row_r3["event_rank"] == 4
@@ -70,11 +71,11 @@ def test_create_race_rankings_percentiles():
     assert row_r4["event_size"] == 4
     assert row_r4["event_percentile"] == pytest.approx(2.0 / 3.0)
     assert row_r4["season_percentile"] == pytest.approx(2.0 / 3.0)
-    assert row_r4["overall_percentile"] == pytest.approx(0.75)
+    assert row_r4["overall_percentile"] == pytest.approx(0.6)
 
     row_r5 = results[results["result_id"] == "r5"].iloc[0]
-    assert row_r5["season_size"] == 1
-    assert row_r5["season_percentile"] == pytest.approx(1.0)
+    assert row_r5["season_size"] == 2
+    assert row_r5["season_percentile"] == pytest.approx(0.0)
 
 
 def test_create_split_percentiles_runs_and_stations():

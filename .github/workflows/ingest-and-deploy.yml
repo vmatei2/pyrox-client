@@ -1,0 +1,65 @@
+name: Ingest DuckDB And Deploy API
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * *"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/ingest_duckdb_from_s3.py"
+      - "scripts/sql_queries.py"
+      - "src/**"
+      - "pyrox_api_service/**"
+      - "fly.toml"
+      - "Dockerfile"
+      - "pyproject.toml"
+      - ".github/workflows/ingest-and-deploy.yml"
+
+concurrency:
+  group: ingest-and-deploy
+  cancel-in-progress: false
+
+jobs:
+  ingest-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      DUCKDB_PATH: pyrox_duckdb
+      S3_URI: ${{ secrets.S3_URI }}
+      S3_REGION: ${{ secrets.S3_REGION }}
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.S3_REGION }}
+
+      - name: Sync dependencies
+        run: uv sync --all-extras
+
+      - name: Build pyrox_duckdb from S3
+        run: uv run python scripts/ingest_duckdb_from_s3.py
+
+      - name: Verify DuckDB schema
+        run: uv run python scripts/verify_duckdb_schema.py pyrox_duckdb
+
+      - name: Show DuckDB artifact size
+        run: ls -lh pyrox_duckdb
+
+      - name: Set up Flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy API to Fly
+        run: flyctl deploy --config fly.toml --remote-only

@@ -63,6 +63,7 @@ S3_REGION = required_env("S3_REGION")
 
 AWS_ACCESS_KEY_ID = required_env("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = required_env("AWS_SECRET_ACCESS_KEY")
+AWS_SESSION_TOKEN = os.getenv("AWS_SESSION_TOKEN", "").strip()
 
 
 # -----------
@@ -80,6 +81,8 @@ def configure_s3(con: duckdb.DuckDBPyConnection) -> None:
     con.execute(f"SET s3_region='{S3_REGION}';")
     con.execute(f"SET s3_access_key_id='{AWS_ACCESS_KEY_ID}';")
     con.execute(f"SET s3_secret_access_key='{AWS_SECRET_ACCESS_KEY}';")
+    if AWS_SESSION_TOKEN:
+        con.execute(f"SET s3_session_token='{AWS_SESSION_TOKEN}';")
 
 
 # -----------
