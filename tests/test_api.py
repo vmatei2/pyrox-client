@@ -1221,6 +1221,21 @@ def test_profile_races_age_group_rank(tmp_path, monkeypatch):
     assert ranks["r2"] == 1
 
 
+def test_profile_races_include_progression_metrics(tmp_path, monkeypatch):
+    client = _make_profile_client(tmp_path, monkeypatch)
+    payload = client.get("/api/athletes/profile", params={"name": "Sarah Johnson"}).json()
+    race = payload["races"][0]
+    assert "total_time_min" in race
+    assert "run_time_min" in race
+    assert "roxzone_time_min" in race
+    assert "runplusroxzone_time_min" in race
+    assert "run1_time_min" in race
+    assert "burpeeBroadJump_time_min" in race
+    assert race["runplusroxzone_time_min"] == pytest.approx(
+        race["run_time_min"] + race["roxzone_time_min"]
+    )
+
+
 def test_profile_ranks_ignore_stale_table_values_and_cross_season_rows(tmp_path, monkeypatch):
     db_path = tmp_path / "profile-rank-season-scope.db"
     con = _create_db(db_path)

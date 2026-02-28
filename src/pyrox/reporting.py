@@ -255,10 +255,14 @@ class ReportingClient:
             >>> con.execute("SELECT 1").fetchone()[0]
             1
         """
+        logger.info("hello from ensure connetion")
         if self._connection is None:
             # forcing to be read only!
             read_only = self.database != ":memory:"
+            logger.info("ensuring connection properly!")
+            logger.info(f"self db:{self.database}")
             self._connection = duckdb.connect(self.database, read_only=read_only)
+            logger.info("init connection done!")
         return self._connection
 
 

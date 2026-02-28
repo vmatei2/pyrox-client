@@ -1693,3 +1693,86 @@ table tr:hover td {
   fill: #ffc480;
   font-family: var(--font-body);
 }
+
+/* ----------------------------------------------------------------
+   Profile finish progression chart
+   ---------------------------------------------------------------- */
+.profile-progression-wrap {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.profile-progression-controls {
+  display: grid;
+  gap: 6px;
+  max-width: 260px;
+}
+
+.profile-progression-label {
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  color: #a9bddf;
+}
+
+.profile-progression-select {
+  min-height: 38px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface-soft);
+  color: var(--text-strong);
+}
+
+.profile-progression-select:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.profile-progression-trend {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 18px;
+}
+
+.profile-progression-improving {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #78d8ff;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.profile-progression-stable {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.profile-progression-svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  display: block;
+}
+
+.profile-progression-axis-label {
+  font-size: 10px;
+  fill: #8fa5c8;
+  font-family: var(--font-body);
+}
+
+.profile-progression-tooltip-label {
+  font-size: 10px;
+  fill: #acbcda;
+  font-family: var(--font-body);
+}
+
+.profile-progression-tooltip-value {
+  font-size: 11px;
+  font-weight: 700;
+  fill: #ffc480;
+  font-family: var(--font-body);
+}
