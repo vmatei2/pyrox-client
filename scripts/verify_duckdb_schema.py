@@ -11,14 +11,12 @@ from __future__ import annotations
 
 import argparse
 import os
-import sys
 from typing import Iterable
-from dotenv import load_dotenv
-
-
-load_dotenv()
 
 import duckdb
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def _normalize_type(raw_type: str) -> str:
@@ -115,6 +113,7 @@ def main() -> int:
                 "sandbagLunges_time_min",
                 "wallBalls_time_min",
                 "work_time_min",
+                "start_date",
             ],
             "types": {
                 "result_id": ["VARCHAR"],
@@ -169,6 +168,7 @@ def main() -> int:
                 "sandbagLunges_time_min": ["DOUBLE", "FLOAT"],
                 "wallBalls_time_min": ["DOUBLE", "FLOAT"],
                 "work_time_min": ["DOUBLE", "FLOAT"],
+                "start_date": ["DATE"],
             },
         },
         "athletes": {

@@ -56,6 +56,28 @@ _PROFILE_TIME_COLUMN_MAP = {
 }
 _PROFILE_RUN_ROXZONE_KEY = "runplusroxzone"
 _PROFILE_PERCENTILE_COHORT_COLUMNS = {"division", "gender"}
+_PROFILE_RACE_PROGRESS_COLUMNS = (
+    "total_time_min",
+    "run_time_min",
+    "work_time_min",
+    "roxzone_time_min",
+    "run1_time_min",
+    "run2_time_min",
+    "run3_time_min",
+    "run4_time_min",
+    "run5_time_min",
+    "run6_time_min",
+    "run7_time_min",
+    "run8_time_min",
+    "skiErg_time_min",
+    "sledPush_time_min",
+    "sledPull_time_min",
+    "burpeeBroadJump_time_min",
+    "rowErg_time_min",
+    "farmersCarry_time_min",
+    "sandbagLunges_time_min",
+    "wallBalls_time_min",
+)
 
 
 def _parse_origins(value: str) -> list[str]:
@@ -403,12 +425,17 @@ async def log_requests(request: Request, call_next):
 
 @app.get("/api/health")
 def healthcheck() -> dict:
+    logger.info("hello")
     db_path = _resolve_db_path()
+    logger.info("resolved db path")
     reporting = _get_reporting()
+    logger.info("reporting done!")
     try:
         con = reporting._ensure_connection()
+        logger.info("ensure connectio!")
         tables = [row[0] for row in con.execute("SHOW TABLES").fetchall()]
     except Exception as exc:  # pragma: no cover - defensive for runtime env issues
+        logger.info(f"caugh excpeiton: {exc}")
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     return {"status": "ok", "database": db_path, "tables": tables}
 
@@ -1419,6 +1446,23 @@ def _build_athlete_profile_payload(
         total_time = race_row.get("total_time_min")
         race_year = race_row.get("year")
         race_location = race_row.get("location")
+        race_start_date = race_row.get("start_date")
+        normalized_start_date = None
+        if race_start_date is not None and pd.notna(race_start_date):
+            normalized_start_date = str(race_start_date)
+        progression_metrics: dict[str, Optional[float]] = {}
+        for column in _PROFILE_RACE_PROGRESS_COLUMNS:
+            value = race_row.get(column)
+            progression_metrics[column] = (
+                float(value) if value is not None and pd.notna(value) else None
+            )
+        run_total = progression_metrics.get("run_time_min")
+        roxzone = progression_metrics.get("roxzone_time_min")
+        progression_metrics["runplusroxzone_time_min"] = (
+            float(run_total + roxzone)
+            if run_total is not None and roxzone is not None
+            else None
+        )
         races.append(
             {
                 "result_id": race_row["result_id"],
@@ -1436,6 +1480,8 @@ def _build_athlete_profile_payload(
                 "age_group_rank": (
                     int(ag_rank) if ag_rank is not None and pd.notna(ag_rank) else None
                 ),
+                "start_date": normalized_start_date,
+                **progression_metrics,
             }
         )
 

@@ -63,14 +63,24 @@ const MOCK_PROFILE = {
       result_id: "r1",
       location: "Vienna",
       year: 2025,
+      start_date: "2025-05-03",
       total_time: 84.55,
+      run_time_min: 39.2,
+      roxzone_time_min: 4.6,
+      run1_time_min: 4.95,
+      burpeeBroadJump_time_min: 3.8,
       age_group_rank: 3,
     },
     {
       result_id: "r2",
       location: "Berlin",
       year: 2024,
+      start_date: "2024-04-18",
       total_time: 86.2,
+      run_time_min: 40.5,
+      roxzone_time_min: 4.8,
+      run1_time_min: 5.1,
+      burpeeBroadJump_time_min: 3.9,
       age_group_rank: 7,
     },
   ],
@@ -425,6 +435,29 @@ describe("ProfileMode — profile view", () => {
     );
   });
 
+  it("renders the Finish Time Progression section and chart", async () => {
+    renderProfile();
+    await waitFor(() =>
+      expect(screen.getByText("Finish Time Progression")).toBeInTheDocument()
+    );
+    expect(
+      screen.getByRole("img", { name: /finish time progression chart/i })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Apr '24")).toBeInTheDocument();
+    expect(screen.getByText("May '25")).toBeInTheDocument();
+  });
+
+  it("allows selecting a different progression metric", async () => {
+    renderProfile();
+    const selector = await screen.findByLabelText(/progression metric/i);
+    expect(selector).toHaveValue("overall");
+    expect(screen.getByRole("option", { name: "Run 1" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Burpee Broad Jump" })).toBeInTheDocument();
+
+    fireEvent.change(selector, { target: { value: "run1_time_min" } });
+    expect(selector).toHaveValue("run1_time_min");
+  });
+
   it("renders race location names in race history", async () => {
     renderProfile();
     await waitFor(() => {
@@ -575,6 +608,9 @@ describe("ProfileMode — profile with no races", () => {
         screen.getByText(/no race history found/i)
       ).toBeInTheDocument()
     );
+    expect(
+      screen.getByText(/no progression data available for this athlete yet/i)
+    ).toBeInTheDocument();
   });
 });
 

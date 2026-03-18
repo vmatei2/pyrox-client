@@ -1,3 +1,5 @@
+from datetime import datetime
+
 MACRO = """
 CREATE OR REPLACE MACRO time_to_min(t) AS (
   CASE
