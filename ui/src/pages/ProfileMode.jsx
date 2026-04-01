@@ -437,6 +437,14 @@ function getProgressionMetricValue(race, metricKey) {
 function FinishProgressionChart({ races }) {
   const [hovered, setHovered] = useState(null);
   const [selectedMetricKey, setSelectedMetricKey] = useState("overall");
+  const toggleTooltipPoint = (point) => {
+    setHovered((current) => {
+      if (!current) return point;
+      const currentId = current.result_id || current._originalIndex;
+      const nextId = point.result_id || point._originalIndex;
+      return currentId === nextId ? null : point;
+    });
+  };
 
   const sourceRaces = Array.isArray(races) ? races : [];
   const availableMetricOptions = PROGRESSION_METRIC_OPTIONS.filter((option) =>
@@ -567,6 +575,11 @@ function FinishProgressionChart({ races }) {
         role="img"
         aria-label="Finish time progression chart"
         onMouseLeave={() => setHovered(null)}
+        onPointerDown={(event) => {
+          if (event.target === event.currentTarget) {
+            setHovered(null);
+          }
+        }}
       >
         <defs>
           <linearGradient id="profile-progress-area" x1="0" y1="0" x2="0" y2="1">
@@ -658,6 +671,19 @@ function FinishProgressionChart({ races }) {
               strokeWidth="2"
               style={{ cursor: "pointer" }}
               onMouseEnter={() => setHovered(point)}
+              onPointerEnter={(event) => {
+                if (event.pointerType === "mouse") {
+                  setHovered(point);
+                }
+              }}
+              onPointerDown={(event) => {
+                if (event.pointerType === "mouse") {
+                  return;
+                }
+                event.preventDefault();
+                event.stopPropagation();
+                toggleTooltipPoint(point);
+              }}
               aria-label={`Race in ${label}: ${selectedMetricLabel} ${formatMinutes(point._metricValue)}`}
             >
               <title>{`Race in ${label}`}</title>

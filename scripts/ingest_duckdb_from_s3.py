@@ -48,12 +48,16 @@ DB_LOCATION_ALIASES = {
     "delhi": "new-delhi",
     "gent": "ghent",
     "london-excel": "london",
+    "london-olympia": "london",
+    "emea-london-olympia": "emea-championships",
     "singapore-expo": "singapore",
     "singapore-national-stadium": "singapore",
     "johannesburg-i": "johannesburg",
     "miami-beach": "miami",
     "chicago-navy-pier": "chicago",
     "ciudad-de-mexico": "mexico-city",
+    "washington-dc": "americas-championships",
+    "washington-d-c": "americas-championships",
     "belgium": "mechelen",
 }
 
@@ -103,6 +107,10 @@ def load_event_start_date_mapping(files_dir: Path | None = None) -> dict[tuple[i
     mapping: dict[tuple[int, str, int], date] = {}
 
     for path in json_files:
+        if not START_DATE_FILENAME_PATTERN.match(path.name):
+            logger.warning("Skipping unexpected start-date JSON filename: %s", path.name)
+            continue
+
         season = _parse_start_date_file_season(path)
         with path.open(encoding="utf-8") as handle:
             payload = json.load(handle)
