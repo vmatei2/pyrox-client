@@ -113,6 +113,11 @@ Return cache statistics and keys.
 This repository also ships a FastAPI reporting service (`pyrox_api_service/`) that
 is separate from the published `pyrox-client` wheel.
 
+The optional `pyrox-client[reporting]` extra installs the DuckDB Python library
+needed by `ReportingClient`, but it does not bundle a DuckDB database file. Use
+`ReportingClient(database="/path/to/pyrox_duckdb")` when you have a local
+generated database artifact.
+
 For athlete profile endpoints:
 
 - `GET /api/athletes/profile?name=<name>`

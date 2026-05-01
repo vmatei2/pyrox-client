@@ -57,6 +57,8 @@ DB_LOCATION_ALIASES = {
     "london-olympia": "london",
     "emea-london-olympia": "emea-championships",
     "apac-championship-brisbane": "apac-championships",
+    "lisboa": "lisbon",
+    "paris-gp": "paris",
     "singapore-expo": "singapore",
     "singapore-national-stadium": "singapore",
     "johannesburg-i": "johannesburg",

@@ -20,7 +20,8 @@ or
 pip install pyrox-client
 ```
 
-Reporting helpers that read the generated DuckDB database are optional:
+DuckDB-backed reporting helpers are optional. The extra installs the DuckDB
+Python library, but it does not bundle a database file:
 
 ```bash
 pip install "pyrox-client[reporting]"
@@ -90,11 +91,14 @@ except RaceNotFound as exc:
 
 ## Reporting Helpers
 
-The base install keeps the public client lightweight. Install the reporting extra
-before using `ReportingClient`:
+The base install keeps the public client lightweight. `ReportingClient` requires
+`pyrox-client[reporting]` and a local DuckDB database path; the package does not
+ship the generated database artifact.
 
 ```python
 from pyrox.reporting import ReportingClient
+
+reporting = ReportingClient(database="/path/to/pyrox_duckdb")
 ```
 
 ## Documentation

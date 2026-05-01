@@ -1,3 +1,26 @@
+"""Scrape HYRESULT monthly event listings into ingest start-date JSON.
+
+The ingest job expects start-date files beside ``scripts/ingest_duckdb_from_s3.py``
+with names like ``scripts/EVENT_START_DATES_SEASON_8.json``. This scraper writes
+``EVENT_START_DATES_SEASON_<season>.json`` to the current working directory, so
+run it from ``scripts/`` or move the generated file there before ingesting.
+
+Example:
+    cd scripts
+    uv run python scrape_hyresult_for_dates.py --season 8 --year 2026 \
+        --start-month 1 --end-month 7
+
+The output is a mapping from HYRESULT event titles to ISO datetimes. During
+ingest, event titles are normalized into ``(season, location, year)`` keys and
+matched against S3/DuckDB partition slugs. If the ingest runner later reports
+``Missing start_date mappings`` with a different ``location``/``normalized_target``,
+update ``DB_LOCATION_ALIASES`` in ``ingest_duckdb_from_s3.py`` to map the
+S3/DuckDB slug to the JSON-derived slug.
+
+This script overwrites the season JSON for only the scraped year/month range; it
+does not automatically merge multiple partial scrapes across years.
+"""
+
 import argparse
 import json
 import re

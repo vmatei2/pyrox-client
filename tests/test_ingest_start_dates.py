@@ -66,6 +66,8 @@ def test_apply_event_start_dates_populates_with_aliases():
         [
             (8, "delhi", 2025),
             (8, "london-excel", 2025),
+            (8, "lisboa", 2026),
+            (8, "paris-gp", 2026),
             (7, "miami-beach", 2025),
         ],
     )
@@ -75,6 +77,8 @@ def test_apply_event_start_dates_populates_with_aliases():
         {
             (8, "new-delhi", 2025): date(2025, 7, 19),
             (8, "london", 2025): date(2025, 12, 4),
+            (8, "lisbon", 2026): date(2026, 5, 1),
+            (8, "paris", 2026): date(2026, 4, 27),
             (7, "miami", 2025): date(2025, 4, 19),
         },
     )
@@ -89,7 +93,9 @@ def test_apply_event_start_dates_populates_with_aliases():
     assert rows == [
         (7, "miami-beach", 2025, date(2025, 4, 19)),
         (8, "delhi", 2025, date(2025, 7, 19)),
+        (8, "lisboa", 2026, date(2026, 5, 1)),
         (8, "london-excel", 2025, date(2025, 12, 4)),
+        (8, "paris-gp", 2026, date(2026, 4, 27)),
     ]
 
 
