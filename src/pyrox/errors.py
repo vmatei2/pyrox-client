@@ -8,6 +8,8 @@ Expose a small, predictable hierarchy so users can:
 
 from __future__ import annotations
 
+from typing import Optional
+
 
 __all__ = [
     "PyroxError",
@@ -29,6 +31,27 @@ class RaceNotFound(PyroxError, LookupError):
     Inherit from LookupError to feel natural in 'lookup' code paths.
     """
 
+    def __init__(
+        self,
+        message: str,
+        *,
+        season: Optional[int] = None,
+        location: Optional[str] = None,
+        year: Optional[int] = None,
+        available_seasons: Optional[list[int]] = None,
+        available_locations: Optional[list[str]] = None,
+        available_years: Optional[list[int]] = None,
+        suggestions: Optional[list[str]] = None,
+    ) -> None:
+        super().__init__(message)
+        self.season = season
+        self.location = location
+        self.year = year
+        self.available_seasons = available_seasons or []
+        self.available_locations = available_locations or []
+        self.available_years = available_years or []
+        self.suggestions = suggestions or []
+
 
 class AthleteNotFound(PyroxError, LookupError):
     """
@@ -36,5 +59,4 @@ class AthleteNotFound(PyroxError, LookupError):
 
     Inerit from LookupError to feel natural in 'lookup' code paths.
     """
-
 

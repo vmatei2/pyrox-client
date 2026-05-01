@@ -35,6 +35,9 @@ client = pyrox.PyroxClient()
 
 # Discover races
 races = client.list_races()
+seasons = client.list_seasons()
+locations = client.list_locations(season=8)
+years = client.list_years(season=8, location="london")
 
 # Fetch one race
 london = client.get_race(season=7, location="london")
@@ -62,11 +65,28 @@ athlete = client.get_athlete_in_race(
 ## Core API
 
 - `list_races(season: int | None = None, force_refresh: bool = False) -> pd.DataFrame`
+- `list_seasons(force_refresh: bool = False) -> list[int]`
+- `list_locations(season: int | None = None, force_refresh: bool = False) -> list[str]`
+- `list_years(season: int | None = None, location: str | None = None, force_refresh: bool = False) -> list[int]`
 - `get_race(season, location, year=None, gender=None, division=None, total_time=None, use_cache=True) -> pd.DataFrame`
 - `get_season(season, locations=None, gender=None, division=None, max_workers=8, use_cache=True) -> pd.DataFrame`
 - `get_athlete_in_race(season, location, athlete_name, year=None, gender=None, division=None, use_cache=True) -> pd.DataFrame`
 - `clear_cache(pattern="*") -> None`
 - `cache_info() -> dict`
+
+## Mistake Recovery
+
+`RaceNotFound` includes manifest-backed suggestions when a race cannot be found:
+
+```python
+from pyrox.errors import RaceNotFound
+
+try:
+    client.get_race(season=8, location="londn")
+except RaceNotFound as exc:
+    print(exc)
+    print(exc.suggestions)
+```
 
 ## Reporting Helpers
 

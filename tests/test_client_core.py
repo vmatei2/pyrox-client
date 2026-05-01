@@ -12,7 +12,7 @@ from pathlib import Path
 from types import MethodType
 from typing import List
 from unittest.mock import patch
-from src.pyrox.errors import AthleteNotFound
+from src.pyrox.errors import AthleteNotFound, RaceNotFound
 
 import pandas as pd
 import pytest
@@ -166,6 +166,83 @@ def test_list_races(client):
         )
         #  assert the manifest has been filtered to only return the specified season
         assert_frame_equal(df, expected)
+
+
+def test_manifest_discovery_helpers_return_sorted_values(client):
+    manifest_rows = [
+        {"season": 8, "location": "London", "year": 2026, "path": "london-2026"},
+        {"season": 7, "location": "Berlin", "year": 2025, "path": "berlin-2025"},
+        {"season": 8, "location": "london", "year": 2025, "path": "london-2025"},
+        {"season": 8, "location": "Manchester", "year": None, "path": "manchester"},
+        {"season": None, "location": None, "year": None, "path": "missing"},
+    ]
+    with patch.object(client, "_get_manifest", return_value=pd.DataFrame(manifest_rows)):
+        assert client.list_seasons() == [7, 8]
+        assert client.list_locations(season=8) == ["London", "Manchester"]
+        assert client.list_locations(season=999) == []
+        assert client.list_years(season=8, location="LONDON") == [2025, 2026]
+        assert client.list_years(season=999, location="london") == []
+
+
+def test_manifest_discovery_helpers_pass_force_refresh(client):
+    with patch.object(
+        client,
+        "_get_manifest",
+        return_value=pd.DataFrame([{"season": 8, "location": "London", "year": 2026}]),
+    ) as get_manifest:
+        assert client.list_seasons(force_refresh=True) == [8]
+        get_manifest.assert_called_with(force_refresh=True)
+
+
+def test_manifest_row_missing_season_raises_enriched_race_not_found(client):
+    manifest_rows = [
+        {"season": 7, "location": "London", "year": 2025, "path": "london"},
+        {"season": 8, "location": "Berlin", "year": 2026, "path": "berlin"},
+    ]
+    with patch.object(client, "_get_manifest", return_value=pd.DataFrame(manifest_rows)):
+        with pytest.raises(RaceNotFound) as exc_info:
+            client._manifest_row(season=9, location="London")
+
+    exc = exc_info.value
+    assert exc.season == 9
+    assert exc.location == "London"
+    assert exc.available_seasons == [7, 8]
+    assert exc.suggestions == []
+    assert "Available seasons" in str(exc)
+
+
+def test_manifest_row_misspelled_location_suggests_close_match(client):
+    manifest_rows = [
+        {"season": 8, "location": "london", "year": 2025, "path": "london"},
+        {"season": 8, "location": "manchester", "year": 2025, "path": "manchester"},
+    ]
+    with patch.object(client, "_get_manifest", return_value=pd.DataFrame(manifest_rows)):
+        with pytest.raises(RaceNotFound) as exc_info:
+            client._manifest_row(season=8, location="londn")
+
+    exc = exc_info.value
+    assert exc.season == 8
+    assert exc.location == "londn"
+    assert exc.available_locations == ["london", "manchester"]
+    assert exc.suggestions == ["london"]
+    assert "Did you mean" in str(exc)
+
+
+def test_manifest_row_wrong_year_lists_available_years(client):
+    manifest_rows = [
+        {"season": 8, "location": "london", "year": 2025, "path": "london-2025"},
+        {"season": 8, "location": "london", "year": 2026, "path": "london-2026"},
+    ]
+    with patch.object(client, "_get_manifest", return_value=pd.DataFrame(manifest_rows)):
+        with pytest.raises(RaceNotFound) as exc_info:
+            client._manifest_row(season=8, location="London", year=2024)
+
+    exc = exc_info.value
+    assert exc.season == 8
+    assert exc.location == "London"
+    assert exc.year == 2024
+    assert exc.available_years == [2025, 2026]
+    assert "Available years" in str(exc)
 
 
 def test_cache_manager_store_thread_safety(tmp_path):

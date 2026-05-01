@@ -9,6 +9,7 @@ import io
 import json
 import logging
 import time
+from difflib import get_close_matches
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from threading import RLock
@@ -206,21 +207,140 @@ class PyroxClient:
 
         return races.sort_values(["season", "location"]).reset_index(drop=True)
 
+    def list_seasons(self, force_refresh: bool = False) -> list[int]:
+        """Return sorted season values available in the manifest."""
+        df = self._get_manifest(force_refresh=force_refresh)
+        return self._unique_int_values(df, "season")
+
+    def list_locations(
+        self,
+        season: Optional[int] = None,
+        force_refresh: bool = False,
+    ) -> list[str]:
+        """Return sorted location values available in the manifest."""
+        df = self._get_manifest(force_refresh=force_refresh)
+        if season is not None and "season" in df.columns:
+            df = df[df["season"].eq(int(season))]
+        return self._unique_str_values(df, "location")
+
+    def list_years(
+        self,
+        season: Optional[int] = None,
+        location: Optional[str] = None,
+        force_refresh: bool = False,
+    ) -> list[int]:
+        """Return sorted calendar years available in the manifest."""
+        df = self._get_manifest(force_refresh=force_refresh)
+        if season is not None and "season" in df.columns:
+            df = df[df["season"].eq(int(season))]
+        if location is not None and "location" in df.columns:
+            df = df[df["location"].astype(str).str.casefold().eq(location.casefold())]
+        return self._unique_int_values(df, "year")
+
+    @staticmethod
+    def _unique_int_values(df: pd.DataFrame, column: str) -> list[int]:
+        if column not in df.columns:
+            return []
+        values = pd.to_numeric(df[column], errors="coerce").dropna()
+        return sorted({int(value) for value in values.tolist()})
+
+    @staticmethod
+    def _unique_str_values(df: pd.DataFrame, column: str) -> list[str]:
+        if column not in df.columns:
+            return []
+        values_by_key: dict[str, str] = {}
+        for value in df[column].dropna().tolist():
+            text = str(value).strip()
+            if text:
+                values_by_key.setdefault(text.casefold(), text)
+        return sorted(values_by_key.values(), key=str.casefold)
+
     def _manifest_row(
         self, season: int, location: str, year: Optional[int] = None
     ) -> pd.Series:
         df = self._get_manifest()
 
-        mask = df["season"].eq(int(season)) & df["location"].str.casefold().eq(
-            location.casefold()
-        )
+        season_mask = df["season"].eq(int(season))
+        location_mask = df["location"].astype(str).str.casefold().eq(location.casefold())
+        mask = season_mask & location_mask
         if year is not None:
             mask &= df["year"].eq(int(year))
         if not mask.any():
-            raise RaceNotFound(
-                f"No manifest entry for season={season}, location='{location}'"
-            )
+            raise self._build_manifest_not_found_error(df, season, location, year)
         return df.loc[mask].iloc[0]
+
+    def _build_manifest_not_found_error(
+        self,
+        df: pd.DataFrame,
+        season: int,
+        location: str,
+        year: Optional[int],
+    ) -> RaceNotFound:
+        available_seasons = self._unique_int_values(df, "season")
+        season_df = (
+            df[df["season"].eq(int(season))]
+            if "season" in df.columns
+            else df.iloc[0:0]
+        )
+
+        message_parts = [f"No manifest entry for season={season}, location='{location}'"]
+        if year is not None:
+            message_parts[0] += f", year={year}"
+
+        if season_df.empty:
+            if available_seasons:
+                seasons_text = ", ".join(str(value) for value in available_seasons)
+                message_parts.append(f"Available seasons: {seasons_text}.")
+            return RaceNotFound(
+                " ".join(message_parts),
+                season=season,
+                location=location,
+                year=year,
+                available_seasons=available_seasons,
+            )
+
+        available_locations = self._unique_str_values(season_df, "location")
+        location_lookup = {value.casefold(): value for value in available_locations}
+        suggestions = [
+            location_lookup[value]
+            for value in get_close_matches(
+                location.casefold(),
+                list(location_lookup),
+                n=3,
+                cutoff=0.6,
+            )
+        ]
+
+        location_df = season_df[
+            season_df["location"].astype(str).str.casefold().eq(location.casefold())
+        ]
+        if location_df.empty:
+            if suggestions:
+                message_parts.append(f"Did you mean: {', '.join(suggestions)}?")
+            return RaceNotFound(
+                " ".join(message_parts),
+                season=season,
+                location=location,
+                year=year,
+                available_seasons=available_seasons,
+                available_locations=available_locations,
+                suggestions=suggestions,
+            )
+
+        available_years = self._unique_int_values(location_df, "year")
+        if year is not None and available_years:
+            years_text = ", ".join(str(value) for value in available_years)
+            message_parts.append(f"Available years for {location}: {years_text}.")
+
+        return RaceNotFound(
+            " ".join(message_parts),
+            season=season,
+            location=location,
+            year=year,
+            available_seasons=available_seasons,
+            available_locations=available_locations,
+            available_years=available_years,
+        )
 
     def _s3_key_from_uri(self, s3_uri: str) -> str:
         if s3_uri.startswith("s3://"):
@@ -346,7 +466,7 @@ class PyroxClient:
 
         try:
             df = self._get_race_from_cdn(season, location, year, gender, division)
-        except (RaceNotFound, FileNotFoundError) as e:
+        except FileNotFoundError as e:
             raise FileNotFoundError(
                 f"Read failed for season{season}, location={location} - {e}"
             ) from e
