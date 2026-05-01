@@ -13,6 +13,29 @@ client = PyroxClient()
 
 Return a DataFrame of available races. Filter by season when provided.
 
+### `list_seasons(force_refresh: bool = False)`
+
+Return sorted season values available in the manifest.
+
+### `list_locations(season: int | None = None, force_refresh: bool = False)`
+
+Return sorted location values available in the manifest. When `season` is
+provided, results are limited to that season. Returns an empty list if no
+locations match.
+
+### `list_years(...)`
+
+```commandline
+list_years(
+    season: int | None = None,
+    location: str | None = None,
+    force_refresh: bool = False,
+) -> list[int]
+```
+
+Return sorted calendar years available in the manifest. Location matching is
+case-insensitive. Returns an empty list if no years match.
+
 ### `get_race(...)`
 
 ```commandline
@@ -33,6 +56,18 @@ Key behaviors:
 - Supports strict time windows using `total_time`.
 
 Division values seen in the dataset include `open`, `pro`, and `pro_doubles`.
+
+If the manifest lookup fails, `RaceNotFound` includes discovery context such as
+available seasons, available years, and close location suggestions:
+
+```commandline
+from pyrox.errors import RaceNotFound
+
+try:
+    client.get_race(season=8, location="londn")
+except RaceNotFound as exc:
+    print(exc.suggestions)
+```
 
 ### `get_athlete_in_race(...)`
 

@@ -29,6 +29,14 @@ races = client.list_races(season=7)
 print(races.head())
 ```
 
+For lightweight notebook discovery, use the manifest-backed helpers:
+
+```commandline
+seasons = client.list_seasons()
+locations = client.list_locations(season=8)
+years = client.list_years(season=8, location="london")
+```
+
 ## Load a single race
 
 ```commandline
