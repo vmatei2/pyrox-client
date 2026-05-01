@@ -1,10 +1,12 @@
 *.pyc
 
 /src/pyrox/__pycache__/
+__pycache__/
 
 site/
+dist/
 
-.env    
+.env
 
 .vscode/
 
@@ -13,3 +15,11 @@ site/
 docs/issues/
 
 ui/.env.capacitor
+ui/.env
+ui/node_modules/
+ui/ios/DerivedData/
+
+.venv*/
+node_modules/
+pyrox_duckdb
+test.sql
