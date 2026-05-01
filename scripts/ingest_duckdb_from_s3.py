@@ -45,11 +45,18 @@ EVENT_KEY_PATTERN = re.compile(
 )
 
 DB_LOCATION_ALIASES = {
+    # S3 parquet locations come from partition slugs, while start-date JSON keys
+    # come from HYRESULT event names normalized by this script. When the runner
+    # fails with "Missing start_date mappings" for a tuple like
+    # (season, location, year, normalized_target), the S3 location exists in
+    # race_results but no JSON-derived key matches it. Add an alias here when the
+    # S3 slug and event-name slug are the same event under different names.
     "delhi": "new-delhi",
     "gent": "ghent",
     "london-excel": "london",
     "london-olympia": "london",
     "emea-london-olympia": "emea-championships",
+    "apac-championship-brisbane": "apac-championships",
     "singapore-expo": "singapore",
     "singapore-national-stadium": "singapore",
     "johannesburg-i": "johannesburg",
