@@ -20,6 +20,12 @@ or
 pip install pyrox-client
 ```
 
+Reporting helpers that read the generated DuckDB database are optional:
+
+```bash
+pip install "pyrox-client[reporting]"
+```
+
 ## Quickstart
 
 ```python
@@ -61,6 +67,15 @@ athlete = client.get_athlete_in_race(
 - `get_athlete_in_race(season, location, athlete_name, year=None, gender=None, division=None, use_cache=True) -> pd.DataFrame`
 - `clear_cache(pattern="*") -> None`
 - `cache_info() -> dict`
+
+## Reporting Helpers
+
+The base install keeps the public client lightweight. Install the reporting extra
+before using `ReportingClient`:
+
+```python
+from pyrox.reporting import ReportingClient
+```
 
 ## Documentation
 

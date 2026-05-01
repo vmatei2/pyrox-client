@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""Verify that the published wheel exposes only the intended pyrox modules.
+"""Verify that published artifacts expose only the intended pyrox modules.
 
 Usage:
     python scripts/verify_wheel_contents.py
     python scripts/verify_wheel_contents.py dist/pyrox_client-0.2.3-py3-none-any.whl
+    python scripts/verify_wheel_contents.py --sdist dist/pyrox_client-0.2.3.tar.gz
     python scripts/verify_wheel_contents.py --no-strict
 
 Behavior:
     - Ensures required modules exist in the wheel.
     - Fails if forbidden modules/packages are present.
+    - Fails if the sdist contains app, virtualenv, node, or local build artifacts.
     - In strict mode (default), fails if unexpected ``pyrox/*.py`` modules exist.
 """
 
@@ -16,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import tarfile
 import zipfile
 from pathlib import Path
 
@@ -33,6 +36,23 @@ FORBIDDEN_PATH_PREFIXES = (
 )
 
 ALLOWED_MODULES = REQUIRED_MODULES
+
+FORBIDDEN_SDIST_PARTS = {
+    ".venv",
+    ".venv-pyrox-test",
+    "__pycache__",
+    "dist",
+    "docs",
+    "example_notebooks",
+    "node_modules",
+    "pyrox_api_service",
+    "scripts",
+    "ui",
+}
+
+FORBIDDEN_SDIST_NAMES = {
+    "pyrox_duckdb",
+}
 
 
 def _default_wheel_path(dist_dir: Path) -> Path:
@@ -95,6 +115,50 @@ def verify_wheel(path: Path, strict: bool = True) -> int:
     return 0
 
 
+def _default_sdist_path(dist_dir: Path) -> Path:
+    sdists = sorted(dist_dir.glob("*.tar.gz"))
+    if not sdists:
+        raise FileNotFoundError(
+            f"No sdist found in '{dist_dir}'. Build first, e.g. `uv build`."
+        )
+    return sdists[-1]
+
+
+def _strip_sdist_root(name: str) -> Path:
+    path = Path(name)
+    parts = path.parts
+    if len(parts) <= 1:
+        return Path("")
+    return Path(*parts[1:])
+
+
+def verify_sdist(path: Path) -> int:
+    with tarfile.open(path, "r:gz") as sdist:
+        names = sdist.getnames()
+
+    forbidden = []
+    for name in names:
+        relative = _strip_sdist_root(name)
+        parts = set(relative.parts)
+        if parts & FORBIDDEN_SDIST_PARTS or relative.name in FORBIDDEN_SDIST_NAMES:
+            forbidden.append(name)
+
+    print(f"Inspecting sdist: {path}")
+    print(f"Detected sdist entries: {len(names)}")
+
+    if forbidden:
+        print("\nVERIFICATION FAILED")
+        print("\nForbidden sdist entries found:")
+        for name in sorted(forbidden)[:50]:
+            print(f"  - {name}")
+        if len(forbidden) > 50:
+            print(f"  ... and {len(forbidden) - 50} more")
+        return 1
+
+    print("\nVERIFICATION PASSED")
+    return 0
+
+
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Verify that a pyrox wheel exposes only the intended modules.",
@@ -102,6 +166,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
             "Examples:\n"
             "  python scripts/verify_wheel_contents.py\n"
             "  python scripts/verify_wheel_contents.py dist/pyrox_client-0.2.3-py3-none-any.whl\n"
+            "  python scripts/verify_wheel_contents.py --sdist\n"
             "  python scripts/verify_wheel_contents.py --no-strict"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -123,13 +188,35 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         action="store_true",
         help="Allow additional pyrox modules beyond the current allowlist.",
     )
+    parser.add_argument(
+        "--sdist",
+        nargs="?",
+        const=True,
+        default=None,
+        help=(
+            "Also verify an sdist. Provide a path or omit the value to use the "
+            "newest .tar.gz in --dist-dir."
+        ),
+    )
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv or sys.argv[1:])
+    status = 0
+
     wheel_path = args.wheel or _default_wheel_path(args.dist_dir)
-    return verify_wheel(wheel_path, strict=not args.no_strict)
+    status |= verify_wheel(wheel_path, strict=not args.no_strict)
+
+    if args.sdist is not None:
+        sdist_path = (
+            _default_sdist_path(args.dist_dir)
+            if args.sdist is True
+            else Path(args.sdist)
+        )
+        status |= verify_sdist(sdist_path)
+
+    return status
 
 
 if __name__ == "__main__":

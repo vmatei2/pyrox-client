@@ -28,26 +28,25 @@ This script:
 - creates a commit
 - creates tag `v<version>`
 
-## 2) Validate Build Artifacts Locally
+## 2) Validate Locally Before Releasing
 
-Build a wheel:
-
-```bash
-uv build --wheel
-```
-
-Validate wheel contents:
+Run the same core checks the release workflow relies on:
 
 ```bash
-python scripts/verify_wheel_contents.py
+uv run --with pytest python -m pytest -q
+uv build
+uv run python scripts/verify_wheel_contents.py --sdist
 ```
 
-This confirms the published wheel contains only the intended package surface.
+The package verifier checks both artifacts:
+
+- the wheel contains only the intended `pyrox` package surface
+- the source distribution does not include local app, virtualenv, node, or build
+  artifacts
 
 ## 3) Optional Local Quality Checks
 
 ```bash
-pytest -q
 ruff check .
 ```
 
@@ -70,4 +69,3 @@ Publishing is handled by `.github/workflows/release.yml`.
 git tag -d v<version>
 git push --delete origin v<version>
 ```
-

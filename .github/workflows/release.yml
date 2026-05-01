@@ -25,6 +25,9 @@ jobs:
       - name: Build package
         run: uv build
 
+      - name: Verify package artifacts
+        run: uv run python scripts/verify_wheel_contents.py --sdist
+
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
