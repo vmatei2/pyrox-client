@@ -26,6 +26,7 @@ calendar years.
 import argparse
 import json
 import re
+import unicodedata
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -53,6 +54,24 @@ MONTH_ABBR = {
 DATE_RE = re.compile(
     r"\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep(?:t)?|Oct|Nov|Dec)\s+(\d{1,2})"
 )
+EVENT_KEY_RE = re.compile(
+    r"^\s*HYROX\s+(?P<city>.+?)\s+(?P<year>20\d{2})(?:\s*/.*)?\s*$",
+    re.IGNORECASE,
+)
+
+
+def normalize_location_slug(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value)
+    normalized = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+    normalized = normalized.replace(".", " ")
+    return re.sub(r"[^a-z0-9]+", "-", normalized.casefold()).strip("-")
+
+
+def event_identity(title: str) -> tuple[str, int] | None:
+    match = EVENT_KEY_RE.match(title)
+    if not match:
+        return None
+    return normalize_location_slug(match.group("city")), int(match.group("year"))
 
 
 def parse_start_date(date_text: str, year: int) -> datetime | None:
@@ -171,23 +190,63 @@ def scrape_month(year: int, month: int, season: int) -> dict[str, datetime]:
         if dt is None:
             dt = parse_event_page_start_date(event_url, year)
 
-        if dt and title not in events:
-            events[title] = dt
+        if dt:
+            merge_event_date(events, title, dt)
             print(f"    {title} → {dt.date()}")
         elif dt is None:
             print(f"    [WARN] Could not parse date for '{title}' — card text: {card_text_clean[:80]!r}")
 
-    return events
+    return dedupe_event_dates(events)
 
 
 def save_events_dates(event_dates: dict[str, datetime], path: str) -> None:
     json_ready = {event: dt.isoformat() for event, dt in event_dates.items()}
-    with open(path, "w") as f:
-        json.dump(json_ready, f, indent=2)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(json_ready, f, indent=2, ensure_ascii=False)
+        f.write("\n")
 
 
 def sort_events_by_date(event_dates: dict[str, datetime]) -> dict[str, datetime]:
     return dict(sorted(event_dates.items(), key=lambda kv: kv[1]))
+
+
+def prefer_event_title(current: str, candidate: str) -> str:
+    if "/" in candidate and "/" not in current:
+        return candidate
+    if "/" in current and "/" not in candidate:
+        return current
+    return min(current, candidate, key=lambda value: (len(value), value.casefold()))
+
+
+def merge_event_date(
+    event_dates: dict[str, datetime],
+    title: str,
+    dt: datetime,
+) -> dict[str, datetime]:
+    identity = event_identity(title)
+    if identity is None:
+        event_dates.setdefault(title, dt)
+        return event_dates
+
+    for current_title, current_dt in list(event_dates.items()):
+        if event_identity(current_title) != identity:
+            continue
+
+        keep_title = prefer_event_title(current_title, title)
+        keep_dt = min(current_dt, dt)
+        event_dates.pop(current_title)
+        event_dates[keep_title] = keep_dt
+        return event_dates
+
+    event_dates[title] = dt
+    return event_dates
+
+
+def dedupe_event_dates(event_dates: dict[str, datetime]) -> dict[str, datetime]:
+    deduped: dict[str, datetime] = {}
+    for title, dt in event_dates.items():
+        merge_event_date(deduped, title, dt)
+    return deduped
 
 
 def load_existing_event_dates(path: Path) -> dict[str, datetime]:
@@ -205,7 +264,7 @@ def load_existing_event_dates(path: Path) -> dict[str, datetime]:
         if not isinstance(title, str) or not isinstance(raw_date, str):
             raise RuntimeError(f"Invalid event date entry in {path}: {title!r}")
         events[title] = datetime.fromisoformat(raw_date)
-    return events
+    return dedupe_event_dates(events)
 
 
 def _parse_args() -> argparse.Namespace:
@@ -238,11 +297,8 @@ def main() -> None:
         month_name = datetime(args.year, month, 1).strftime("%B")
         print(f"\n── {month_name} {args.year} ──")
         month_events = scrape_month(args.year, month, args.season)
-        # Keep the earliest date if an event spans two calendar months
-        # and appears in both month pages.
         for title, dt in month_events.items():
-            if title not in all_events or dt < all_events[title]:
-                all_events[title] = dt
+            merge_event_date(all_events, title, dt)
 
         all_events = sort_events_by_date(all_events)
         save_events_dates(all_events, str(output_path))
