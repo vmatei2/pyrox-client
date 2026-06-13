@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "pyrox": {
+      "type": "http",
+      "url": "https://pyrox-api.fly.dev/mcp"
+    }
+  }
+}
