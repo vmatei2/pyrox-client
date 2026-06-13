@@ -72,4 +72,7 @@ async def _lifespan(_app):
 
 
 app.router.lifespan_context = _lifespan
+# Rate limiting is applied once, by RateLimitMiddleware on the REST app (app.py),
+# which wraps this mount too — do NOT add the middleware here as well, or every
+# MCP request double-counts. See pyrox_api_service/ratelimit.py.
 app.mount("/mcp", mcp_server.streamable_http_app())

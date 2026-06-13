@@ -22,6 +22,7 @@ except ModuleNotFoundError:  # pragma: no cover - direct repository execution fa
     from src.pyrox.errors import AthleteNotFound
 
 from pyrox_api_service.database import DatabaseConfigurationError
+from pyrox_api_service.ratelimit import RateLimitMiddleware
 from pyrox_api_service.reporting_queries import (
     DISTRIBUTION_SMALL_SAMPLE_MIN_N as DISTRIBUTION_SMALL_SAMPLE_MIN_N,
     SEGMENT_CONFIG as SEGMENT_CONFIG,
@@ -41,7 +42,10 @@ def _parse_origins(value: str) -> list[str]:
 def _raise_http(exc: Exception) -> None:
     """Map expected query/runtime exceptions to FastAPI HTTP errors."""
     if isinstance(exc, DatabaseConfigurationError):
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        # Log the real cause (it contains the DuckDB path); return a generic
+        # message so the filesystem layout is not leaked to clients.
+        logger.error("database configuration error: %s", exc)
+        raise HTTPException(status_code=500, detail="internal server error") from exc
     if isinstance(exc, AthleteNotFound):
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     if isinstance(exc, ReportingQueryError):
@@ -62,6 +66,9 @@ def _query(call, *args, **kwargs):
 app = FastAPI(title="Pyrox Reporting API", version="0.1.0")
 queries = ReportingQueries()
 allowed_origins = _parse_origins(os.getenv("PYROX_API_ALLOW_ORIGINS", DEFAULT_ORIGINS))
+# Added before CORS so a 429 still flows back out through CORSMiddleware and
+# carries the Access-Control headers a browser client needs to read it.
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,

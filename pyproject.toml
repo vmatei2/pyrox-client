@@ -26,6 +26,7 @@ reporting = [
 api = [
     "duckdb>=1.4.3",
     "fastapi>=0.115.0",
+    "limits>=3.0",
     "mcp>=1.2.0",
     "numpy>=1.26.4",
     "uvicorn[standard]>=0.30.0",
