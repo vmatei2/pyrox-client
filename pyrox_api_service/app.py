@@ -54,6 +54,17 @@ _PROFILE_TIME_COLUMN_MAP = {
     "sandbaglunges":   "sandbagLunges_time_min",
     "wallballs":       "wallBalls_time_min",
 }
+# Below this cohort size, a distribution's percentile tails are unstable, so we
+# flag the result and suppress the fragile tail estimates.
+DISTRIBUTION_SMALL_SAMPLE_MIN_N = 30
+
+# Cohort-distribution: maps a friendly metric key -> race_results column name.
+# Reuses the profile station map (overall + stations) and adds the eight runs.
+_DISTRIBUTION_METRIC_COLUMN_MAP = {
+    **_PROFILE_TIME_COLUMN_MAP,
+    **{f"run{number}": f"run{number}_time_min" for number in range(1, 9)},
+}
+
 _PROFILE_RUN_ROXZONE_KEY = "runplusroxzone"
 _PROFILE_PERCENTILE_COHORT_COLUMNS = {"division", "gender"}
 _PROFILE_RACE_PROGRESS_COLUMNS = (
@@ -887,6 +898,103 @@ def planner_summary(
         },
         "count": int(len(df)),
         "segments": segments,
+    }
+
+
+def _resolve_distribution_metric(metric: str) -> tuple[str, str]:
+    """Map a friendly metric key to (column, normalized_key); 400 if unknown."""
+    key = _normalize_split_key(metric)
+    column = _DISTRIBUTION_METRIC_COLUMN_MAP.get(key)
+    if column is None:
+        raise HTTPException(status_code=400, detail=f"Unknown metric '{metric}'.")
+    return column, key
+
+
+@app.get("/api/distribution")
+def distribution(
+    gender: str = Query(..., min_length=1),
+    season: Optional[int] = Query(None, ge=1),
+    division: Optional[str] = Query(None),
+    age_group: Optional[str] = Query(None),
+    location: Optional[str] = Query(None),
+    metric: str = Query("overall"),
+    bins: int = Query(22, ge=5, le=80),
+) -> dict:
+    reporting = _get_reporting()
+    con = reporting._ensure_connection()
+
+    column, metric_key = _resolve_distribution_metric(metric)
+    normalized_division = _normalize_optional_text(division) or "open"
+    normalized_gender = str(gender).strip()
+
+    clauses = ["lower(division) = ?"]
+    params: list[object] = [normalized_division.casefold()]
+
+    gender_key = normalized_gender.casefold()
+    if gender_key in {"m", "male"}:
+        clauses.append("lower(gender) IN (?, ?)")
+        params.extend(["m", "male"])
+    elif gender_key in {"f", "female"}:
+        clauses.append("lower(gender) IN (?, ?)")
+        params.extend(["f", "female"])
+    else:
+        clauses.append("lower(gender) = ?")
+        params.append(gender_key)
+
+    normalized_age_group = _normalize_optional_text(age_group)
+    if normalized_age_group is not None:
+        clauses.append("lower(age_group) = ?")
+        params.append(normalized_age_group.casefold())
+    normalized_location = _normalize_optional_text(location)
+    if normalized_location is not None:
+        clauses.append("lower(location) = ?")
+        params.append(normalized_location.casefold())
+
+    resolved_season = int(season) if season is not None else None
+    if resolved_season is None:
+        latest = con.execute(
+            f"SELECT max(season) FROM race_results WHERE {' AND '.join(clauses)}",
+            params,
+        ).fetchone()
+        resolved_season = int(latest[0]) if latest and latest[0] is not None else None
+    if resolved_season is not None:
+        clauses.append("season = ?")
+        params.append(resolved_season)
+
+    where_sql = " AND ".join(clauses)
+    df = con.execute(
+        f"SELECT {column} AS value FROM race_results WHERE {where_sql}",
+        params,
+    ).fetchdf()
+
+    min_value = _min_value_for_segment(column)
+    histogram = _build_histogram(df["value"], bins=bins, min_value=min_value)
+    stats = _describe_series(df["value"], min_value=min_value)
+    n = 0 if stats is None else int(stats["count"])
+
+    small_sample = 0 < n < DISTRIBUTION_SMALL_SAMPLE_MIN_N
+    note = None
+    if small_sample and stats is not None:
+        stats = {**stats, "p10": None, "p90": None}
+        note = (
+            f"Small cohort (n={n} < {DISTRIBUTION_SMALL_SAMPLE_MIN_N}): "
+            "percentile tails are suppressed and estimates are unstable."
+        )
+
+    return {
+        "metric": metric_key,
+        "cohort": {
+            "season": resolved_season,
+            "division": normalized_division,
+            "gender": normalized_gender,
+            "age_group": normalized_age_group,
+            "location": normalized_location,
+        },
+        "n": n,
+        "small_sample": small_sample,
+        "note": note,
+        "histogram": histogram,
+        "stats": stats,
     }
 
 

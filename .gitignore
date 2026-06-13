@@ -13,6 +13,7 @@ dist/
 .idea/
 
 docs/issues/
+docs/PROJECT_STATE.md
 
 ui/.env.capacitor
 ui/.env

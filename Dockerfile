@@ -17,4 +17,5 @@ EXPOSE 8080
 
 ENV PYROX_DUCKDB_PATH=/app/pyrox_duckdb
 
-CMD ["uvicorn", "pyrox_api_service.app:app", "--host", "0.0.0.0", "--port", "8080"]
+# Serve the composed app: REST API (/api/*) plus the mounted MCP server (/mcp).
+CMD ["uvicorn", "pyrox_api_service.mcp_app:app", "--host", "0.0.0.0", "--port", "8080"]

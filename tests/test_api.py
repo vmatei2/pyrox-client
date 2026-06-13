@@ -1269,3 +1269,212 @@ def test_profile_name_match_is_case_insensitive(tmp_path, monkeypatch):
     resp = client.get("/api/athletes/profile", params={"name": "sarah johnson"})
     assert resp.status_code == 200
     assert resp.json()["summary"]["total_races"] == 2
+
+
+# ── Cohort distribution ─────────────────────────────────────────────────────────
+
+
+def _seed_distribution_tables(con: duckdb.DuckDBPyConnection) -> None:
+    """Seed cohort rows for /api/distribution: multiple seasons, divisions, genders."""
+    con.execute(
+        """
+        CREATE TABLE race_results (
+            result_id VARCHAR,
+            season INTEGER,
+            location VARCHAR,
+            year INTEGER,
+            division VARCHAR,
+            gender VARCHAR,
+            age_group VARCHAR,
+            total_time_min DOUBLE,
+            skiErg_time_min DOUBLE
+        );
+        """
+    )
+    con.executemany(
+        "INSERT INTO race_results VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+            # season 8, open, female cohort (the default-latest target) -> 3 rows
+            ("d1", 8, "london", 2024, "open", "F", "30-34", 60.0, 4.0),
+            ("d2", 8, "paris", 2024, "open", "F", "30-34", 62.0, 4.2),
+            ("d3", 8, "london", 2024, "open", "female", "35-39", 64.0, 4.4),
+            # season 8, open, male cohort (different gender, must be excluded)
+            ("d4", 8, "london", 2024, "open", "M", "30-34", 55.0, 3.8),
+            # season 7, open, female (older season; excluded when default latest=8)
+            ("d5", 7, "london", 2023, "open", "F", "30-34", 70.0, 5.0),
+            # season 8, pro, female (different division, must be excluded from open)
+            ("d6", 8, "london", 2024, "pro", "F", "30-34", 50.0, 3.5),
+        ],
+    )
+
+
+def test_distribution_endpoint_returns_cohort_histogram(tmp_path, monkeypatch):
+    """Distribution should bin total times for the requested season/division/gender cohort."""
+    db_path = tmp_path / "distribution.db"
+    con = _create_db(db_path)
+    _seed_distribution_tables(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+    resp = client.get(
+        "/api/distribution",
+        params={"season": 8, "division": "open", "gender": "female"},
+    )
+
+    assert resp.status_code == 200
+    payload = resp.json()
+    assert payload["cohort"]["season"] == 8
+    assert payload["cohort"]["division"] == "open"
+    assert payload["cohort"]["gender"] == "female"
+    assert payload["n"] == 3
+    assert payload["histogram"]["count"] == 3
+
+
+def test_distribution_defaults_to_latest_season_for_cohort(tmp_path, monkeypatch):
+    """Omitting season should scope to the latest season available for that cohort."""
+    db_path = tmp_path / "distribution-latest-season.db"
+    con = _create_db(db_path)
+    _seed_distribution_tables(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+    resp = client.get(
+        "/api/distribution",
+        params={"division": "open", "gender": "female"},
+    )
+
+    assert resp.status_code == 200
+    payload = resp.json()
+    # season 8 is latest; the season-7 row (d5) must be excluded.
+    assert payload["cohort"]["season"] == 8
+    assert payload["n"] == 3
+
+
+def test_distribution_defaults_division_to_open(tmp_path, monkeypatch):
+    """Omitting division should default to 'open' and exclude other divisions."""
+    db_path = tmp_path / "distribution-default-division.db"
+    con = _create_db(db_path)
+    _seed_distribution_tables(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+    resp = client.get("/api/distribution", params={"gender": "female"})
+
+    assert resp.status_code == 200
+    payload = resp.json()
+    assert payload["cohort"]["division"] == "open"
+    # the season-8 pro row (d6) must be excluded.
+    assert payload["n"] == 3
+
+
+def test_distribution_requires_gender(tmp_path, monkeypatch):
+    """Gender is mandatory: a gender-mixed distribution would be confounded."""
+    db_path = tmp_path / "distribution-no-gender.db"
+    con = _create_db(db_path)
+    _seed_distribution_tables(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+    resp = client.get("/api/distribution", params={"season": 8, "division": "open"})
+    assert resp.status_code == 422
+
+
+def test_distribution_flags_small_sample_and_suppresses_tails(tmp_path, monkeypatch):
+    """A thin cohort (n<30) is flagged and its fragile percentiles are suppressed."""
+    db_path = tmp_path / "distribution-small-sample.db"
+    con = _create_db(db_path)
+    _seed_distribution_tables(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+    resp = client.get(
+        "/api/distribution",
+        params={"season": 8, "division": "open", "gender": "female"},
+    )
+
+    assert resp.status_code == 200
+    payload = resp.json()
+    assert payload["n"] == 3
+    assert payload["small_sample"] is True
+    # fragile tail percentiles are suppressed, robust central stats are kept.
+    assert payload["stats"]["p10"] is None
+    assert payload["stats"]["p90"] is None
+    assert payload["stats"]["median"] is not None
+    assert payload["stats"]["mean"] is not None
+    assert payload["note"]
+
+
+def test_distribution_large_cohort_is_not_flagged(tmp_path, monkeypatch):
+    """A cohort at/above the threshold keeps full stats and is not flagged."""
+    db_path = tmp_path / "distribution-large-cohort.db"
+    con = _create_db(db_path)
+    con.execute(
+        """
+        CREATE TABLE race_results (
+            result_id VARCHAR, season INTEGER, division VARCHAR,
+            gender VARCHAR, total_time_min DOUBLE
+        );
+        """
+    )
+    con.executemany(
+        "INSERT INTO race_results VALUES (?, ?, ?, ?, ?)",
+        [(f"b{i}", 8, "open", "M", 55.0 + i) for i in range(40)],
+    )
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+    resp = client.get(
+        "/api/distribution",
+        params={"season": 8, "division": "open", "gender": "male"},
+    )
+
+    assert resp.status_code == 200
+    payload = resp.json()
+    assert payload["n"] == 40
+    assert payload["small_sample"] is False
+    assert payload["stats"]["p10"] is not None
+    assert payload["stats"]["p90"] is not None
+
+
+def test_distribution_metric_selects_station_column(tmp_path, monkeypatch):
+    """A station metric should bin that station's column, not total time."""
+    db_path = tmp_path / "distribution-metric.db"
+    con = _create_db(db_path)
+    _seed_distribution_tables(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+    resp = client.get(
+        "/api/distribution",
+        params={"season": 8, "division": "open", "gender": "female", "metric": "skierg"},
+    )
+
+    assert resp.status_code == 200
+    payload = resp.json()
+    assert payload["metric"] == "skierg"
+    # seeded skiErg values for the cohort are 4.0, 4.2, 4.4
+    assert payload["stats"]["min"] == pytest.approx(4.0)
+    assert payload["stats"]["max"] == pytest.approx(4.4)
+
+
+def test_distribution_rejects_unknown_metric(tmp_path, monkeypatch):
+    """An unrecognised metric should be a 400, not a silent fallback."""
+    db_path = tmp_path / "distribution-bad-metric.db"
+    con = _create_db(db_path)
+    _seed_distribution_tables(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+    resp = client.get(
+        "/api/distribution",
+        params={"season": 8, "gender": "female", "metric": "bogus"},
+    )
+    assert resp.status_code == 400
