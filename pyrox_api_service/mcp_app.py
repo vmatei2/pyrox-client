@@ -19,6 +19,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 
 from pyrox_api_service import mcp_tools
 from pyrox_api_service.app import app
+from pyrox_api_service.ratelimit import RateLimitMiddleware
 
 
 def _split_env(name: str) -> list[str]:
@@ -72,4 +73,11 @@ async def _lifespan(_app):
 
 
 app.router.lifespan_context = _lifespan
-app.mount("/mcp", mcp_server.streamable_http_app())
+
+# Rate limit external MCP callers at this boundary. The REST limiter cannot see
+# them: the MCP tools reach the REST app in-process (no Fly-Client-IP header),
+# which the limiter intentionally exempts. The same shared limiter is used, so a
+# client's MCP and REST calls count against one per-IP window.
+mcp_sub = mcp_server.streamable_http_app()
+mcp_sub.add_middleware(RateLimitMiddleware)
+app.mount("/mcp", mcp_sub)
