@@ -101,6 +101,39 @@ from pyrox.reporting import ReportingClient
 reporting = ReportingClient(database="/path/to/pyrox_duckdb")
 ```
 
+## MCP Server
+
+The hosted reporting service exposes an MCP server over streamable HTTP at
+`https://pyrox-api.fly.dev/mcp`. It lets Claude answer natural-language questions
+against the HYROX dataset through a small set of intent-shaped tools:
+`list_filters`, `find_athlete`, `get_distribution`, `get_rankings`,
+`get_race_report`, `get_deepdive`, and `get_athlete_profile`.
+
+Add it to Claude Code with the `claude mcp add` command:
+
+```bash
+claude mcp add --transport http pyrox https://pyrox-api.fly.dev/mcp
+```
+
+Then verify the connection:
+
+```bash
+claude mcp list
+```
+
+By default this registers the server at the local (project) scope. Use
+`--scope user` to make it available across all your projects:
+
+```bash
+claude mcp add --transport http --scope user pyrox https://pyrox-api.fly.dev/mcp
+```
+
+To remove it:
+
+```bash
+claude mcp remove pyrox
+```
+
 ## Documentation
 
 - Live docs: https://vmatei2.github.io/pyrox-client/
