@@ -38,7 +38,6 @@ logging.basicConfig(
 logger = logging.getLogger("ingest_duckdb")
 
 INTEGRITY_FANOUT_RATIO = 1.9
-INTEGRITY_ROXZONE_ZERO_FRAC = 0.95
 INTEGRITY_MIN_ROSTER = 20
 
 START_DATE_FILE_PATTERN = "EVENT_START_DATES_SEASON_*.json"
@@ -173,11 +172,12 @@ def _build_in_clause_placeholders(values: list[int]) -> str:
 
 
 def assert_race_results_integrity(con: duckdb.DuckDBPyConnection) -> list[str]:
-    """Return human-readable phantom-duplicate violations from race_results.
+    """Return human-readable duplicate-roster violations from race_results.
 
     Empty list means safe to build. Thresholds mirror the upstream scraper's
     assert_event_integrity; keep them in sync with
-    hyrox_analysis/scraping_code/hyrox_web_scraping.py.
+    hyrox_analysis/scraping_code/hyrox_web_scraping.py. Explicit zero Roxzone
+    values are allowed downstream; only cross-division fan-out blocks the build.
     """
     rows = con.execute(
         f"""
@@ -188,8 +188,7 @@ def assert_race_results_integrity(con: duckdb.DuckDBPyConnection) -> list[str]:
                 CAST(year AS INTEGER) AS year,
                 CAST(division AS VARCHAR) AS division,
                 COUNT(*) AS n_rows,
-                COUNT(DISTINCT lower(trim(name_raw))) AS n_names,
-                AVG(CASE WHEN roxzone_time_min = 0 THEN 1.0 ELSE 0.0 END) AS roxzone_zero_frac
+                COUNT(DISTINCT lower(trim(name_raw))) AS n_names
             FROM race_results
             WHERE name_raw IS NOT NULL AND trim(name_raw) <> ''
             GROUP BY 1, 2, 3, 4
@@ -201,27 +200,21 @@ def assert_race_results_integrity(con: duckdb.DuckDBPyConnection) -> list[str]:
             division,
             n_rows,
             n_names,
-            roxzone_zero_frac,
             CAST(n_rows AS DOUBLE) / NULLIF(n_names, 0) AS fanout
         FROM grp
         WHERE n_rows >= {INTEGRITY_MIN_ROSTER}
-          AND (
-                CAST(n_rows AS DOUBLE) / NULLIF(n_names, 0) >= {INTEGRITY_FANOUT_RATIO}
-                OR roxzone_zero_frac >= {INTEGRITY_ROXZONE_ZERO_FRAC}
-          )
+          AND CAST(n_rows AS DOUBLE) / NULLIF(n_names, 0) >= {INTEGRITY_FANOUT_RATIO}
         ORDER BY season, location, year, division
         """
     ).fetchall()
 
     violations: list[str] = []
-    for season, location, year, division, n_rows, n_names, rox_frac, fanout in rows:
+    for season, location, year, division, n_rows, n_names, fanout in rows:
         tells = []
         if fanout is not None and fanout >= INTEGRITY_FANOUT_RATIO:
             tells.append(
                 f"fan-out {fanout:.2f} (rows={n_rows}, distinct_names={n_names})"
             )
-        if rox_frac is not None and rox_frac >= INTEGRITY_ROXZONE_ZERO_FRAC:
-            tells.append(f"{rox_frac:.0%} zero-roxzone")
         violations.append(
             f"(season={season}, location={location}, year={year}, division={division}): "
             + "; ".join(tells)
@@ -236,7 +229,7 @@ def _enforce_integrity_gate(violations: list[str], *, allow_dirty: bool) -> None
 
     header = (
         f"Integrity gate FAILED: {len(violations)} event group(s) show the "
-        f"phantom-duplicate fingerprint (fan-out and/or zero-roxzone)."
+        f"phantom-duplicate fingerprint (cross-division fan-out)."
     )
     for violation in violations:
         logger.warning("  %s", violation)

@@ -14,6 +14,7 @@ nav:
       - Data Model: data-model.md
       - Analytics: analytics.md
       - Reproducible Research: reproducible-research.md
+      - Try Pyrox MCP: mcp.md
 
   - API Reference:
       - Client API: api.md

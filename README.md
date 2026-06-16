@@ -134,10 +134,13 @@ To remove it:
 claude mcp remove pyrox
 ```
 
+For example prompts, tool semantics, and caveats, see `docs/mcp.md`.
+
 ## Documentation
 
 - Live docs: https://vmatei2.github.io/pyrox-client/
 - Client API: `docs/api.md`
+- MCP guide: `docs/mcp.md`
 - Error model: `docs/errors.md`
 - Filters and usage notes: `docs/filters.md`
 

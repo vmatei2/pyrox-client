@@ -29,7 +29,7 @@ def _race_results_con() -> duckdb.DuckDBPyConnection:
 
 def _insert_rows(
     con: duckdb.DuckDBPyConnection,
-    rows: list[tuple[int, str, int, str, str, float]],
+    rows: list[tuple[int, str, int, str, str, float | None]],
 ) -> None:
     con.executemany("INSERT INTO race_results VALUES (?, ?, ?, ?, ?, ?)", rows)
 
@@ -61,7 +61,7 @@ def test_fanout_is_caught():
     assert "fan-out" in violations[0]
 
 
-def test_zero_roxzone_is_caught():
+def test_zero_roxzone_values_are_allowed():
     con = _race_results_con()
     _insert_rows(
         con,
@@ -71,10 +71,34 @@ def test_zero_roxzone_is_caught():
         ],
     )
 
-    violations = assert_race_results_integrity(con)
+    assert assert_race_results_integrity(con) == []
 
-    assert len(violations) == 1
-    assert "zero-roxzone" in violations[0]
+
+def test_missing_roxzone_values_are_allowed():
+    con = _race_results_con()
+    _insert_rows(
+        con,
+        [
+            (8, "london", 2025, "Women Open", f"Athlete {idx}", None)
+            for idx in range(INTEGRITY_MIN_ROSTER)
+        ],
+    )
+
+    assert assert_race_results_integrity(con) == []
+
+
+def test_mixed_missing_and_zero_roxzone_values_are_allowed():
+    con = _race_results_con()
+    _insert_rows(
+        con,
+        [
+            (8, "london", 2025, "Women Open", f"Athlete {idx}", None)
+            for idx in range(INTEGRITY_MIN_ROSTER - 1)
+        ]
+        + [(8, "london", 2025, "Women Open", "Athlete with zero roxzone", 0.0)],
+    )
+
+    assert assert_race_results_integrity(con) == []
 
 
 def test_small_groups_are_ignored():

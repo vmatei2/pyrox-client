@@ -94,9 +94,8 @@ Pre-aggregated search index for fast lookup.
 
 ## Build Integrity Gate
 The DuckDB ingest refuses to publish a build when any `(season, location, year, division)`
-group in `race_results` shows the phantom-duplicate fingerprint: high
-rows-per-distinct-athlete fan-out or near-total zero Roxzone times. This mirrors the
-upstream scraper guard documented in
-`hyrox_analysis/docs/phantom-duplicate-races-rootcause.md` and is intentionally
-read-only; contaminated source partitions must be re-scraped or cleaned upstream. Set
+group in `race_results` shows duplicate-roster fan-out: high rows per distinct
+athlete name within the same Race and Division. Explicit zero Roxzone values are
+allowed downstream and do not block the build. The gate is intentionally read-only;
+contaminated source partitions must be re-scraped or cleaned upstream. Set
 `ALLOW_DIRTY_INGEST=1` only for an explicit temporary backfill-window override.
