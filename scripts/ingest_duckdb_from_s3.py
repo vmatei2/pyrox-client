@@ -33,12 +33,18 @@ load_dotenv()
 logging.basicConfig(
     level=logging.INFO,
     format="[%(asctime)s] %(levelname)s: %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger("ingest_duckdb")
 
+INTEGRITY_FANOUT_RATIO = 1.9
+INTEGRITY_ROXZONE_ZERO_FRAC = 0.95
+INTEGRITY_MIN_ROSTER = 20
+
 START_DATE_FILE_PATTERN = "EVENT_START_DATES_SEASON_*.json"
-START_DATE_FILENAME_PATTERN = re.compile(r"^EVENT_START_DATES_SEASON_(?P<season>\d+)\.json$")
+START_DATE_FILENAME_PATTERN = re.compile(
+    r"^EVENT_START_DATES_SEASON_(?P<season>\d+)\.json$"
+)
 EVENT_KEY_PATTERN = re.compile(
     r"^\s*HYROX\s+(?P<city>.+?)\s+(?P<year>20\d{2})(?:\s*/.*)?\s*$",
     re.IGNORECASE,
@@ -97,7 +103,9 @@ def _parse_event_key(event_name: str) -> tuple[str, int]:
 
 def _parse_start_date(value: object, *, context: str) -> date:
     if not isinstance(value, str):
-        raise RuntimeError(f"Invalid start_date in {context}: expected string, got {type(value).__name__}")
+        raise RuntimeError(
+            f"Invalid start_date in {context}: expected string, got {type(value).__name__}"
+        )
     date_part = value.split("T", 1)[0].strip()
     try:
         return date.fromisoformat(date_part)
@@ -105,7 +113,9 @@ def _parse_start_date(value: object, *, context: str) -> date:
         raise RuntimeError(f"Invalid start_date in {context}: {value!r}") from exc
 
 
-def load_event_start_date_mapping(files_dir: Path | None = None) -> dict[tuple[int, str, int], date]:
+def load_event_start_date_mapping(
+    files_dir: Path | None = None,
+) -> dict[tuple[int, str, int], date]:
     base_dir = files_dir or Path(__file__).resolve().parent
     json_files = sorted(base_dir.glob(START_DATE_FILE_PATTERN))
     if not json_files:
@@ -117,7 +127,9 @@ def load_event_start_date_mapping(files_dir: Path | None = None) -> dict[tuple[i
 
     for path in json_files:
         if not START_DATE_FILENAME_PATTERN.match(path.name):
-            logger.warning("Skipping unexpected start-date JSON filename: %s", path.name)
+            logger.warning(
+                "Skipping unexpected start-date JSON filename: %s", path.name
+            )
             continue
 
         season = _parse_start_date_file_season(path)
@@ -130,7 +142,9 @@ def load_event_start_date_mapping(files_dir: Path | None = None) -> dict[tuple[i
             if not isinstance(event_name, str):
                 raise RuntimeError(f"Invalid event key in {path}: expected string key")
             location, year = _parse_event_key(event_name)
-            start_date = _parse_start_date(raw_date, context=f"{path.name}:{event_name}")
+            start_date = _parse_start_date(
+                raw_date, context=f"{path.name}:{event_name}"
+            )
             key = (season, location, year)
             current = mapping.get(key)
             if current is not None and current != start_date:
@@ -150,8 +164,91 @@ def _build_alias_map() -> dict[str, str]:
     }
 
 
+def _env_truthy(name: str) -> bool:
+    return os.getenv(name, "").strip().lower() in {"1", "true", "yes"}
+
+
 def _build_in_clause_placeholders(values: list[int]) -> str:
     return ", ".join("?" for _ in values)
+
+
+def assert_race_results_integrity(con: duckdb.DuckDBPyConnection) -> list[str]:
+    """Return human-readable phantom-duplicate violations from race_results.
+
+    Empty list means safe to build. Thresholds mirror the upstream scraper's
+    assert_event_integrity; keep them in sync with
+    hyrox_analysis/scraping_code/hyrox_web_scraping.py.
+    """
+    rows = con.execute(
+        f"""
+        WITH grp AS (
+            SELECT
+                CAST(season AS INTEGER) AS season,
+                trim(CAST(location AS VARCHAR)) AS location,
+                CAST(year AS INTEGER) AS year,
+                CAST(division AS VARCHAR) AS division,
+                COUNT(*) AS n_rows,
+                COUNT(DISTINCT lower(trim(name_raw))) AS n_names,
+                AVG(CASE WHEN roxzone_time_min = 0 THEN 1.0 ELSE 0.0 END) AS roxzone_zero_frac
+            FROM race_results
+            WHERE name_raw IS NOT NULL AND trim(name_raw) <> ''
+            GROUP BY 1, 2, 3, 4
+        )
+        SELECT
+            season,
+            location,
+            year,
+            division,
+            n_rows,
+            n_names,
+            roxzone_zero_frac,
+            CAST(n_rows AS DOUBLE) / NULLIF(n_names, 0) AS fanout
+        FROM grp
+        WHERE n_rows >= {INTEGRITY_MIN_ROSTER}
+          AND (
+                CAST(n_rows AS DOUBLE) / NULLIF(n_names, 0) >= {INTEGRITY_FANOUT_RATIO}
+                OR roxzone_zero_frac >= {INTEGRITY_ROXZONE_ZERO_FRAC}
+          )
+        ORDER BY season, location, year, division
+        """
+    ).fetchall()
+
+    violations: list[str] = []
+    for season, location, year, division, n_rows, n_names, rox_frac, fanout in rows:
+        tells = []
+        if fanout is not None and fanout >= INTEGRITY_FANOUT_RATIO:
+            tells.append(
+                f"fan-out {fanout:.2f} (rows={n_rows}, distinct_names={n_names})"
+            )
+        if rox_frac is not None and rox_frac >= INTEGRITY_ROXZONE_ZERO_FRAC:
+            tells.append(f"{rox_frac:.0%} zero-roxzone")
+        violations.append(
+            f"(season={season}, location={location}, year={year}, division={division}): "
+            + "; ".join(tells)
+        )
+
+    return violations
+
+
+def _enforce_integrity_gate(violations: list[str], *, allow_dirty: bool) -> None:
+    if not violations:
+        return
+
+    header = (
+        f"Integrity gate FAILED: {len(violations)} event group(s) show the "
+        f"phantom-duplicate fingerprint (fan-out and/or zero-roxzone)."
+    )
+    for violation in violations:
+        logger.warning("  %s", violation)
+    if allow_dirty:
+        logger.warning("%s ALLOW_DIRTY_INGEST set -- building anyway.", header)
+        return
+
+    raise SystemExit(
+        header
+        + "\nRefusing to build DuckDB. Re-scrape/clean these groups upstream, "
+        + "or set ALLOW_DIRTY_INGEST=1 to build anyway (NOT recommended)."
+    )
 
 
 def apply_event_start_dates(
@@ -186,7 +283,9 @@ def apply_event_start_dates(
         start_date = start_dates.get((int(season), target_location, int(year)))
         if start_date is None:
             continue
-        resolved_rows.append((int(season), str(location), int(year), start_date.isoformat()))
+        resolved_rows.append(
+            (int(season), str(location), int(year), start_date.isoformat())
+        )
 
     con.execute("ALTER TABLE race_results ADD COLUMN start_date DATE;")
     con.execute(
@@ -234,7 +333,9 @@ def apply_event_start_dates(
         for season, location, year in unmapped_rows[:20]:
             normalized_location = _normalize_location_slug(location)
             normalized_target = alias_map.get(normalized_location, normalized_location)
-            sample_rows.append((int(season), str(location), int(year), normalized_target))
+            sample_rows.append(
+                (int(season), str(location), int(year), normalized_target)
+            )
         raise RuntimeError(
             "Missing start_date mappings for "
             f"{len(unmapped_rows)} distinct event keys. "
@@ -281,6 +382,7 @@ def warn_if_single_season_scope(s3_uri: str) -> None:
         season_selector,
     )
 
+
 def required_env(name: str) -> str:
     value = os.getenv(name)
     if value is None or value.strip() == "":
@@ -302,12 +404,12 @@ def _load_ingest_config() -> dict[str, str]:
 
 
 # -----------
-# DuckDB / S3 setup
+# DuckDB / S3 setup
 # -----------
 def configure_s3(con: duckdb.DuckDBPyConnection, config: dict[str, str]) -> None:
     """
     Enabe DuckDB to read from s3://URIs
-    
+
     :param con: connection object
     :type con: duckdb.DuckDBPyConnection
     """
@@ -324,17 +426,19 @@ def configure_s3(con: duckdb.DuckDBPyConnection, config: dict[str, str]) -> None
 # Ingest
 # -----------
 
-def ingest_full_refresh() -> None:
+
+def ingest_full_refresh(allow_dirty: bool = False) -> None:
     """
     Full rebuild of DuckDB from latest S3 parquet.
 
     Notes:
         - Uses columns existing in parquet
-        - Creates deterministic IDs (md5) 
+        - Creates deterministic IDs (md5)
         - Builds a basic athlete identity (TODO: replace with probablistic fuzzy linking?)
         - Writes to a temp DB file then automatically swaps into place
     """
 
+    allow_dirty = allow_dirty or _env_truthy("ALLOW_DIRTY_INGEST")
     config = _load_ingest_config()
     logger.info("Starting full refresh ingest...")
     logger.info(f"Reading from S3 URI: {config['s3_uri']}")
@@ -349,11 +453,23 @@ def ingest_full_refresh() -> None:
 
     con.execute(MACRO)
 
-
     con.execute(create_race_results_query(config["s3_uri"]))
     start_dates = load_event_start_date_mapping()
     apply_event_start_dates(con, start_dates)
 
+    violations = assert_race_results_integrity(con)
+    try:
+        _enforce_integrity_gate(violations, allow_dirty=allow_dirty)
+    except SystemExit:
+        con.execute("ROLLBACK;")
+        con.close()
+        try:
+            Path(config["duckdb_tmp_path"]).unlink(missing_ok=True)
+        except OSError:
+            logger.warning(
+                "Could not remove failed ingest temp DB: %s", config["duckdb_tmp_path"]
+            )
+        raise
 
     # Optional: basic hygiene (helps later joins/search)
     con.execute(
@@ -391,7 +507,6 @@ def ingest_full_refresh() -> None:
         FROM base;
         """
     )
-
 
     # 3) athlete_results: link layer (v1 exact match)
     con.execute(
@@ -445,12 +560,11 @@ def ingest_full_refresh() -> None:
     con.execute("COMMIT;")
     con.close()
 
-
     # atomic swap into place
     os.replace(config["duckdb_tmp_path"], config["duckdb_path"])
 
-    logger.info(F"Ingestion Complete - {config['duckdb_path']}")
+    logger.info(f"Ingestion Complete - {config['duckdb_path']}")
 
-    
+
 if __name__ == "__main__":
     ingest_full_refresh()

@@ -64,3 +64,8 @@ jobs:
 
       - name: Deploy API to Fly
         run: flyctl deploy --config fly.toml --remote-only
+
+      - name: Smoke test live MCP endpoint
+        env:
+          PYROX_MCP_URL: https://pyrox-api.fly.dev/mcp/
+        run: uv run python scripts/smoke_mcp.py --json

@@ -48,11 +48,16 @@ class RateLimitMiddleware:
     docstring). Pure ASGI so allowed requests are forwarded untouched.
     """
 
-    def __init__(self, app):
+    def __init__(self, app, exempt_path_prefixes: tuple[str, ...] = ()):
         self.app = app
+        self.exempt_path_prefixes = exempt_path_prefixes
 
     async def __call__(self, scope, receive, send):
         if scope["type"] == "http":
+            path = scope.get("path", "")
+            if any(path.startswith(prefix) for prefix in self.exempt_path_prefixes):
+                await self.app(scope, receive, send)
+                return
             client_ip = dict(scope["headers"]).get(FLY_CLIENT_IP_HEADER)
             if client_ip and not _limiter.hit(_rate, "pyrox", client_ip.decode()):
                 response = JSONResponse(

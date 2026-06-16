@@ -16,6 +16,7 @@ import os
 
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
+from mcp.types import ToolAnnotations
 
 from pyrox_api_service import mcp_tools
 from pyrox_api_service.app import app
@@ -50,19 +51,30 @@ mcp_server = FastMCP(
     transport_security=_transport_security,
 )
 
-# Each tool's input schema and description are derived from the function's type
-# hints and docstring, so registering the functions directly avoids duplication.
-TOOLS = (
-    mcp_tools.list_filters,
-    mcp_tools.find_athlete,
-    mcp_tools.get_distribution,
-    mcp_tools.get_rankings,
-    mcp_tools.get_race_report,
-    mcp_tools.get_deepdive,
-    mcp_tools.get_athlete_profile,
+READ_ONLY_TOOL = ToolAnnotations(
+    readOnlyHint=True,
+    destructiveHint=False,
+    idempotentHint=True,
+    openWorldHint=False,
 )
-for _tool in TOOLS:
-    mcp_server.tool()(_tool)
+
+# Each tool's input schema and description are derived from the function's type
+# hints and docstring. Titles and annotations give MCP clients clearer display
+# labels and safe-use hints for model-controlled tool calls.
+TOOLS = (
+    (mcp_tools.list_filters, "List Pyrox filters"),
+    (mcp_tools.find_athlete, "Find athlete results"),
+    (mcp_tools.get_distribution, "Get cohort distribution"),
+    (mcp_tools.get_rankings, "Get rankings"),
+    (mcp_tools.get_race_report, "Get race report"),
+    (mcp_tools.get_deepdive, "Get location deep dive"),
+    (mcp_tools.get_athlete_profile, "Get athlete profile"),
+)
+for _tool, _title in TOOLS:
+    mcp_server.tool(
+        title=_title,
+        annotations=READ_ONLY_TOOL,
+    )(_tool)
 
 
 @contextlib.asynccontextmanager

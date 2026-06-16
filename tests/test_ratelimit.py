@@ -16,7 +16,7 @@ from limits.storage import MemoryStorage  # noqa: E402
 from limits.strategies import MovingWindowRateLimiter  # noqa: E402
 from starlette.applications import Starlette  # noqa: E402
 from starlette.responses import PlainTextResponse  # noqa: E402
-from starlette.routing import Route  # noqa: E402
+from starlette.routing import Mount, Route  # noqa: E402
 from starlette.testclient import TestClient  # noqa: E402
 
 from pyrox_api_service import ratelimit  # noqa: E402
@@ -35,6 +35,17 @@ def _client() -> TestClient:
 
     app = Starlette(routes=[Route("/x", ok)])
     app.add_middleware(RateLimitMiddleware)
+    return TestClient(app)
+
+
+def _mounted_mcp_shape_client() -> TestClient:
+    async def ok(request):
+        return PlainTextResponse("ok")
+
+    sub_app = Starlette(routes=[Route("/", ok)])
+    sub_app.add_middleware(RateLimitMiddleware)
+    app = Starlette(routes=[Mount("/mcp", sub_app)])
+    app.add_middleware(RateLimitMiddleware, exempt_path_prefixes=("/mcp",))
     return TestClient(app)
 
 
@@ -63,3 +74,13 @@ def test_limit_is_isolated_per_client_ip(monkeypatch):
     assert client.get("/x", headers=first).status_code == 429
     # A different client IP has its own window.
     assert client.get("/x", headers={"fly-client-ip": "2.2.2.2"}).status_code == 200
+
+
+def test_mounted_mcp_request_counts_once_with_parent_exemption(monkeypatch):
+    _low_limit(monkeypatch)
+    client = _mounted_mcp_shape_client()
+    headers = {"fly-client-ip": "1.2.3.4"}
+
+    codes = [client.get("/mcp", headers=headers).status_code for _ in range(3)]
+
+    assert codes == [200, 200, 429]

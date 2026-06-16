@@ -67,8 +67,10 @@ app = FastAPI(title="Pyrox Reporting API", version="0.1.0")
 queries = ReportingQueries()
 allowed_origins = _parse_origins(os.getenv("PYROX_API_ALLOW_ORIGINS", DEFAULT_ORIGINS))
 # Added before CORS so a 429 still flows back out through CORSMiddleware and
-# carries the Access-Control headers a browser client needs to read it.
-app.add_middleware(RateLimitMiddleware)
+# carries the Access-Control headers a browser client needs to read it. The MCP
+# mount is exempt here and limited at the sub-app boundary to avoid charging the
+# /mcp -> /mcp/ redirect plus the served request.
+app.add_middleware(RateLimitMiddleware, exempt_path_prefixes=("/mcp",))
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,

@@ -180,7 +180,7 @@ def test_list_filters_returns_distinct_cohort_values(tmp_path, monkeypatch):
 
 
 def test_mcp_server_registers_expected_tools():
-    """The MCP server should expose exactly the intent-shaped tool set."""
+    """The MCP server should expose exactly the annotated intent-shaped tool set."""
     import asyncio
 
     from pyrox_api_service import mcp_app
@@ -196,3 +196,6 @@ def test_mcp_server_registers_expected_tools():
         "get_deepdive",
         "get_athlete_profile",
     }
+    assert all(tool.title for tool in tools)
+    assert all(tool.annotations.readOnlyHint for tool in tools)
+    assert all(tool.annotations.destructiveHint is False for tool in tools)

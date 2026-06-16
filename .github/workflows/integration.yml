@@ -5,6 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   integration:
@@ -23,3 +24,22 @@ jobs:
 
       - name: Run integration tests
         run: uv run pytest -vv --only-integration
+
+  live-mcp-smoke:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+
+    container:
+      image: ghcr.io/astral-sh/uv:python3.12-bookworm
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Sync dependencies with uv
+        run: uv sync --all-extras
+
+      - name: Smoke test live MCP endpoint
+        env:
+          PYROX_MCP_URL: https://pyrox-api.fly.dev/mcp/
+        run: uv run python scripts/smoke_mcp.py --json

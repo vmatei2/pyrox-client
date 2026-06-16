@@ -91,3 +91,12 @@ Pre-aggregated search index for fast lookup.
 - Tests should mirror contract columns (especially `athlete_results` link metadata).
 - `race_results.division` is required for client-side filtering in
   `src/pyrox/reporting.py`.
+
+## Build Integrity Gate
+The DuckDB ingest refuses to publish a build when any `(season, location, year, division)`
+group in `race_results` shows the phantom-duplicate fingerprint: high
+rows-per-distinct-athlete fan-out or near-total zero Roxzone times. This mirrors the
+upstream scraper guard documented in
+`hyrox_analysis/docs/phantom-duplicate-races-rootcause.md` and is intentionally
+read-only; contaminated source partitions must be re-scraped or cleaned upstream. Set
+`ALLOW_DIRTY_INGEST=1` only for an explicit temporary backfill-window override.
