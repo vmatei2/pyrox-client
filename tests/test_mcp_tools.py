@@ -179,6 +179,146 @@ def test_list_filters_returns_distinct_cohort_values(tmp_path, monkeypatch):
     assert set(result["divisions"]) == {"open", "pro"}
 
 
+def _seed_races(con: duckdb.DuckDBPyConnection) -> None:
+    con.execute(
+        """
+        CREATE TABLE race_results (
+            result_id VARCHAR, event_name VARCHAR, event_id VARCHAR,
+            season INTEGER, location VARCHAR, year INTEGER,
+            division VARCHAR, gender VARCHAR, age_group VARCHAR,
+            total_time_min DOUBLE
+        );
+        """
+    )
+    con.executemany(
+        "INSERT INTO race_results VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+            ("r1", "London Open", "e1", 8, "london", 2024, "open", "F", "30-34", 60.0),
+            ("r2", "London Open", "e1", 8, "london", 2024, "open", "F", "30-34", 62.0),
+            ("r3", "London Open", "e1", 8, "london", 2024, "open", "M", "30-34", 55.0),
+            ("r4", "Paris Open", "e2", 8, "paris", 2024, "open", "F", "30-34", 63.0),
+            ("r5", "Berlin S7", "e3", 7, "berlin", 2023, "open", "M", "35-39", 58.0),
+        ],
+    )
+
+
+def test_list_races_returns_distinct_races_with_counts(tmp_path, monkeypatch):
+    db_path = tmp_path / "mcp-races.db"
+    con = _create_db(db_path)
+    _seed_races(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    result = mcp_tools.list_races()
+
+    assert result["count"] == 3
+    london = next(r for r in result["races"] if r["location"] == "london")
+    assert london["participant_count"] == 3
+
+
+def test_list_races_filters_by_season(tmp_path, monkeypatch):
+    db_path = tmp_path / "mcp-races-season.db"
+    con = _create_db(db_path)
+    _seed_races(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    result = mcp_tools.list_races(season=7)
+
+    assert result["count"] == 1
+    assert result["races"][0]["location"] == "berlin"
+
+
+def test_list_races_filters_by_gender(tmp_path, monkeypatch):
+    db_path = tmp_path / "mcp-races-gender.db"
+    con = _create_db(db_path)
+    _seed_races(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    result = mcp_tools.list_races(gender="female")
+
+    assert result["count"] == 2
+    locations = {r["location"] for r in result["races"]}
+    assert locations == {"london", "paris"}
+
+
+def _seed_race_summary(con: duckdb.DuckDBPyConnection) -> None:
+    con.execute(
+        """
+        CREATE TABLE race_results (
+            result_id VARCHAR, event_name VARCHAR, event_id VARCHAR,
+            season INTEGER, location VARCHAR, year INTEGER,
+            division VARCHAR, gender VARCHAR, age_group VARCHAR,
+            total_time_min DOUBLE,
+            run_time_min DOUBLE, work_time_min DOUBLE, roxzone_time_min DOUBLE,
+            run1_time_min DOUBLE, skiErg_time_min DOUBLE
+        );
+        """
+    )
+    rows = []
+    for i in range(1, 21):
+        rows.append((
+            f"r{i}", "London Open", "e1", 8, "london", 2024,
+            "open", "F", "30-34",
+            50.0 + i,
+            25.0 + i * 0.5, 20.0 + i * 0.3, 5.0 + i * 0.2,
+            3.0 + i * 0.1, 4.0 + i * 0.1,
+        ))
+    con.executemany(
+        "INSERT INTO race_results VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        rows,
+    )
+
+
+def test_get_race_summary_returns_segment_stats(tmp_path, monkeypatch):
+    db_path = tmp_path / "mcp-summary.db"
+    con = _create_db(db_path)
+    _seed_race_summary(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    result = mcp_tools.get_race_summary(season=8, location="london")
+
+    assert result["total_count"] == 20
+    assert result["filtered_count"] == 20
+    assert result["percentile_threshold_min"] is None
+    keys = [s["key"] for s in result["segments"]]
+    assert "total_time_min" in keys
+    total_seg = next(s for s in result["segments"] if s["key"] == "total_time_min")
+    assert total_seg["stats"]["count"] == 20
+    assert "mean" in total_seg["stats"]
+    assert "median" in total_seg["stats"]
+    assert "p10" in total_seg["stats"]
+
+
+def test_get_race_summary_percentile_filter(tmp_path, monkeypatch):
+    db_path = tmp_path / "mcp-summary-pct.db"
+    con = _create_db(db_path)
+    _seed_race_summary(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    result = mcp_tools.get_race_summary(season=8, location="london", top_percentile=10)
+
+    assert result["total_count"] == 20
+    assert result["filtered_count"] < 20
+    assert result["percentile_threshold_min"] is not None
+
+
+def test_get_race_summary_not_found(tmp_path, monkeypatch):
+    db_path = tmp_path / "mcp-summary-nf.db"
+    con = _create_db(db_path)
+    _seed_race_summary(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    result = mcp_tools.get_race_summary(season=99, location="nonexistent")
+
+    assert "error" in result
+    assert result["status_code"] == 404
+
+
 def test_mcp_server_registers_expected_tools():
     """The MCP server should expose exactly the annotated intent-shaped tool set."""
     import asyncio
@@ -189,8 +329,10 @@ def test_mcp_server_registers_expected_tools():
     names = {tool.name for tool in tools}
     assert names == {
         "list_filters",
+        "list_races",
         "find_athlete",
         "get_distribution",
+        "get_race_summary",
         "get_rankings",
         "get_race_report",
         "get_deepdive",

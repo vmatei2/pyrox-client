@@ -578,6 +578,152 @@ class ReportingQueries:
             "age_groups": _clean_distinct_values(age_groups_df, "age_group"),
         }
 
+    def list_races(
+        self,
+        *,
+        season: Optional[int] = None,
+        gender: Optional[str] = None,
+    ) -> dict:
+        """Return distinct races with participant counts.
+
+        Each race is identified by (event_name, event_id, location, season, year).
+        Optional *season* and *gender* filters scope the results; when *gender* is
+        used the participant count reflects only matching athletes.
+        """
+        con = self.connection()
+        clauses: list[str] = []
+        params: list[object] = []
+
+        if season is not None:
+            clauses.append("season = ?")
+            params.append(int(season))
+
+        normalized_gender = normalize_optional_text(gender)
+        if normalized_gender is not None:
+            gender_clauses, gender_params = _gender_filter(normalized_gender)
+            clauses.extend(gender_clauses)
+            params.extend(gender_params)
+
+        where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        df = con.execute(
+            f"""
+            SELECT event_name, event_id, location, season, year,
+                   COUNT(*) AS participant_count
+            FROM race_results
+            {where_sql}
+            GROUP BY event_name, event_id, location, season, year
+            ORDER BY season DESC, year DESC, lower(location) ASC
+            """,
+            params,
+        ).fetchdf()
+
+        return {
+            "filters": {"season": season, "gender": normalized_gender},
+            "count": len(df),
+            "races": df_to_records(df),
+        }
+
+    def race_summary(
+        self,
+        *,
+        season: int,
+        location: str,
+        gender: Optional[str] = None,
+        division: Optional[str] = None,
+        age_group: Optional[str] = None,
+        top_percentile: Optional[float] = None,
+    ) -> dict:
+        """Return summary statistics across all timing segments for one race.
+
+        The race is identified by *season* + *location*. Optional cohort filters
+        narrow the population. When *top_percentile* is set (e.g. ``10``), only
+        athletes whose ``total_time_min`` falls at or below the Nth-percentile
+        threshold are included (lower time = faster = "top").
+        """
+        con = self.connection()
+        clauses = ["season = ?", "lower(location) = ?"]
+        params: list[object] = [int(season), str(location).strip().casefold()]
+
+        normalized_division = normalize_optional_text(division)
+        if normalized_division is not None:
+            clauses.append("lower(division) = ?")
+            params.append(normalized_division.casefold())
+
+        normalized_gender = normalize_optional_text(gender)
+        if normalized_gender is not None:
+            gender_clauses, gender_params = _gender_filter(normalized_gender)
+            clauses.extend(gender_clauses)
+            params.extend(gender_params)
+
+        normalized_age_group = normalize_optional_text(age_group)
+        if normalized_age_group is not None:
+            clauses.append("lower(age_group) = ?")
+            params.append(normalized_age_group.casefold())
+
+        where_sql = " AND ".join(clauses)
+        df = con.execute(
+            f"SELECT * FROM race_results WHERE {where_sql}",
+            params,
+        ).fetchdf()
+
+        total_count = len(df)
+        if total_count == 0:
+            raise ReportingNotFoundError(
+                f"No results for season={season}, location={location}"
+            )
+
+        percentile_threshold = None
+        if top_percentile is not None:
+            if not (0 < top_percentile < 100):
+                raise ReportingQueryError(
+                    "top_percentile must be between 0 and 100 (exclusive)."
+                )
+            valid_totals = pd.to_numeric(df["total_time_min"], errors="coerce").dropna()
+            if valid_totals.empty:
+                raise ReportingQueryError(
+                    "No valid total_time_min values for percentile filtering."
+                )
+            percentile_threshold = float(valid_totals.quantile(top_percentile / 100.0))
+            df = df[pd.to_numeric(df["total_time_min"], errors="coerce") <= percentile_threshold]
+
+        filtered_count = len(df)
+
+        segments: list[dict] = []
+        for cfg in SEGMENT_CONFIG:
+            stats = _describe_times(df, cfg["key"])
+            if stats is None:
+                continue
+            segments.append({
+                "key": cfg["key"],
+                "label": cfg["label"],
+                "group": cfg["group"],
+                "stats": stats,
+            })
+
+        for col, label, group in (
+            ("run_time_min", "Total Run", "aggregate"),
+            ("work_time_min", "Total Work", "aggregate"),
+            ("roxzone_time_min", "Total Roxzone", "aggregate"),
+        ):
+            stats = _describe_times(df, col)
+            if stats is not None:
+                segments.append({"key": col, "label": label, "group": group, "stats": stats})
+
+        return {
+            "filters": {
+                "season": season,
+                "location": location,
+                "gender": normalized_gender,
+                "division": normalized_division,
+                "age_group": normalized_age_group,
+                "top_percentile": top_percentile,
+            },
+            "total_count": total_count,
+            "filtered_count": filtered_count,
+            "percentile_threshold_min": percentile_threshold,
+            "segments": segments,
+        }
+
     def report_for_result(
         self,
         *,

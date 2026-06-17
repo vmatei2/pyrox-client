@@ -154,6 +154,40 @@ def filter_options(
     )
 
 
+@app.get("/api/races")
+def list_races(
+    season: Optional[int] = Query(None, ge=1),
+    gender: Optional[str] = Query(None),
+) -> dict:
+    """Return distinct races with participant counts."""
+    return _query(
+        queries.list_races,
+        season=season,
+        gender=gender,
+    )
+
+
+@app.get("/api/race-summary")
+def race_summary(
+    season: int = Query(..., ge=1),
+    location: str = Query(..., min_length=1),
+    gender: Optional[str] = Query(None),
+    division: Optional[str] = Query(None),
+    age_group: Optional[str] = Query(None),
+    top_percentile: Optional[float] = Query(None, gt=0, lt=100),
+) -> dict:
+    """Return summary statistics across all timing metrics for one race."""
+    return _query(
+        queries.race_summary,
+        season=season,
+        location=location,
+        gender=gender,
+        division=division,
+        age_group=age_group,
+        top_percentile=top_percentile,
+    )
+
+
 @app.get("/api/reports/{result_id}")
 def report_for_result(
     result_id: str,

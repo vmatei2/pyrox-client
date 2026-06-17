@@ -63,8 +63,10 @@ READ_ONLY_TOOL = ToolAnnotations(
 # labels and safe-use hints for model-controlled tool calls.
 TOOLS = (
     (mcp_tools.list_filters, "List Pyrox filters"),
+    (mcp_tools.list_races, "List available races"),
     (mcp_tools.find_athlete, "Find athlete results"),
     (mcp_tools.get_distribution, "Get cohort distribution"),
+    (mcp_tools.get_race_summary, "Get race summary stats"),
     (mcp_tools.get_rankings, "Get rankings"),
     (mcp_tools.get_race_report, "Get race report"),
     (mcp_tools.get_deepdive, "Get location deep dive"),
