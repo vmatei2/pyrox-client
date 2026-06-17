@@ -19,8 +19,10 @@ DEFAULT_TIMEOUT_SECONDS = 20.0
 EXPECTED_TOOL_NAMES = frozenset(
     {
         "list_filters",
+        "list_races",
         "find_athlete",
         "get_distribution",
+        "get_race_summary",
         "get_rankings",
         "get_race_report",
         "get_deepdive",

@@ -177,3 +177,49 @@ def list_filters(
         "/api/filter-options",
         {"season": season, "division": division, "gender": gender},
     )
+
+
+def list_races(
+    season: Optional[int] = None,
+    gender: Optional[str] = None,
+) -> dict:
+    """Available races with participant counts, optionally filtered by season or gender.
+
+    Returns distinct races showing event name, location, season, year, and
+    how many athletes participated. Use this to discover which races exist
+    before requesting a race summary.
+    """
+    return _get(
+        "/api/races",
+        {"season": season, "gender": gender},
+    )
+
+
+def get_race_summary(
+    season: int,
+    location: str,
+    gender: Optional[str] = None,
+    division: Optional[str] = None,
+    age_group: Optional[str] = None,
+    top_percentile: Optional[float] = None,
+) -> dict:
+    """Summary statistics across all timing segments for a specific race.
+
+    Returns count, min, max, mean, median, p10, p90 for every timing
+    segment (total, each run, each station, aggregate run/work/roxzone).
+
+    Use `list_races` first to discover valid season + location pairs.
+    Set `top_percentile` (e.g. 10) to restrict to the fastest N percent of
+    finishers and see what their segment times look like.
+    """
+    return _get(
+        "/api/race-summary",
+        {
+            "season": season,
+            "location": location,
+            "gender": gender,
+            "division": division,
+            "age_group": age_group,
+            "top_percentile": top_percentile,
+        },
+    )
