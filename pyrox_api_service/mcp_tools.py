@@ -223,3 +223,40 @@ def get_race_summary(
             "top_percentile": top_percentile,
         },
     )
+
+
+def get_cohort_segment_averages(
+    season: int,
+    location: str,
+    gender: Optional[str] = None,
+    division: Optional[str] = None,
+    age_group: Optional[str] = None,
+    top_n: Optional[int] = None,
+    bottom_n: Optional[int] = None,
+) -> dict:
+    """Per-segment statistics for a rank-based slice of athletes in one race.
+
+    Athletes are ranked by total time. Set `top_n` for the fastest N
+    athletes, `bottom_n` for the slowest N, or omit both for all athletes.
+    The two are mutually exclusive.
+
+    Response separates `runs` (Run 1-8) and `stations` (SkiErg through
+    Wall Balls) so you can compare pacing across segments. Includes
+    `group_averages` with the mean across all run and station segment means.
+
+    Use `list_races` first to discover valid season + location pairs.
+    Call multiple times with different slices (e.g. top_n=20, bottom_n=20,
+    and no slice) to compare cohorts.
+    """
+    return _get(
+        "/api/cohort-segment-averages",
+        {
+            "season": season,
+            "location": location,
+            "gender": gender,
+            "division": division,
+            "age_group": age_group,
+            "top_n": top_n,
+            "bottom_n": bottom_n,
+        },
+    )

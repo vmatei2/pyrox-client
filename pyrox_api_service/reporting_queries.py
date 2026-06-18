@@ -724,6 +724,119 @@ class ReportingQueries:
             "segments": segments,
         }
 
+    def cohort_segment_averages(
+        self,
+        *,
+        season: int,
+        location: str,
+        gender: Optional[str] = None,
+        division: Optional[str] = None,
+        age_group: Optional[str] = None,
+        top_n: Optional[int] = None,
+        bottom_n: Optional[int] = None,
+    ) -> dict:
+        """Return per-segment statistics for a rank-based slice of athletes.
+
+        Athletes are ranked by ``total_time_min``. Set *top_n* for the fastest
+        N, *bottom_n* for the slowest N, or neither for all athletes. The two
+        parameters are mutually exclusive.
+
+        The response separates runs and stations so an LLM can directly compare
+        pacing across segments.
+        """
+        if top_n is not None and bottom_n is not None:
+            raise ReportingQueryError("top_n and bottom_n are mutually exclusive.")
+
+        con = self.connection()
+        clauses = ["season = ?", "lower(location) = ?", "total_time_min IS NOT NULL"]
+        params: list[object] = [int(season), str(location).strip().casefold()]
+
+        normalized_division = normalize_optional_text(division)
+        if normalized_division is not None:
+            clauses.append("lower(division) = ?")
+            params.append(normalized_division.casefold())
+
+        normalized_gender = normalize_optional_text(gender)
+        if normalized_gender is not None:
+            gender_clauses, gender_params = _gender_filter(normalized_gender)
+            clauses.extend(gender_clauses)
+            params.extend(gender_params)
+
+        normalized_age_group = normalize_optional_text(age_group)
+        if normalized_age_group is not None:
+            clauses.append("lower(age_group) = ?")
+            params.append(normalized_age_group.casefold())
+
+        where_sql = " AND ".join(clauses)
+        df = con.execute(
+            f"SELECT * FROM race_results WHERE {where_sql} ORDER BY total_time_min ASC",
+            params,
+        ).fetchdf()
+
+        total_count = len(df)
+        if total_count == 0:
+            raise ReportingNotFoundError(
+                f"No results for season={season}, location={location}"
+            )
+
+        slice_label = "all"
+        slice_n = None
+        if top_n is not None:
+            slice_label = "top"
+            slice_n = top_n
+            df = df.head(top_n)
+        elif bottom_n is not None:
+            slice_label = "bottom"
+            slice_n = bottom_n
+            df = df.tail(bottom_n)
+
+        slice_count = len(df)
+
+        runs: list[dict] = []
+        stations: list[dict] = []
+        for cfg in SEGMENT_CONFIG:
+            stats = _describe_times(df, cfg["key"])
+            if stats is None:
+                continue
+            entry = {"key": cfg["key"], "label": cfg["label"], "stats": stats}
+            if cfg["group"] == "runs":
+                runs.append(entry)
+            elif cfg["group"] == "stations":
+                stations.append(entry)
+
+        run_means = [r["stats"]["mean"] for r in runs]
+        station_means = [s["stats"]["mean"] for s in stations]
+
+        totals: dict[str, Optional[dict]] = {}
+        for col, label in (
+            ("total_time_min", "total_time"),
+            ("run_time_min", "run_time"),
+            ("work_time_min", "work_time"),
+            ("roxzone_time_min", "roxzone_time"),
+        ):
+            totals[label] = _describe_times(df, col)
+
+        return {
+            "filters": {
+                "season": season,
+                "location": location,
+                "gender": normalized_gender,
+                "division": normalized_division,
+                "age_group": normalized_age_group,
+                "slice": slice_label,
+                "n": slice_n,
+            },
+            "total_count": total_count,
+            "slice_count": slice_count,
+            "runs": runs,
+            "stations": stations,
+            "group_averages": {
+                "avg_run_time_min": float(np.mean(run_means)) if run_means else None,
+                "avg_station_time_min": float(np.mean(station_means)) if station_means else None,
+            },
+            "totals": totals,
+        }
+
     def report_for_result(
         self,
         *,

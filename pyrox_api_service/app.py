@@ -188,6 +188,29 @@ def race_summary(
     )
 
 
+@app.get("/api/cohort-segment-averages")
+def cohort_segment_averages(
+    season: int = Query(..., ge=1),
+    location: str = Query(..., min_length=1),
+    gender: Optional[str] = Query(None),
+    division: Optional[str] = Query(None),
+    age_group: Optional[str] = Query(None),
+    top_n: Optional[int] = Query(None, ge=1),
+    bottom_n: Optional[int] = Query(None, ge=1),
+) -> dict:
+    """Return per-segment statistics for a rank-based slice of athletes."""
+    return _query(
+        queries.cohort_segment_averages,
+        season=season,
+        location=location,
+        gender=gender,
+        division=division,
+        age_group=age_group,
+        top_n=top_n,
+        bottom_n=bottom_n,
+    )
+
+
 @app.get("/api/reports/{result_id}")
 def report_for_result(
     result_id: str,

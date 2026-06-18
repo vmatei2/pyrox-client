@@ -319,6 +319,154 @@ def test_get_race_summary_not_found(tmp_path, monkeypatch):
     assert result["status_code"] == 404
 
 
+def _seed_cohort_segments(con: duckdb.DuckDBPyConnection) -> None:
+    con.execute(
+        """
+        CREATE TABLE race_results (
+            result_id VARCHAR, event_name VARCHAR, event_id VARCHAR,
+            season INTEGER, location VARCHAR, year INTEGER,
+            division VARCHAR, gender VARCHAR, age_group VARCHAR,
+            total_time_min DOUBLE,
+            run_time_min DOUBLE, work_time_min DOUBLE, roxzone_time_min DOUBLE,
+            run1_time_min DOUBLE, run2_time_min DOUBLE,
+            run3_time_min DOUBLE, run4_time_min DOUBLE,
+            run5_time_min DOUBLE, run6_time_min DOUBLE,
+            run7_time_min DOUBLE, run8_time_min DOUBLE,
+            skiErg_time_min DOUBLE, sledPush_time_min DOUBLE,
+            sledPull_time_min DOUBLE, burpeeBroadJump_time_min DOUBLE,
+            rowErg_time_min DOUBLE, farmersCarry_time_min DOUBLE,
+            sandbagLunges_time_min DOUBLE, wallBalls_time_min DOUBLE
+        );
+        """
+    )
+    rows = []
+    for i in range(1, 21):
+        run = 3.0 + i * 0.2
+        station = 4.0 + i * 0.15
+        rows.append((
+            f"r{i}", "London Open", "e1", 7, "london", 2023,
+            "open", "M", "30-34",
+            (run * 8) + (station * 8),
+            run * 8, station * 8, i * 0.5,
+            run, run, run, run, run, run, run, run,
+            station, station, station, station,
+            station, station, station, station,
+        ))
+    con.executemany(
+        "INSERT INTO race_results VALUES ("
+        + ", ".join(["?"] * 29) + ")",
+        rows,
+    )
+
+
+def test_get_cohort_segment_averages_top_n(tmp_path, monkeypatch):
+    db_path = tmp_path / "mcp-cohort-top.db"
+    con = _create_db(db_path)
+    _seed_cohort_segments(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    result = mcp_tools.get_cohort_segment_averages(season=7, location="london", top_n=5)
+
+    assert result["total_count"] == 20
+    assert result["slice_count"] == 5
+    assert result["filters"]["slice"] == "top"
+    assert result["filters"]["n"] == 5
+    assert len(result["runs"]) == 8
+    assert len(result["stations"]) == 8
+    top_run1_mean = result["runs"][0]["stats"]["mean"]
+    assert top_run1_mean < 4.5
+
+
+def test_get_cohort_segment_averages_bottom_n(tmp_path, monkeypatch):
+    db_path = tmp_path / "mcp-cohort-bottom.db"
+    con = _create_db(db_path)
+    _seed_cohort_segments(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    result = mcp_tools.get_cohort_segment_averages(season=7, location="london", bottom_n=5)
+
+    assert result["total_count"] == 20
+    assert result["slice_count"] == 5
+    assert result["filters"]["slice"] == "bottom"
+    bottom_run1_mean = result["runs"][0]["stats"]["mean"]
+    assert bottom_run1_mean > 6.0
+
+
+def test_get_cohort_segment_averages_all(tmp_path, monkeypatch):
+    db_path = tmp_path / "mcp-cohort-all.db"
+    con = _create_db(db_path)
+    _seed_cohort_segments(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    result = mcp_tools.get_cohort_segment_averages(season=7, location="london")
+
+    assert result["total_count"] == 20
+    assert result["slice_count"] == 20
+    assert result["filters"]["slice"] == "all"
+    assert result["filters"]["n"] is None
+
+
+def test_get_cohort_segment_averages_mutual_exclusion(tmp_path, monkeypatch):
+    db_path = tmp_path / "mcp-cohort-exclusive.db"
+    con = _create_db(db_path)
+    _seed_cohort_segments(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    result = mcp_tools.get_cohort_segment_averages(
+        season=7, location="london", top_n=5, bottom_n=5,
+    )
+
+    assert "error" in result
+    assert result["status_code"] == 400
+
+
+def test_get_cohort_segment_averages_top_n_exceeds_total(tmp_path, monkeypatch):
+    db_path = tmp_path / "mcp-cohort-overflow.db"
+    con = _create_db(db_path)
+    _seed_cohort_segments(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    result = mcp_tools.get_cohort_segment_averages(season=7, location="london", top_n=100)
+
+    assert result["total_count"] == 20
+    assert result["slice_count"] == 20
+
+
+def test_get_cohort_segment_averages_group_averages(tmp_path, monkeypatch):
+    db_path = tmp_path / "mcp-cohort-groups.db"
+    con = _create_db(db_path)
+    _seed_cohort_segments(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    result = mcp_tools.get_cohort_segment_averages(season=7, location="london", top_n=5)
+
+    run_means = [r["stats"]["mean"] for r in result["runs"]]
+    station_means = [s["stats"]["mean"] for s in result["stations"]]
+    expected_avg_run = sum(run_means) / len(run_means)
+    expected_avg_station = sum(station_means) / len(station_means)
+    assert abs(result["group_averages"]["avg_run_time_min"] - expected_avg_run) < 0.001
+    assert abs(result["group_averages"]["avg_station_time_min"] - expected_avg_station) < 0.001
+
+
+def test_get_cohort_segment_averages_not_found(tmp_path, monkeypatch):
+    db_path = tmp_path / "mcp-cohort-nf.db"
+    con = _create_db(db_path)
+    _seed_cohort_segments(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    result = mcp_tools.get_cohort_segment_averages(season=99, location="nonexistent")
+
+    assert "error" in result
+    assert result["status_code"] == 404
+
+
 def test_mcp_server_registers_expected_tools():
     """The MCP server should expose exactly the annotated intent-shaped tool set."""
     import asyncio
@@ -333,6 +481,7 @@ def test_mcp_server_registers_expected_tools():
         "find_athlete",
         "get_distribution",
         "get_race_summary",
+        "get_cohort_segment_averages",
         "get_rankings",
         "get_race_report",
         "get_deepdive",

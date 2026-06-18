@@ -23,6 +23,7 @@ EXPECTED_TOOL_NAMES = frozenset(
         "find_athlete",
         "get_distribution",
         "get_race_summary",
+        "get_cohort_segment_averages",
         "get_rankings",
         "get_race_report",
         "get_deepdive",
