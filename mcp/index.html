@@ -147,10 +147,6 @@
               <ul class="nav flex-column">
               </ul>
             </li>
-            <li class="nav-item" data-bs-level="2"><a href="#maintainer-smoke-test" class="nav-link">Maintainer Smoke Test</a>
-              <ul class="nav flex-column">
-              </ul>
-            </li>
               </ul>
             </li>
         </ul>
@@ -243,7 +239,7 @@ available across your Claude Code projects:</p>
 </code></pre></div>
 
 <p>Find an athlete and inspect one Result:</p>
-<div class="codehilite"><pre><span></span><code>Using Pyrox, find results for James Ingham. Pick the most recent open Result and
+<div class="codehilite"><pre><span></span><code>Using Pyrox, find results for Vlad Matei. Pick the most recent open Result and
 summarize the Race report, including strongest and weakest Segments.
 </code></pre></div>
 
@@ -257,7 +253,7 @@ State the Cohort, sample size, and whether the sample is thin.
 </code></pre></div>
 
 <p>Build a profile:</p>
-<div class="codehilite"><pre><span></span><code>Using Pyrox, create an athlete profile for James Ingham and explain how his
+<div class="codehilite"><pre><span></span><code>Using Pyrox, create an athlete profile for Your Name and explain how his
 Segment strengths compare with his historical Results.
 </code></pre></div>
 
@@ -271,13 +267,10 @@ Segment strengths compare with his historical Results.
 <li><strong>Cohort</strong>: the reference population used for rankings, Distributions, and Percentiles.</li>
 <li><strong>Distribution</strong>: histogram bins plus summary stats for a metric across a Cohort.</li>
 </ul>
-<p>When a user names an athlete, Claude usually needs to follow this flow:</p>
-<div class="codehilite"><pre><span></span><code>find_athlete -&gt; choose a result_id -&gt; get_race_report or get_deepdive
-</code></pre></div>
-
 <p>The <code>result_id</code> is an internal identifier. Users do not need to know it in advance.
 For common or ambiguous names, <code>find_athlete</code> returns candidate races so Claude
-can choose the right Result or ask for a narrower filter.</p>
+can choose the right Result or ask for a narrower filter.
+i.e <code>Vlad Matei</code> and <code>Vlad Mateei</code> (typo when registering ha)</p>
 <h2 id="caveats">Caveats<a class="headerlink" href="#caveats" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Pyrox is based on public HYROX source data and may inherit source-data issues.</li>
@@ -291,11 +284,7 @@ can choose the right Result or ask for a narrower filter.</p>
   return image files.</li>
 <li>The public MCP endpoint is open and read-only. It is rate-limited to protect
   availability.</li>
-</ul>
-<h2 id="maintainer-smoke-test">Maintainer Smoke Test<a class="headerlink" href="#maintainer-smoke-test" title="Permanent link">&para;</a></h2>
-<p>Maintainers can verify the live connector with:</p>
-<div class="codehilite"><pre><span></span><code><span class="nv">PYROX_MCP_URL</span><span class="o">=</span>https://pyrox-api.fly.dev/mcp/<span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>scripts/smoke_mcp.py<span class="w"> </span>--json
-</code></pre></div></div>
+</ul></div>
             </div>
         </div>
 
