@@ -64,6 +64,10 @@
 <li>
     <a href="../../reproducible-research/" class="dropdown-item">Reproducible Research</a>
 </li>
+                                    
+<li>
+    <a href="../../mcp/" class="dropdown-item">Try Pyrox MCP</a>
+</li>
                                 </ul>
                             </li>
                             <li class="nav-item dropdown">
@@ -121,7 +125,7 @@
               <ul class="nav flex-column">
               </ul>
             </li>
-            <li class="nav-item" data-bs-level="2"><a href="#2-validate-build-artifacts-locally" class="nav-link">2) Validate Build Artifacts Locally</a>
+            <li class="nav-item" data-bs-level="2"><a href="#2-validate-locally-before-releasing" class="nav-link">2) Validate Locally Before Releasing</a>
               <ul class="nav flex-column">
               </ul>
             </li>
@@ -167,19 +171,21 @@
 <li>creates a commit</li>
 <li>creates tag <code>v&lt;version&gt;</code></li>
 </ul>
-<h2 id="2-validate-build-artifacts-locally">2) Validate Build Artifacts Locally<a class="headerlink" href="#2-validate-build-artifacts-locally" title="Permanent link">&para;</a></h2>
-<p>Build a wheel:</p>
-<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>build<span class="w"> </span>--wheel
+<h2 id="2-validate-locally-before-releasing">2) Validate Locally Before Releasing<a class="headerlink" href="#2-validate-locally-before-releasing" title="Permanent link">&para;</a></h2>
+<p>Run the same core checks the release workflow relies on:</p>
+<div class="codehilite"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>--with<span class="w"> </span>pytest<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>-q
+uv<span class="w"> </span>build
+uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>scripts/verify_wheel_contents.py<span class="w"> </span>--sdist
 </code></pre></div>
 
-<p>Validate wheel contents:</p>
-<div class="codehilite"><pre><span></span><code>python<span class="w"> </span>scripts/verify_wheel_contents.py
-</code></pre></div>
-
-<p>This confirms the published wheel contains only the intended package surface.</p>
+<p>The package verifier checks both artifacts:</p>
+<ul>
+<li>the wheel contains only the intended <code>pyrox</code> package surface</li>
+<li>the source distribution does not include local app, virtualenv, node, or build
+  artifacts</li>
+</ul>
 <h2 id="3-optional-local-quality-checks">3) Optional Local Quality Checks<a class="headerlink" href="#3-optional-local-quality-checks" title="Permanent link">&para;</a></h2>
-<div class="codehilite"><pre><span></span><code>pytest<span class="w"> </span>-q
-ruff<span class="w"> </span>check<span class="w"> </span>.
+<div class="codehilite"><pre><span></span><code>ruff<span class="w"> </span>check<span class="w"> </span>.
 </code></pre></div>
 
 <h2 id="4-publish-via-github-actions">4) Publish via GitHub Actions<a class="headerlink" href="#4-publish-via-github-actions" title="Permanent link">&para;</a></h2>

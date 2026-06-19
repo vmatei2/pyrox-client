@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://vmatei2.github.io/pyrox-client/bugs/phantom-duplicate-races/">
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>Bug report: phantom duplicate races (cross-division &amp; cross-event) - pyrox-client</title>
+        <link href="../../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../../css/brands.min.css" rel="stylesheet">
+        <link href="../../css/solid.min.css" rel="stylesheet">
+        <link href="../../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <link href="../../assets/styles.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="../..">pyrox-client</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href="../.." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../../quickstart/" class="nav-link">Getting Started</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">User Guide</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../filters/" class="dropdown-item">Filtering</a>
+</li>
+                                    
+<li>
+    <a href="../../caching/" class="dropdown-item">Caching</a>
+</li>
+                                    
+<li>
+    <a href="../../data-model/" class="dropdown-item">Data Model</a>
+</li>
+                                    
+<li>
+    <a href="../../analytics/" class="dropdown-item">Analytics</a>
+</li>
+                                    
+<li>
+    <a href="../../reproducible-research/" class="dropdown-item">Reproducible Research</a>
+</li>
+                                    
+<li>
+    <a href="../../mcp/" class="dropdown-item">Try Pyrox MCP</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">API Reference</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../api/" class="dropdown-item">Client API</a>
+</li>
+                                    
+<li>
+    <a href="../../errors/" class="dropdown-item">Errors</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../../faq/" class="nav-link">FAQ</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../../privacy/" class="nav-link">Privacy Policy</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#bug-report-phantom-duplicate-races-cross-division-cross-event" class="nav-link">Bug report: phantom duplicate races (cross-division &amp; cross-event)</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#0-exact-file-locations-two-separate-repos" class="nav-link">0. Exact file locations (two separate repos)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#1-symptom-what-the-user-saw" class="nav-link">1. Symptom (what the user saw)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#2-how-to-reproduce" class="nav-link">2. How to reproduce</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#3-the-two-three-failure-modes" class="nav-link">3. The two (three) failure modes</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#4-root-cause-analysis" class="nav-link">4. Root cause analysis</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#5-scope-blast-radius" class="nav-link">5. Scope / blast radius</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#6-detection-queries-reusable" class="nav-link">6. Detection queries (reusable)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#7-recommended-fix-direction" class="nav-link">7. Recommended fix direction</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#8-open-questions-for-the-next-agent" class="nav-link">8. Open questions for the next agent</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#appendix-key-identifiers" class="nav-link">Appendix — key identifiers</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="bug-report-phantom-duplicate-races-cross-division-cross-event">Bug report: phantom duplicate races (cross-division &amp; cross-event)<a class="headerlink" href="#bug-report-phantom-duplicate-races-cross-division-cross-event" title="Permanent link">&para;</a></h1>
+<ul>
+<li><strong>Status:</strong> Open — root cause located in the data pipeline; fix not yet implemented.</li>
+<li><strong>Severity:</strong> High. Corrupts ~1.5% of <code>race_results</code> rows (~14.7k phantom rows) and silently inflates athlete profiles, rankings, distributions, and any cohort built from the affected events.</li>
+<li><strong>Discovered via:</strong> <code>find_athlete("James Ingham")</code> returning impossible races.</li>
+<li><strong>Area:</strong> Upstream scraper (separate repo, see §0) → source parquet in S3 → warehouse build in this repo. <strong>Not</strong> an API/MCP logic bug — the service faithfully serves corrupt source rows.</li>
+<li><strong>Date filed:</strong> 2026-06-16.</li>
+</ul>
+<hr />
+<h2 id="0-exact-file-locations-two-separate-repos">0. Exact file locations (two separate repos)<a class="headerlink" href="#0-exact-file-locations-two-separate-repos" title="Permanent link">&para;</a></h2>
+<p>The data flows through <strong>two distinct repositories on disk</strong>. The bug originates in the first; the second only reflects it.</p>
+<p><strong>A. Upstream scraper repo</strong> — produces the source parquet in S3 (this is where the root cause lives):
+- <code>/Users/vladmatei/VS_code_files/hyrox_analysis/scraping_code/hyrox_web_scraping.py</code> — core scraper: discovers events, parses results per division/gender, writes one parquet per event to S3.
+- <code>/Users/vladmatei/VS_code_files/hyrox_analysis/scraping_code/scraping_helpers.py</code>
+- <code>/Users/vladmatei/VS_code_files/hyrox_analysis/scraping_code/generate_manifest.py</code>
+- <code>/Users/vladmatei/VS_code_files/hyrox_analysis/scraping_code/dispatch_downstream.py</code>
+- <code>/Users/vladmatei/VS_code_files/hyrox_analysis/scraping_code/pipeline_reporting.py</code>
+- <code>/Users/vladmatei/VS_code_files/hyrox_analysis/scraping_code/hyrox_loader.py</code></p>
+<p><strong>B. This repo (<code>pyrox-client</code>)</strong> — reads that S3 parquet and builds the DuckDB artifact served by the API/MCP:
+- <code>/Users/vladmatei/PycharmProjects/pyrox-client/scripts/ingest_duckdb_from_s3.py</code> — orchestrates the DuckDB build.
+- <code>/Users/vladmatei/PycharmProjects/pyrox-client/scripts/sql_queries.py</code> — the SQL transforms (<code>create_race_results_query</code>, rankings, split percentiles). <strong>This faithfully copies whatever the parquet contains — no dedup.</strong>
+- <code>/Users/vladmatei/PycharmProjects/pyrox-client/pyrox_duckdb</code> — the built artifact (~1.1 GB).
+- <code>/Users/vladmatei/PycharmProjects/pyrox-client/pyrox_api_service/reporting_queries.py</code> + <code>/Users/vladmatei/PycharmProjects/pyrox-client/src/pyrox/reporting.py</code> — API/MCP read paths (correct; not the bug).</p>
+<blockquote>
+<p>⚠️ <strong>Do not</strong> confuse the feeder with <code>/Users/vladmatei/PycharmProjects/pyrox-client/scripts/scrape_hyresult_for_dates.py</code>. That script only scrapes <strong>event start dates</strong> (it produces <code>scripts/EVENT_START_DATES_SEASON_*.json</code>); it does <strong>not</strong> scrape the result rosters and is unrelated to this bug. The roster scraper is repo <strong>A</strong> above.</p>
+</blockquote>
+<hr />
+<h2 id="1-symptom-what-the-user-saw">1. Symptom (what the user saw)<a class="headerlink" href="#1-symptom-what-the-user-saw" title="Permanent link">&para;</a></h2>
+<p>James Ingham (singles, GBR, <code>athlete_id = 7ffd7bcf1bba0ad3e184ca89249f21b7</code>) has <strong>21 race rows</strong>, but several are clearly impossible: he appears to have run <strong>the exact same time (1:07:18) to the second at four different venues on four different dates</strong>, across every division (open / pro / doubles / pro_doubles) — at events he never physically competed in.</p>
+<p>His 21 rows split into <strong>9 genuine races</strong> and <strong>12 phantom duplicate rows</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>status</th>
+<th>location</th>
+<th>division</th>
+<th>total_time</th>
+<th>start_date</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PHANTOM</td>
+<td>apac-championship-brisbane</td>
+<td>open / pro / doubles / pro_doubles</td>
+<td>1:07:18</td>
+<td>2026-04-12</td>
+</tr>
+<tr>
+<td>PHANTOM</td>
+<td>warsaw</td>
+<td>open / pro / doubles / pro_doubles</td>
+<td>1:07:18</td>
+<td>2026-04-19</td>
+</tr>
+<tr>
+<td>PHANTOM</td>
+<td>cardiff</td>
+<td>pro / pro_doubles</td>
+<td>1:07:18</td>
+<td>2026-04-29</td>
+</tr>
+<tr>
+<td>PHANTOM</td>
+<td>lisboa</td>
+<td>pro / pro_doubles</td>
+<td>1:07:18</td>
+<td>2026-05-01</td>
+</tr>
+<tr>
+<td>genuine</td>
+<td>berlin</td>
+<td>open</td>
+<td>1:02:34</td>
+<td>2026-05-22</td>
+</tr>
+<tr>
+<td>genuine</td>
+<td>singapore-expo</td>
+<td>open</td>
+<td>1:02:56</td>
+<td>2025-11-29</td>
+</tr>
+<tr>
+<td>genuine</td>
+<td>hamburg</td>
+<td>open</td>
+<td>1:04:38</td>
+<td>2025-10-02</td>
+</tr>
+<tr>
+<td>genuine</td>
+<td>valencia</td>
+<td>open</td>
+<td>1:04:54</td>
+<td>2025-10-17</td>
+</tr>
+<tr>
+<td>genuine</td>
+<td>cape-town</td>
+<td>open</td>
+<td>1:05:19</td>
+<td>2025-07-19</td>
+</tr>
+<tr>
+<td>genuine</td>
+<td>shenzhen</td>
+<td>pro</td>
+<td>1:07:33</td>
+<td>2025-12-20</td>
+</tr>
+<tr>
+<td>genuine</td>
+<td>bangkok</td>
+<td>pro</td>
+<td>1:09:58</td>
+<td>2026-03-20</td>
+</tr>
+<tr>
+<td>genuine</td>
+<td>manchester</td>
+<td>open</td>
+<td>1:10:50</td>
+<td>2024-11-09</td>
+</tr>
+<tr>
+<td>genuine</td>
+<td>birmingham</td>
+<td>open</td>
+<td>1:12:45</td>
+<td>2024-10-25</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Note on <code>bangkok</code></strong> (flagged as suspect in the original report): James's bangkok row (1:09:58) is <strong>unique</strong> — its split signature does not appear anywhere else — so it is <strong>not</strong> a phantom duplicate. Likewise his cape-town row is genuine even though cape-town belongs to a contaminated cluster (see §5). <strong>Venue membership in a corrupt event does not by itself make a row phantom.</strong> The reliable test is whether the exact split signature is replicated elsewhere (see §6).</p>
+</blockquote>
+<p>All 12 phantom rows are <strong>byte-identical in every split</strong>, not just total time:</p>
+<div class="codehilite"><pre><span></span><code>run1 0:04:30 | skiErg 0:04:18 | sledPush 0:03:34 | ... | wallBalls 0:05:13 | run8 0:04:40 | roxzone 0:00:00 | work 0:31:30
+</code></pre></div>
+
+<p>(<code>roxzone 0:00:00</code> is itself implausible for a real singles race and is a secondary tell that these events are corrupt.)</p>
+<hr />
+<h2 id="2-how-to-reproduce">2. How to reproduce<a class="headerlink" href="#2-how-to-reproduce" title="Permanent link">&para;</a></h2>
+<h3 id="via-the-mcp-tool-what-a-future-agent-will-hit">Via the MCP tool (what a future agent will hit)<a class="headerlink" href="#via-the-mcp-tool-what-a-future-agent-will-hit" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code>find_athlete(name=&quot;James Ingham&quot;)
+</code></pre></div>
+
+<p>Returns an ambiguous-match error listing concatenated doubles names — <strong>ignore that</strong>, it is a separate, <em>expected</em> behaviour (names are not the bug). Resolve the singles athlete directly:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># athlete_id for singles James Ingham</span>
+<span class="n">get_athlete_profile</span><span class="p">(</span><span class="n">athlete_id</span><span class="o">=</span><span class="s2">&quot;7ffd7bcf1bba0ad3e184ca89249f21b7&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p>The profile's race list contains the 12 phantom 1:07:18 rows.</p>
+<h3 id="via-sql-direct-read-only">Via SQL (direct, read-only)<a class="headerlink" href="#via-sql-direct-read-only" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">duckdb</span>
+<span class="n">con</span> <span class="o">=</span> <span class="n">duckdb</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;/Users/vladmatei/PycharmProjects/pyrox-client/pyrox_duckdb&quot;</span><span class="p">,</span> <span class="n">read_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># 1.1 GB artifact</span>
+<span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">  SELECT r.location, r.division, r.total_time, r.start_date</span>
+<span class="s2">  FROM race_results r</span>
+<span class="s2">  JOIN athlete_results ar ON ar.result_id = r.result_id</span>
+<span class="s2">  WHERE ar.athlete_id = &#39;7ffd7bcf1bba0ad3e184ca89249f21b7&#39;</span>
+<span class="s2">  ORDER BY r.total_time_min, r.location</span>
+<span class="s2">&quot;&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">fetchdf</span><span class="p">()</span>
+</code></pre></div>
+
+<hr />
+<h2 id="3-the-two-three-failure-modes">3. The two (three) failure modes<a class="headerlink" href="#3-the-two-three-failure-modes" title="Permanent link">&para;</a></h2>
+<p>The corruption is not a single bug; the same underlying mishandling shows up as distinct shapes.</p>
+<h3 id="mode-a-cross-division-fan-out-largest">Mode A — cross-division fan-out (largest)<a class="headerlink" href="#mode-a-cross-division-fan-out-largest" title="Permanent link">&para;</a></h3>
+<p>Within one event, a single result is replicated <strong>once per division present in that event</strong>, each copy stamped with a different (mostly wrong) division but otherwise identical (same splits, same times).</p>
+<p>Evidence — warsaw event <code>LR3MS4JI1532</code>:</p>
+<table>
+<thead>
+<tr>
+<th>division</th>
+<th>rows</th>
+<th>distinct names</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>doubles</td>
+<td>653</td>
+<td>653</td>
+</tr>
+<tr>
+<td>open</td>
+<td>653</td>
+<td>653</td>
+</tr>
+<tr>
+<td>pro</td>
+<td>653</td>
+<td>653</td>
+</tr>
+<tr>
+<td>pro_doubles</td>
+<td>653</td>
+<td>653</td>
+</tr>
+</tbody>
+</table>
+<p>All four divisions carry the <strong>same 653-athlete roster with identical singles splits</strong> (8 runs + roxzone present in all). A <em>real</em> event has different rosters per division (e.g. melbourne <code>LR3MS4JI1182</code>: doubles=2525 rows, open=919 rows — genuinely different). So warsaw's "doubles"/"pro_doubles" copies are the singles field mislabeled, not real doubles results.</p>
+<p>Signature: in an affected event, <code>rows ÷ distinct_names == number_of_divisions</code> exactly (ratio 4.00 or 2.00).</p>
+<h3 id="mode-b-cross-event-contamination-the-one-the-user-cares-about">Mode B — cross-event contamination (the one the user cares about)<a class="headerlink" href="#mode-b-cross-event-contamination-the-one-the-user-cares-about" title="Permanent link">&para;</a></h3>
+<p>The <strong>same roster is replicated across several distinct events</strong> (different <code>event_id</code>, <code>location</code>, <code>start_date</code>), so an athlete who raced once appears at venues they never attended — with identical splits. This is what produces James's 1:07:18 at brisbane + warsaw + cardiff + lisboa.</p>
+<h3 id="mode-c-duplicate-location-slug">Mode C — duplicate location slug<a class="headerlink" href="#mode-c-duplicate-location-slug" title="Permanent link">&para;</a></h3>
+<p>The same physical event is ingested under two location slugs, e.g. <code>johannesburg</code> and <code>johannesburg-i</code> (both <code>start_date = 2025-03-01</code>). Because <code>location</code> is part of the <code>result_id</code> hash (see §4), the two copies get <strong>different <code>result_id</code>s</strong> and survive as separate rows.</p>
+<hr />
+<h2 id="4-root-cause-analysis">4. Root cause analysis<a class="headerlink" href="#4-root-cause-analysis" title="Permanent link">&para;</a></h2>
+<h3 id="the-warehouse-transform-is-innocent-but-offers-no-guard">The warehouse transform is innocent (but offers no guard)<a class="headerlink" href="#the-warehouse-transform-is-innocent-but-offers-no-guard" title="Permanent link">&para;</a></h3>
+<p><code>result_id</code> is built in <code>/Users/vladmatei/PycharmProjects/pyrox-client/scripts/sql_queries.py</code> (<code>create_race_results_query</code>):</p>
+<div class="codehilite"><pre><span></span><code><span class="n">md5</span><span class="p">(</span>
+<span class="w">    </span><span class="k">coalesce</span><span class="p">(</span><span class="n">event_id</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">&#39;|&#39;</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="k">coalesce</span><span class="p">(</span><span class="k">trim</span><span class="p">(</span><span class="n">name</span><span class="p">),</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">&#39;|&#39;</span><span class="w"> </span><span class="o">||</span>
+<span class="w">    </span><span class="k">coalesce</span><span class="p">(</span><span class="n">division</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">&#39;|&#39;</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="k">coalesce</span><span class="p">(</span><span class="n">total_time_str</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">&#39;|&#39;</span><span class="w"> </span><span class="o">||</span>
+<span class="w">    </span><span class="k">coalesce</span><span class="p">(</span><span class="n">season</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">&#39;|&#39;</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="k">coalesce</span><span class="p">(</span><span class="k">location</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">&#39;|&#39;</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="k">coalesce</span><span class="p">(</span><span class="k">year</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+<span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">result_id</span>
+</code></pre></div>
+
+<p>The transform reads straight from S3 parquet:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">FROM</span><span class="w"> </span><span class="n">read_parquet</span><span class="p">(</span><span class="s1">&#39;s3://hyrox-results/processed/parquet/season=*/location=*/year=*/*.parquet&#39;</span><span class="p">,</span>
+<span class="w">                  </span><span class="n">hive_partitioning</span><span class="o">=</span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="n">union_by_name</span><span class="o">=</span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="n">binary_as_string</span><span class="o">=</span><span class="k">true</span><span class="p">)</span>
+</code></pre></div>
+
+<p>There is <strong>no <code>DISTINCT</code>/dedup step</strong>. So:
+- Whatever duplication exists in the source parquet is copied 1:1 into <code>race_results</code>.
+- Because <code>division</code> and <code>location</code> are part of the <code>md5</code>, the same underlying performance under a different division (Mode A) or location slug (Mode C) produces a <em>distinct</em> <code>result_id</code> and is therefore not even a hash collision — it is a fully materialised extra row.
+- <code>union_by_name=true</code> across all partition files means two source files for the same event (Mode C, or a re-scrape) are concatenated, not merged.</p>
+<p><strong>Conclusion: the duplicates originate in the source parquet in S3</strong>, not in the DuckDB build. The upstream writer is <code>/Users/vladmatei/VS_code_files/hyrox_analysis/scraping_code/hyrox_web_scraping.py</code>. Relevant pointers in that file (line numbers as of 2026-06-16, ~1411 lines total — re-grep if they have drifted):</p>
+<ul>
+<li><strong><code>EVENT_VALUE_RE</code> (~line 455)</strong> — <code>^(?P&lt;division&gt;[A-Z]+)_(?P&lt;event_id&gt;[A-Z0-9]+)$</code>. The source site identifies a result set by <code>DIVISION_EVENTID</code>; <code>event_id</code> is shared across the divisions of one physical event.</li>
+<li><strong><code>discover_events_for_season</code> (~line 542)</strong> — returns <strong>one row per <code>(division, event_id)</code></strong>, i.e. each division is a separate scrape target.</li>
+<li><strong>The per-event scraper class (~line 812) and its division×gender loop (<code>for division, gender in all_div_gender</code>, ~line 934)</strong> — fetches a roster for <strong>each</strong> division. <strong>This is the prime suspect for Mode A:</strong> if the source endpoint returns the <em>complete</em> event field regardless of the requested division (a known failure mode on result sites where the division filter is cosmetic), every division iteration captures the same finishers, each then stamped with the requested division. Verify by checking whether <code>get_timings</code> / the roster fetch actually constrains rows to the requested division.</li>
+<li><strong>Parquet writer (~lines 1080–1145)</strong> — <code>file_name = f"{_slug(self.event_name)}__{self.event_id}.parquet"</code>, written under <code>season={season}</code>. The <code>location</code> partition the warehouse globs on (<code>location=*</code>) is derived downstream from <code>event_name</code>/event metadata. <strong>Mode C (<code>johannesburg</code> vs <code>johannesburg-i</code>) is two <code>event_name</code>/<code>event_id</code> files for the same physical event</strong> — confirm whether the source listed Johannesburg twice, or whether the manifest/dispatch step (<code>generate_manifest.py</code> / <code>dispatch_downstream.py</code>) emitted it twice.</li>
+</ul>
+<p>Likely mechanisms by mode:
+- <strong>Mode A</strong> — division filter on the source returns the full field; the loop at ~line 934 captures it once per division.
+- <strong>Mode B</strong> — a batch of events shares one roster / the same roster associated with several <code>event_id</code>s (inspect <code>discover_events_for_season</code> output and <code>generate_manifest.py</code>).
+- <strong>Mode C</strong> — an event scraped/written twice under two <code>event_name</code> slugs.</p>
+<h3 id="why-this-matters-downstream">Why this matters downstream<a class="headerlink" href="#why-this-matters-downstream" title="Permanent link">&para;</a></h3>
+<p>Every consumer treats <code>race_results</code> rows as independent finishers:
+- <strong>Rankings / percentiles</strong> (<code>race_rankings</code>, <code>split_percentiles</code> in <code>/Users/vladmatei/PycharmProjects/pyrox-client/scripts/sql_queries.py</code>) partition by <code>division, gender, age_group</code> — phantom rows inflate cohort sizes and distort <code>event_size</code>, <code>percent_rank</code>, and placement.
+- <strong>Athlete profiles</strong> count phantom races as real PBs/averages.
+- <strong>Distributions</strong> (<code>/api/distribution</code>) include duplicated finishers.</p>
+<hr />
+<h2 id="5-scope-blast-radius">5. Scope / blast radius<a class="headerlink" href="#5-scope-blast-radius" title="Permanent link">&para;</a></h2>
+<p>Measured on the current <code>pyrox_duckdb</code> artifact (971,094 total rows):</p>
+<ul>
+<li><strong>~14,707 phantom rows</strong> across <strong>8,946 duplicate groups</strong> (grouping by <code>event_id, name, total_time</code>).</li>
+<li><strong>~3,351 distinct athletes</strong> have at least one performance replicated across multiple locations.</li>
+<li><strong>137 events</strong> contain at least some duplication; the corruption concentrates in a handful of wholesale-corrupt events.</li>
+</ul>
+<h3 id="contamination-clusters-mode-b-by-shared-location-set">Contamination clusters (Mode B), by shared location set<a class="headerlink" href="#contamination-clusters-mode-b-by-shared-location-set" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>location cluster</th>
+<th># affected athletes (signatures)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>johannesburg \| johannesburg-i</code></td>
+<td>2,184</td>
+</tr>
+<tr>
+<td><code>apac-championship-brisbane \| cardiff \| lisboa \| warsaw</code> ← <strong>James's cluster</strong></td>
+<td>634</td>
+</tr>
+<tr>
+<td><code>bologna \| cape-town \| emea-london-olympia \| mechelen \| miami \| phoenix \| singapore \| washington-dc</code></td>
+<td>520</td>
+</tr>
+<tr>
+<td><code>apac-championship-brisbane \| lisboa \| warsaw</code></td>
+<td>11</td>
+</tr>
+<tr>
+<td><code>apac-championship-brisbane \| warsaw</code></td>
+<td>8</td>
+</tr>
+</tbody>
+</table>
+<h3 id="worst-single-events-mode-a-by-phantom-rows">Worst single events (Mode A), by phantom rows<a class="headerlink" href="#worst-single-events-mode-a-by-phantom-rows" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>event_id</th>
+<th>location</th>
+<th>season</th>
+<th>athletes</th>
+<th>% duplicated</th>
+<th>phantom rows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>JGDMS4JI9A0</td>
+<td>johannesburg</td>
+<td>7</td>
+<td>2272</td>
+<td>96%</td>
+<td>2184</td>
+</tr>
+<tr>
+<td>LR3MS4JI14B8</td>
+<td>apac-championship-brisbane</td>
+<td>8</td>
+<td>660</td>
+<td>100%</td>
+<td>1979</td>
+</tr>
+<tr>
+<td>LR3MS4JI1532</td>
+<td>warsaw</td>
+<td>8</td>
+<td>653</td>
+<td>100%</td>
+<td>1959</td>
+</tr>
+<tr>
+<td>LR3MS4JI139F</td>
+<td>washington-dc</td>
+<td>8</td>
+<td>520</td>
+<td>100%</td>
+<td>1560</td>
+</tr>
+<tr>
+<td>LR3MS4JI1287</td>
+<td>phoenix</td>
+<td>8</td>
+<td>520</td>
+<td>100%</td>
+<td>1560</td>
+</tr>
+<tr>
+<td>LR3MS4JI1405</td>
+<td>emea-london-olympia</td>
+<td>8</td>
+<td>520</td>
+<td>100%</td>
+<td>1560</td>
+</tr>
+<tr>
+<td>LR3MS4JI14F4</td>
+<td>lisboa</td>
+<td>8</td>
+<td>645</td>
+<td>100%</td>
+<td>645</td>
+</tr>
+<tr>
+<td>LR3MS4JI1597</td>
+<td>cardiff</td>
+<td>8</td>
+<td>634</td>
+<td>100%</td>
+<td>634</td>
+</tr>
+<tr>
+<td>LR3MS4JI1441</td>
+<td>mechelen</td>
+<td>8</td>
+<td>520</td>
+<td>100%</td>
+<td>520</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Red flag — the "exactly 520" events</strong> (phoenix, washington-dc, emea-london-olympia, mechelen) each have <em>precisely</em> 520 distinct athletes × N divisions. A real Hyrox event roster is never a round 520 repeated across four cities. These specific event partitions look <strong>synthetic / seeded / capped-pagination</strong> in addition to being fan-out-duplicated, and should be inspected at the source before trusting any row from them.</p>
+</blockquote>
+<hr />
+<h2 id="6-detection-queries-reusable">6. Detection queries (reusable)<a class="headerlink" href="#6-detection-queries-reusable" title="Permanent link">&para;</a></h2>
+<p><strong>Mode A — events where every athlete is fanned across divisions:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="n">event_id</span><span class="p">,</span><span class="w"> </span><span class="n">any_value</span><span class="p">(</span><span class="k">location</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">location</span><span class="p">,</span>
+<span class="w">       </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">n_rows</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">n_names</span><span class="p">,</span>
+<span class="w">       </span><span class="n">ROUND</span><span class="p">(</span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="o">*</span><span class="mi">1</span><span class="p">.</span><span class="mi">0</span><span class="o">/</span><span class="k">NULLIF</span><span class="p">(</span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">name</span><span class="p">),</span><span class="mi">0</span><span class="p">),</span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">ratio</span><span class="p">,</span>
+<span class="w">       </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">division</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">n_divisions</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">race_results</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">event_id</span>
+<span class="k">HAVING</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">200</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">ratio</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">1</span><span class="p">.</span><span class="mi">9</span><span class="w">      </span><span class="c1">-- ratio ~= n_divisions ⇒ corrupt</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">ratio</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+</code></pre></div>
+
+<p><strong>Mode B — same athlete + identical full split signature at &gt;1 location (the authoritative per-row test):</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">WITH</span><span class="w"> </span><span class="n">sig</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="k">SELECT</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">total_time</span><span class="p">,</span>
+<span class="w">         </span><span class="n">run1_time</span><span class="o">||</span><span class="n">run2_time</span><span class="o">||</span><span class="n">run3_time</span><span class="o">||</span><span class="n">run4_time</span><span class="o">||</span><span class="n">run5_time</span><span class="o">||</span><span class="n">run6_time</span><span class="o">||</span><span class="n">run7_time</span><span class="o">||</span><span class="n">run8_time</span>
+<span class="w">         </span><span class="o">||</span><span class="n">skiErg_time</span><span class="o">||</span><span class="n">sledPush_time</span><span class="o">||</span><span class="n">sledPull_time</span><span class="o">||</span><span class="n">burpeeBroadJump_time</span><span class="o">||</span><span class="n">rowErg_time</span>
+<span class="w">         </span><span class="o">||</span><span class="n">farmersCarry_time</span><span class="o">||</span><span class="n">sandbagLunges_time</span><span class="o">||</span><span class="n">wallBalls_time</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">splitsig</span><span class="p">,</span>
+<span class="w">         </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="k">location</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">n_locations</span><span class="p">,</span>
+<span class="w">         </span><span class="n">array_to_string</span><span class="p">(</span><span class="n">list_sort</span><span class="p">(</span><span class="n">array_agg</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="k">location</span><span class="p">)),</span><span class="s1">&#39; | &#39;</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">cluster</span>
+<span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="n">race_results</span>
+<span class="w">  </span><span class="k">WHERE</span><span class="w"> </span><span class="n">total_time_min</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span>
+<span class="w">  </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">total_time</span><span class="p">,</span><span class="w"> </span><span class="n">splitsig</span>
+<span class="p">)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">cluster</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">n_signatures</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">sig</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">n_locations</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">cluster</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">n_signatures</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+</code></pre></div>
+
+<p><strong>Mode C — duplicate location slugs sharing a date:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="n">start_date</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="k">location</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">slugs</span><span class="p">,</span>
+<span class="w">       </span><span class="n">array_agg</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="k">location</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">location_slugs</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">race_results</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">start_date</span>
+<span class="k">HAVING</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="k">location</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">AND</span>
+<span class="w">       </span><span class="n">bool_or</span><span class="p">(</span><span class="k">location</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;%-i&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">;</span><span class="w">   </span><span class="c1">-- &#39;-i&#39; / numeric suffixes are the tell</span>
+</code></pre></div>
+
+<hr />
+<h2 id="7-recommended-fix-direction">7. Recommended fix direction<a class="headerlink" href="#7-recommended-fix-direction" title="Permanent link">&para;</a></h2>
+<p>Fixing only the DuckDB artifact treats the symptom; the source parquet must be corrected too, or the next rebuild reintroduces everything.</p>
+<ol>
+<li>
+<p><strong>Confirm at the source first.</strong> Inspect the S3 parquet for one affected event (e.g. warsaw <code>event_id = LR3MS4JI1532</code>). Determine whether the duplication is (a) one file with division-fanned rows, (b) multiple files per event, or (c) division-filter-ignored scrape responses. This decides whether the fix lives in the scraper or the manifest/dispatch step. <strong>Start in the scraper repo:</strong> <code>/Users/vladmatei/VS_code_files/hyrox_analysis/scraping_code/hyrox_web_scraping.py</code> (the division×gender loop at ~line 934 and the roster fetch it calls), then <code>generate_manifest.py</code> and <code>dispatch_downstream.py</code> in the same directory.</p>
+</li>
+<li>
+<p><strong>Pitfalls — naive fixes that will <em>not</em> work:</strong></p>
+</li>
+<li><strong>Dedup on <code>result_id</code> alone:</strong> does nothing. Every phantom already has a <em>distinct</em> <code>result_id</code> (division and location are in the hash). Modes A/B/C all survive a <code>result_id</code> dedup.</li>
+<li><strong>"Keep one row per division":</strong> you cannot recover the <em>true</em> division — all copies are equally (in)valid. For Mode A the real division is unknown from the warehouse alone; it must come from the source.</li>
+<li>
+<p><strong>Dropping whole venues:</strong> over-deletes. James's cape-town row is genuine even though cape-town is in a contaminated cluster.</p>
+</li>
+<li>
+<p><strong>A defensible warehouse-level guard (interim):</strong> dedup on the <strong>full content signature</strong> — <code>(name, total_time, every split string, gender, age_group)</code> — collapsing Mode B/C copies, and for Mode A reduce the per-division fan-out by detecting <code>rows/names == n_divisions</code> events. But this is lossy (it cannot reconstruct true divisions) and should be a stopgap, clearly logged, not the primary fix.</p>
+</li>
+<li>
+<p><strong>Add a regression check</strong> to the ingest pipeline (<code>/Users/vladmatei/PycharmProjects/pyrox-client/scripts/ingest_duckdb_from_s3.py</code>) using the §6 queries: fail the build if any event has <code>rows/names &gt;= 1.9</code>, or if any <code>(name + splitsig)</code> spans &gt;1 location above a small threshold.</p>
+</li>
+</ol>
+<hr />
+<h2 id="8-open-questions-for-the-next-agent">8. Open questions for the next agent<a class="headerlink" href="#8-open-questions-for-the-next-agent" title="Permanent link">&para;</a></h2>
+<ul>
+<li>For each Mode B cluster, <strong>which event is the real one?</strong> (Is James's 1:07:18 a real brisbane/warsaw/cardiff/lisboa race that got copied, or fully fabricated? The warehouse cannot tell — needs the source/hyresult page.)</li>
+<li>Are the <strong>"exactly 520" events</strong> real events at all, or seeded/sample data that leaked into the production artifact?</li>
+<li>Why do the affected events all carry <strong><code>roxzone_time = 0:00:00</code></strong>? Is that a property of the corrupt source batch (useful as an extra detector), or coincidental?</li>
+<li>In Mode C, the johannesburg dup pair differs only in <code>nationality</code> (<code>None</code> vs <code>RSA, RSA</code>) — confirming two source files, one enrichment pass apart. How many other events have this two-file shape?</li>
+</ul>
+<hr />
+<h2 id="appendix-key-identifiers">Appendix — key identifiers<a class="headerlink" href="#appendix-key-identifiers" title="Permanent link">&para;</a></h2>
+<ul>
+<li>DuckDB artifact: <code>/Users/vladmatei/PycharmProjects/pyrox-client/pyrox_duckdb</code> (~1.1 GB). Open <code>read_only=True</code>.</li>
+<li>Singles James Ingham: <code>athlete_id = 7ffd7bcf1bba0ad3e184ca89249f21b7</code> (canonical_name <code>ingham, james</code>, 21 rows).</li>
+<li>Transform that builds <code>race_results</code>: <code>/Users/vladmatei/PycharmProjects/pyrox-client/scripts/sql_queries.py::create_race_results_query</code>.</li>
+<li>Upstream roster scraper (root cause): <code>/Users/vladmatei/VS_code_files/hyrox_analysis/scraping_code/hyrox_web_scraping.py</code>.</li>
+<li>S3 source globbed by the warehouse: <code>s3://hyrox-results/processed/parquet/season=*/location=*/year=*/*.parquet</code>.</li>
+<li>Scraper S3 output base: <code>HYROX_OUTPUT_URI</code> env var (see <code>hyrox_web_scraping.py:35</code>), written as <code>season={season}/{slug(event_name)}__{event_id}.parquet</code>.</li>
+</ul></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../js/base.js"></script>
+        <script src="../../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

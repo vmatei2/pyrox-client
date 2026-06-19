@@ -64,6 +64,10 @@
 <li>
     <a href="../reproducible-research/" class="dropdown-item">Reproducible Research</a>
 </li>
+                                    
+<li>
+    <a href="../mcp/" class="dropdown-item">Try Pyrox MCP</a>
+</li>
                                 </ul>
                             </li>
                             <li class="nav-item dropdown">
@@ -94,7 +98,7 @@
                             </a>
                         </li>
                             <li class="nav-item">
-                                <a rel="prev" href="../reproducible-research/" class="nav-link">
+                                <a rel="prev" href="../mcp/" class="nav-link">
                                     <i class="fa fa-arrow-left"></i> Previous
                                 </a>
                             </li>
@@ -127,6 +131,10 @@
               <ul class="nav flex-column">
               </ul>
             </li>
+            <li class="nav-item" data-bs-level="2"><a href="#reporting-service-note-repository-only" class="nav-link">Reporting Service Note (Repository-Only)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
               </ul>
             </li>
         </ul>
@@ -143,6 +151,22 @@
 
 <h3 id="list_racesseason-int-none-none-force_refresh-bool-false"><code>list_races(season: int | None = None, force_refresh: bool = False)</code><a class="headerlink" href="#list_racesseason-int-none-none-force_refresh-bool-false" title="Permanent link">&para;</a></h3>
 <p>Return a DataFrame of available races. Filter by season when provided.</p>
+<h3 id="list_seasonsforce_refresh-bool-false"><code>list_seasons(force_refresh: bool = False)</code><a class="headerlink" href="#list_seasonsforce_refresh-bool-false" title="Permanent link">&para;</a></h3>
+<p>Return sorted season values available in the manifest.</p>
+<h3 id="list_locationsseason-int-none-none-force_refresh-bool-false"><code>list_locations(season: int | None = None, force_refresh: bool = False)</code><a class="headerlink" href="#list_locationsseason-int-none-none-force_refresh-bool-false" title="Permanent link">&para;</a></h3>
+<p>Return sorted location values available in the manifest. When <code>season</code> is
+provided, results are limited to that season. Returns an empty list if no
+locations match.</p>
+<h3 id="list_years"><code>list_years(...)</code><a class="headerlink" href="#list_years" title="Permanent link">&para;</a></h3>
+<div class="codehilite"><pre><span></span><code><span class="n">list_years</span><span class="p">(</span>
+<span class="w">    </span><span class="nl">season</span><span class="p">:</span><span class="w"> </span><span class="nc">int</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="k">None</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">None</span><span class="p">,</span>
+<span class="w">    </span><span class="nl">location</span><span class="p">:</span><span class="w"> </span><span class="nf">str</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="k">None</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">None</span><span class="p">,</span>
+<span class="w">    </span><span class="nl">force_refresh</span><span class="p">:</span><span class="w"> </span><span class="n">bool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">False</span><span class="p">,</span>
+<span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">list</span><span class="o">[</span><span class="n">int</span><span class="o">]</span>
+</code></pre></div>
+
+<p>Return sorted calendar years available in the manifest. Location matching is
+case-insensitive. Returns an empty list if no years match.</p>
 <h3 id="get_race"><code>get_race(...)</code><a class="headerlink" href="#get_race" title="Permanent link">&para;</a></h3>
 <div class="codehilite"><pre><span></span><code><span class="n">get_race</span><span class="p">(</span>
 <span class="w">    </span><span class="n">season</span><span class="o">:</span><span class="w"> </span><span class="n">int</span><span class="p">,</span>
@@ -160,6 +184,16 @@
 - Converts time columns into minutes.
 - Supports strict time windows using <code>total_time</code>.</p>
 <p>Division values seen in the dataset include <code>open</code>, <code>pro</code>, and <code>pro_doubles</code>.</p>
+<p>If the manifest lookup fails, <code>RaceNotFound</code> includes discovery context such as
+available seasons, available years, and close location suggestions:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pyrox.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">RaceNotFound</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">client</span><span class="o">.</span><span class="n">get_race</span><span class="p">(</span><span class="n">season</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="s2">&quot;londn&quot;</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">RaceNotFound</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">exc</span><span class="o">.</span><span class="n">suggestions</span><span class="p">)</span>
+</code></pre></div>
+
 <h3 id="get_athlete_in_race"><code>get_athlete_in_race(...)</code><a class="headerlink" href="#get_athlete_in_race" title="Permanent link">&para;</a></h3>
 <div class="codehilite"><pre><span></span><code><span class="n">get_athlete_in_race</span><span class="p">(</span>
 <span class="w">    </span><span class="n">season</span><span class="o">:</span><span class="w"> </span><span class="n">int</span><span class="p">,</span>
@@ -188,7 +222,32 @@
 <h3 id="clear_cachepattern-str"><code>clear_cache(pattern: str = "*")</code><a class="headerlink" href="#clear_cachepattern-str" title="Permanent link">&para;</a></h3>
 <p>Clear cached items matching a glob pattern.</p>
 <h3 id="cache_info-dict"><code>cache_info() -&gt; dict</code><a class="headerlink" href="#cache_info-dict" title="Permanent link">&para;</a></h3>
-<p>Return cache statistics and keys.</p></div>
+<p>Return cache statistics and keys.</p>
+<h2 id="reporting-service-note-repository-only">Reporting Service Note (Repository-Only)<a class="headerlink" href="#reporting-service-note-repository-only" title="Permanent link">&para;</a></h2>
+<p>This repository also ships a FastAPI reporting service (<code>pyrox_api_service/</code>) that
+is separate from the published <code>pyrox-client</code> wheel.</p>
+<p>The optional <code>pyrox-client[reporting]</code> extra installs the DuckDB Python library
+needed by <code>ReportingClient</code>, but it does not bundle a DuckDB database file. Use
+<code>ReportingClient(database="/path/to/pyrox_duckdb")</code> when you have a local
+generated database artifact.</p>
+<p>For athlete profile endpoints:</p>
+<ul>
+<li><code>GET /api/athletes/profile?name=&lt;name&gt;</code></li>
+<li><code>GET /api/athletes/{athlete_id}/profile</code></li>
+</ul>
+<p><code>personal_bests</code> entries may include an optional <code>percentile</code> field (float in
+<code>[0, 1]</code>) per segment key (<code>overall</code>, <code>runplusroxzone</code>, <code>skierg</code>, <code>sledpush</code>,
+<code>sledpull</code>, <code>burpeebroadjump</code>, <code>rowerg</code>, <code>farmerscarry</code>, <code>sandbaglunges</code>,
+<code>wallballs</code>).</p>
+<p><code>average_times</code> entries may also include optional <code>percentile</code> with the same
+range and segment keys.</p>
+<p>Percentile direction matches report split percentiles:
+- <code>1.0</code> means faster than 100% of the cohort.
+- <code>0.0</code> means slower than everyone in the cohort.
+- If percentile cannot be computed for a segment, the key is omitted for that
+  segment without failing the endpoint.</p>
+<p>Profile percentiles are computed against historical results in the same division
+and gender.</p></div>
             </div>
         </div>
 

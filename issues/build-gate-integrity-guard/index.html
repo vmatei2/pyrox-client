@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://vmatei2.github.io/pyrox-client/issues/build-gate-integrity-guard/">
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>Plan: Build-gate integrity guard for the DuckDB ingest (#18) - pyrox-client</title>
+        <link href="../../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../../css/brands.min.css" rel="stylesheet">
+        <link href="../../css/solid.min.css" rel="stylesheet">
+        <link href="../../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <link href="../../assets/styles.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="../..">pyrox-client</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href="../.." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../../quickstart/" class="nav-link">Getting Started</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">User Guide</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../filters/" class="dropdown-item">Filtering</a>
+</li>
+                                    
+<li>
+    <a href="../../caching/" class="dropdown-item">Caching</a>
+</li>
+                                    
+<li>
+    <a href="../../data-model/" class="dropdown-item">Data Model</a>
+</li>
+                                    
+<li>
+    <a href="../../analytics/" class="dropdown-item">Analytics</a>
+</li>
+                                    
+<li>
+    <a href="../../reproducible-research/" class="dropdown-item">Reproducible Research</a>
+</li>
+                                    
+<li>
+    <a href="../../mcp/" class="dropdown-item">Try Pyrox MCP</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">API Reference</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../api/" class="dropdown-item">Client API</a>
+</li>
+                                    
+<li>
+    <a href="../../errors/" class="dropdown-item">Errors</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../../faq/" class="nav-link">FAQ</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../../privacy/" class="nav-link">Privacy Policy</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#plan-build-gate-integrity-guard-for-the-duckdb-ingest-18" class="nav-link">Plan: Build-gate integrity guard for the DuckDB ingest (#18)</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#background-read-this-first-do-not-skip" class="nav-link">Background (read this first, do not skip)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#what-to-build" class="nav-link">What to build</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#constraints-do-nots" class="nav-link">Constraints / do-nots</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#success-criteria" class="nav-link">Success criteria</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#out-of-scope" class="nav-link">Out of scope</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="plan-build-gate-integrity-guard-for-the-duckdb-ingest-18">Plan: Build-gate integrity guard for the DuckDB ingest (#18)<a class="headerlink" href="#plan-build-gate-integrity-guard-for-the-duckdb-ingest-18" title="Permanent link">&para;</a></h1>
+<p><strong>Repo:</strong> <code>pyrox-client</code>
+<strong>Target file:</strong> <code>scripts/ingest_duckdb_from_s3.py</code>
+<strong>Test file:</strong> <code>tests/test_ingest_build_gate.py</code> (new)
+<strong>Type:</strong> AFK — implement and merge without human interaction, provided all tests pass.</p>
+<hr />
+<h2 id="background-read-this-first-do-not-skip">Background (read this first, do not skip)<a class="headerlink" href="#background-read-this-first-do-not-skip" title="Permanent link">&para;</a></h2>
+<p>The upstream scraper (<code>hyrox_analysis</code> repo) had a bug nicknamed <strong>"phantom duplicate races."</strong>
+The mikatiming results server returns <strong>HTTP 200 and silently substitutes a default
+event</strong> when asked for an event id it cannot resolve. The old scraper accepted that
+substituted page, so a single athlete's splits got written into many divisions/venues
+they never actually raced. Two fingerprints identify the corruption:</p>
+<ol>
+<li><strong>Fan-out</strong> — the same roster duplicated across divisions, so within one
+   <code>(location, year, division)</code> group <code>row_count / distinct_athlete_names</code> is well
+   above 1.0 (clean singles is ~1.0; corrupt groups were ≥2.0).</li>
+<li><strong>Zero roxzone</strong> — the substituted page came back with empty transition (Roxzone)
+   fields, so nearly every finisher in a corrupt group has <code>roxzone_time == 0</code>.</li>
+</ol>
+<p>The scraper has since been fixed and now validates at <strong>write time</strong>. This task adds the
+<strong>mirror check at the consumer</strong> so corrupt data — whether a leftover historical
+partition or a future regression — can <strong>never silently reach the queryable DuckDB
+warehouse</strong>. The build must <strong>fail loudly</strong> instead.</p>
+<p>This is <strong>defense in depth</strong>, not a replacement for the upstream fix. Do not try to
+"clean" or repair data here. The only job is: detect the fingerprint, refuse to build,
+report exactly which event groups tripped it.</p>
+<hr />
+<h2 id="what-to-build">What to build<a class="headerlink" href="#what-to-build" title="Permanent link">&para;</a></h2>
+<p>A read-only integrity check that runs over the assembled <code>race_results</code> table <strong>after
+it is created but before any downstream tables are built</strong>, and aborts the ingest if any
+event group shows the phantom fingerprint — unless an explicit override flag is passed.</p>
+<h3 id="step-1-add-the-integrity-check-function">Step 1 — Add the integrity check function<a class="headerlink" href="#step-1-add-the-integrity-check-function" title="Permanent link">&para;</a></h3>
+<p>In <code>scripts/ingest_duckdb_from_s3.py</code>, add a module-level function. It must query the
+already-created <code>race_results</code> table (it exists by the time we call this — see Step 3).
+Do <strong>not</strong> read S3 or parquet directly; query DuckDB.</p>
+<p>Confirmed <code>race_results</code> column names (from <code>scripts/sql_queries.py</code>,
+<code>create_race_results_query</code>): <code>season</code>, <code>location</code>, <code>year</code>, <code>division</code>, <code>name_raw</code>
+(athlete name), <code>roxzone_time_min</code> (Roxzone minutes as float), <code>total_time_min</code>.
+Verify these exist by reading <code>sql_queries.py</code> before writing the query — do not assume.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># module-level constants, near the top with the other constants</span>
+<span class="n">INTEGRITY_FANOUT_RATIO</span> <span class="o">=</span> <span class="mf">1.9</span>        <span class="c1"># rows/distinct_names at or above this == cross-division fan-out</span>
+<span class="n">INTEGRITY_ROXZONE_ZERO_FRAC</span> <span class="o">=</span> <span class="mf">0.95</span>  <span class="c1"># fraction of finishers with roxzone == 0</span>
+<span class="n">INTEGRITY_MIN_ROSTER</span> <span class="o">=</span> <span class="mi">20</span>           <span class="c1"># ignore tiny groups; thresholds are noisy below this</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">assert_race_results_integrity</span><span class="p">(</span><span class="n">con</span><span class="p">:</span> <span class="n">duckdb</span><span class="o">.</span><span class="n">DuckDBPyConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of human-readable violations for phantom-duplicate corruption.</span>
+
+<span class="sd">    Empty list == safe to build. Each violation names the (season, location, year,</span>
+<span class="sd">    division) group and which fingerprint it tripped. Read-only: runs SELECTs only.</span>
+
+<span class="sd">    Thresholds mirror the upstream scraper&#39;s assert_event_integrity. Keep them in sync;</span>
+<span class="sd">    see hyrox_analysis/scraping_code/hyrox_web_scraping.py.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        WITH grp AS (</span>
+<span class="s2">            SELECT</span>
+<span class="s2">                CAST(season AS INTEGER)            AS season,</span>
+<span class="s2">                trim(CAST(location AS VARCHAR))    AS location,</span>
+<span class="s2">                CAST(year AS INTEGER)              AS year,</span>
+<span class="s2">                CAST(division AS VARCHAR)          AS division,</span>
+<span class="s2">                COUNT(*)                            AS n_rows,</span>
+<span class="s2">                COUNT(DISTINCT lower(trim(name_raw))) AS n_names,</span>
+<span class="s2">                AVG(CASE WHEN roxzone_time_min = 0 THEN 1.0 ELSE 0.0 END) AS roxzone_zero_frac</span>
+<span class="s2">            FROM race_results</span>
+<span class="s2">            WHERE name_raw IS NOT NULL AND trim(name_raw) &lt;&gt; &#39;&#39;</span>
+<span class="s2">            GROUP BY 1, 2, 3, 4</span>
+<span class="s2">        )</span>
+<span class="s2">        SELECT season, location, year, division, n_rows, n_names, roxzone_zero_frac,</span>
+<span class="s2">               CAST(n_rows AS DOUBLE) / NULLIF(n_names, 0) AS fanout</span>
+<span class="s2">        FROM grp</span>
+<span class="s2">        WHERE n_rows &gt;= </span><span class="si">{</span><span class="n">INTEGRITY_MIN_ROSTER</span><span class="si">}</span>
+<span class="s2">          AND (</span>
+<span class="s2">                CAST(n_rows AS DOUBLE) / NULLIF(n_names, 0) &gt;= </span><span class="si">{</span><span class="n">INTEGRITY_FANOUT_RATIO</span><span class="si">}</span>
+<span class="s2">                OR roxzone_zero_frac &gt;= </span><span class="si">{</span><span class="n">INTEGRITY_ROXZONE_ZERO_FRAC</span><span class="si">}</span>
+<span class="s2">          )</span>
+<span class="s2">        ORDER BY season, location, year, division</span>
+<span class="s2">        &quot;&quot;&quot;</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+
+    <span class="n">violations</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">season</span><span class="p">,</span> <span class="n">location</span><span class="p">,</span> <span class="n">year</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">n_rows</span><span class="p">,</span> <span class="n">n_names</span><span class="p">,</span> <span class="n">rox_frac</span><span class="p">,</span> <span class="n">fanout</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+        <span class="n">tells</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">fanout</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">fanout</span> <span class="o">&gt;=</span> <span class="n">INTEGRITY_FANOUT_RATIO</span><span class="p">:</span>
+            <span class="n">tells</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;fan-out </span><span class="si">{</span><span class="n">fanout</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> (rows=</span><span class="si">{</span><span class="n">n_rows</span><span class="si">}</span><span class="s2">, distinct_names=</span><span class="si">{</span><span class="n">n_names</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">rox_frac</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">rox_frac</span> <span class="o">&gt;=</span> <span class="n">INTEGRITY_ROXZONE_ZERO_FRAC</span><span class="p">:</span>
+            <span class="n">tells</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">rox_frac</span><span class="si">:</span><span class="s2">.0%</span><span class="si">}</span><span class="s2"> zero-roxzone&quot;</span><span class="p">)</span>
+        <span class="n">violations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;(season=</span><span class="si">{</span><span class="n">season</span><span class="si">}</span><span class="s2">, location=</span><span class="si">{</span><span class="n">location</span><span class="si">}</span><span class="s2">, year=</span><span class="si">{</span><span class="n">year</span><span class="si">}</span><span class="s2">, division=</span><span class="si">{</span><span class="n">division</span><span class="si">}</span><span class="s2">): &quot;</span>
+            <span class="o">+</span> <span class="s2">&quot;; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tells</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">violations</span>
+</code></pre></div>
+
+<h3 id="step-2-add-the-allow-dirty-override">Step 2 — Add the <code>--allow-dirty</code> override<a class="headerlink" href="#step-2-add-the-allow-dirty-override" title="Permanent link">&para;</a></h3>
+<p>The default must be <strong>fail-closed</strong>. Provide one escape hatch so a known-imperfect
+snapshot can still be built deliberately (e.g. during the upstream backfill window).</p>
+<p>Two acceptable mechanisms — pick the one that matches the repo's existing entrypoint
+style (this script currently has no argparse and is invoked as
+<code>if __name__ == "__main__": ingest_full_refresh()</code>):</p>
+<ul>
+<li><strong>Preferred (matches current style):</strong> an env var read via the existing
+  <code>os.getenv</code> pattern, e.g. <code>ALLOW_DIRTY_INGEST</code> truthy → skip the abort but still log
+  every violation at WARNING. Thread it in as a parameter
+  <code>ingest_full_refresh(allow_dirty: bool = False)</code> defaulting from
+  <code>os.getenv("ALLOW_DIRTY_INGEST", "").strip().lower() in {"1", "true", "yes"}</code>.</li>
+<li>If the repo already uses argparse elsewhere for scripts, add <code>--allow-dirty</code> instead.</li>
+</ul>
+<p>Do not add argparse machinery beyond what is needed for this one flag.</p>
+<h3 id="step-3-wire-the-gate-into-ingest_full_refresh">Step 3 — Wire the gate into <code>ingest_full_refresh</code><a class="headerlink" href="#step-3-wire-the-gate-into-ingest_full_refresh" title="Permanent link">&para;</a></h3>
+<p>Call the check <strong>immediately after</strong> <code>race_results</code> is created and start-dates are
+applied, and <strong>before</strong> the <code>athletes</code> / <code>athlete_results</code> / <code>athlete_index</code> /
+rankings / percentiles / history tables are built. That ordering guarantees we never
+spend work materializing downstream tables on top of corrupt rows, and that the abort
+happens inside the open transaction (which is rolled back / the temp DB simply
+discarded — we never <code>os.replace</code> into place).</p>
+<p>Insert right after line ~355 (<code>apply_event_start_dates(con, start_dates)</code>):</p>
+<div class="codehilite"><pre><span></span><code>    <span class="n">violations</span> <span class="o">=</span> <span class="n">assert_race_results_integrity</span><span class="p">(</span><span class="n">con</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">violations</span><span class="p">:</span>
+        <span class="n">header</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Integrity gate FAILED: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">violations</span><span class="p">)</span><span class="si">}</span><span class="s2"> event group(s) show the &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;phantom-duplicate fingerprint (fan-out and/or zero-roxzone).&quot;</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">violations</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;  </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">allow_dirty</span><span class="p">:</span>
+            <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;ROLLBACK;&quot;</span><span class="p">)</span>
+            <span class="n">con</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span>
+                <span class="n">header</span>
+                <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Refusing to build DuckDB. Re-scrape/clean these groups upstream, &quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;or set ALLOW_DIRTY_INGEST=1 to build anyway (NOT recommended).&quot;</span>
+            <span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> ALLOW_DIRTY_INGEST set -- building anyway.&quot;</span><span class="p">,</span> <span class="n">header</span><span class="p">)</span>
+</code></pre></div>
+
+<p>Make sure no partial DB is swapped into place on abort: the <code>os.replace(...)</code> at the end
+must not be reached when we <code>raise SystemExit</code>. Because the temp file is
+<code>config["duckdb_tmp_path"]</code> (the <code>.new</code> file) and the swap is the last step, simply
+raising before it is sufficient — but explicitly <code>con.close()</code> first so the temp file
+handle is released. Optionally delete the temp <code>.new</code> file on abort for cleanliness.</p>
+<h3 id="step-4-tests">Step 4 — Tests<a class="headerlink" href="#step-4-tests" title="Permanent link">&para;</a></h3>
+<p>Create <code>tests/test_ingest_build_gate.py</code>. Follow the style of the existing
+<code>tests/test_ingest_start_dates.py</code>. Build a tiny in-memory or temp-file DuckDB with a
+hand-made <code>race_results</code> table (you do not need S3 — just
+<code>con.execute("CREATE TABLE race_results (...)")</code> and insert rows) and assert:</p>
+<ol>
+<li><strong>Clean data passes</strong> — a group of ≥20 distinct athletes, fan-out ~1.0, non-zero
+   roxzone → <code>assert_race_results_integrity(con)</code> returns <code>[]</code>.</li>
+<li><strong>Fan-out is caught</strong> — duplicate every athlete row across two divisions so
+   <code>rows/distinct_names ≥ 1.9</code> → returns a violation mentioning "fan-out".</li>
+<li><strong>Zero-roxzone is caught</strong> — ≥20 finishers all with <code>roxzone_time_min = 0</code> →
+   returns a violation mentioning "zero-roxzone".</li>
+<li><strong>Small groups are ignored</strong> — a corrupt-looking group with <code>&lt; INTEGRITY_MIN_ROSTER</code>
+   rows returns <code>[]</code> (no false positive on tiny brackets).</li>
+<li><strong>Gate aborts by default / honours allow_dirty</strong> — either call
+   <code>ingest_full_refresh</code> with a stubbed config, or (simpler and sufficient) unit-test
+   the decision: violations + <code>allow_dirty=False</code> raises <code>SystemExit</code>; violations +
+   <code>allow_dirty=True</code> does not. If wiring a full <code>ingest_full_refresh</code> is too heavy to
+   stub, factor the abort decision into a tiny pure helper and test that directly.</li>
+</ol>
+<p>Only <code>race_results</code> columns referenced by the query need to exist in the test table:
+<code>season, location, year, division, name_raw, roxzone_time_min</code>. Keep fixtures minimal.</p>
+<h3 id="step-5-document">Step 5 — Document<a class="headerlink" href="#step-5-document" title="Permanent link">&para;</a></h3>
+<p>Add a short note to <code>docs/duckdb-stabilization.md</code> (or <code>docs/data-model.md</code>, whichever
+covers the ingest): the build now refuses to publish if any event group shows the
+phantom-duplicate fingerprint; override with <code>ALLOW_DIRTY_INGEST=1</code>. One paragraph,
+link back to the upstream <code>docs/phantom-duplicate-races-rootcause.md</code> in <code>hyrox_analysis</code>.</p>
+<hr />
+<h2 id="constraints-do-nots">Constraints / do-nots<a class="headerlink" href="#constraints-do-nots" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Read-only.</strong> The check runs <code>SELECT</code>s only. Never UPDATE/DELETE rows to "fix" data.</li>
+<li><strong>No new dependencies.</strong> Use <code>duckdb</code>, stdlib, and the existing logging setup.</li>
+<li><strong>Match existing style</strong> in <code>ingest_duckdb_from_s3.py</code> (module-level functions, the
+  <code>logger</code>, the env-var/<code>required_env</code> pattern). Do not refactor unrelated code.</li>
+<li><strong>Thresholds are a copied contract.</strong> They mirror the upstream scraper constants. Add
+  the comment pointing back so a future maintainer keeps them in sync; do not invent
+  different numbers.</li>
+<li><strong>Fail-closed by default.</strong> <code>--allow-dirty</code> / <code>ALLOW_DIRTY_INGEST</code> is the only bypass.</li>
+<li>Do not touch <code>DB_LOCATION_ALIASES</code>, the start-date logic, or the table-build SQL.</li>
+</ul>
+<h2 id="success-criteria">Success criteria<a class="headerlink" href="#success-criteria" title="Permanent link">&para;</a></h2>
+<ul>
+<li>[ ] <code>assert_race_results_integrity(con)</code> exists, is read-only, returns <code>list[str]</code>.</li>
+<li>[ ] Gate is called after <code>race_results</code>/start-dates, before downstream tables.</li>
+<li>[ ] Default run aborts (no DB swap) when violations exist; <code>ALLOW_DIRTY_INGEST=1</code>
+      logs and proceeds.</li>
+<li>[ ] <code>tests/test_ingest_build_gate.py</code> covers clean-pass, fan-out, zero-roxzone,
+      small-group-ignored, and the abort/allow-dirty decision. All pass.</li>
+<li>[ ] Existing test suite (<code>pytest -q</code>) stays green.</li>
+<li>[ ] One paragraph of docs added.</li>
+</ul>
+<h2 id="out-of-scope">Out of scope<a class="headerlink" href="#out-of-scope" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Cleaning/quarantining existing corrupt S3 partitions — that is the upstream audit
+  script <code>hyrox_analysis/scraping_code/audit_phantom_s3.py</code> (#19).</li>
+<li>Switching identity to column-based grouping / retiring <code>DB_LOCATION_ALIASES</code> (#18 in
+  the upstream plan is a different downstream change; do not conflate).</li>
+</ul></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../js/base.js"></script>
+        <script src="../../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

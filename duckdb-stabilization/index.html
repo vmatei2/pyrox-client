@@ -64,6 +64,10 @@
 <li>
     <a href="../reproducible-research/" class="dropdown-item">Reproducible Research</a>
 </li>
+                                    
+<li>
+    <a href="../mcp/" class="dropdown-item">Try Pyrox MCP</a>
+</li>
                                 </ul>
                             </li>
                             <li class="nav-item dropdown">
@@ -122,6 +126,10 @@
               </ul>
             </li>
             <li class="nav-item" data-bs-level="2"><a href="#contract-alignment-notes" class="nav-link">Contract Alignment Notes</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#build-integrity-gate" class="nav-link">Build Integrity Gate</a>
               <ul class="nav flex-column">
               </ul>
             </li>
@@ -227,7 +235,14 @@ stable keys and search; other fields may be NULL depending on source data.</p>
 <li>Tests should mirror contract columns (especially <code>athlete_results</code> link metadata).</li>
 <li><code>race_results.division</code> is required for client-side filtering in
   <code>src/pyrox/reporting.py</code>.</li>
-</ul></div>
+</ul>
+<h2 id="build-integrity-gate">Build Integrity Gate<a class="headerlink" href="#build-integrity-gate" title="Permanent link">&para;</a></h2>
+<p>The DuckDB ingest refuses to publish a build when any <code>(season, location, year, division)</code>
+group in <code>race_results</code> shows duplicate-roster fan-out: high rows per distinct
+athlete name within the same Race and Division. Explicit zero Roxzone values are
+allowed downstream and do not block the build. The gate is intentionally read-only;
+contaminated source partitions must be re-scraped or cleaned upstream. Set
+<code>ALLOW_DIRTY_INGEST=1</code> only for an explicit temporary backfill-window override.</p></div>
             </div>
         </div>
 

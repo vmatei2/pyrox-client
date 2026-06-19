@@ -6,9 +6,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
         
-        <link rel="canonical" href="https://vmatei2.github.io/pyrox-client/filters/">
+        <link rel="canonical" href="https://vmatei2.github.io/pyrox-client/mcp/">
         <link rel="shortcut icon" href="../img/favicon.ico">
-        <title>Filtering - pyrox-client</title>
+        <title>Try Pyrox MCP - pyrox-client</title>
         <link href="../css/bootstrap.min.css" rel="stylesheet">
         <link href="../css/fontawesome.min.css" rel="stylesheet">
         <link href="../css/brands.min.css" rel="stylesheet">
@@ -46,7 +46,7 @@
                                 <ul class="dropdown-menu">
                                     
 <li>
-    <a href="./" class="dropdown-item active" aria-current="page">Filtering</a>
+    <a href="../filters/" class="dropdown-item">Filtering</a>
 </li>
                                     
 <li>
@@ -66,7 +66,7 @@
 </li>
                                     
 <li>
-    <a href="../mcp/" class="dropdown-item">Try Pyrox MCP</a>
+    <a href="./" class="dropdown-item active" aria-current="page">Try Pyrox MCP</a>
 </li>
                                 </ul>
                             </li>
@@ -98,12 +98,12 @@
                             </a>
                         </li>
                             <li class="nav-item">
-                                <a rel="prev" href="../quickstart/" class="nav-link">
+                                <a rel="prev" href="../reproducible-research/" class="nav-link">
                                     <i class="fa fa-arrow-left"></i> Previous
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a rel="next" href="../caching/" class="nav-link">
+                                <a rel="next" href="../api/" class="nav-link">
                                     Next <i class="fa fa-arrow-right"></i>
                                 </a>
                             </li>
@@ -125,13 +125,29 @@
     <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
         <ul class="nav flex-column">
             
-            <li class="nav-item" data-bs-level="1"><a href="#filtering" class="nav-link">Filtering</a>
+            <li class="nav-item" data-bs-level="1"><a href="#try-pyrox-mcp" class="nav-link">Try Pyrox MCP</a>
               <ul class="nav flex-column">
-            <li class="nav-item" data-bs-level="2"><a href="#gender-and-division" class="nav-link">Gender and division</a>
+            <li class="nav-item" data-bs-level="2"><a href="#add-it-to-claude-code" class="nav-link">Add It To Claude Code</a>
               <ul class="nav flex-column">
               </ul>
             </li>
-            <li class="nav-item" data-bs-level="2"><a href="#total-time-windows" class="nav-link">Total time windows</a>
+            <li class="nav-item" data-bs-level="2"><a href="#what-it-can-answer" class="nav-link">What It Can Answer</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#example-prompts" class="nav-link">Example Prompts</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#how-to-read-the-answers" class="nav-link">How To Read The Answers</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#caveats" class="nav-link">Caveats</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#maintainer-smoke-test" class="nav-link">Maintainer Smoke Test</a>
               <ul class="nav flex-column">
               </ul>
             </li>
@@ -142,36 +158,144 @@
 </div></div>
                     <div class="col-md-9" role="main">
 
-<h1 id="filtering">Filtering<a class="headerlink" href="#filtering" title="Permanent link">&para;</a></h1>
-<p>Pyrox supports high-signal filtering at read time, so you can load only the rows you need.</p>
-<h2 id="gender-and-division">Gender and division<a class="headerlink" href="#gender-and-division" title="Permanent link">&para;</a></h2>
-<p>These filters are applied server-side for efficiency.</p>
-<div class="codehilite"><pre><span></span><code>race = client.get_race(
-    season=7,
-    location=&quot;london&quot;,
-    gender=&quot;male&quot;,      # &quot;male&quot; | &quot;female&quot; | &quot;mixed&quot;
-    division=&quot;open&quot;,   # &quot;open&quot; | &quot;pro&quot; | &quot;pro_doubles&quot;
-)
+<h1 id="try-pyrox-mcp">Try Pyrox MCP<a class="headerlink" href="#try-pyrox-mcp" title="Permanent link">&para;</a></h1>
+<p>Pyrox exposes a public, read-only MCP server at:</p>
+<div class="codehilite"><pre><span></span><code>https://pyrox-api.fly.dev/mcp/
 </code></pre></div>
 
-<p>Notes:
-- Values are case-sensitive in the underlying parquet filter; prefer lowercase.
-- If the filtered dataset has no rows, Pyrox raises <code>RaceNotFound</code>.</p>
-<h2 id="total-time-windows">Total time windows<a class="headerlink" href="#total-time-windows" title="Permanent link">&para;</a></h2>
-<p><code>total_time</code> is expressed in minutes. You can pass a single value or an open interval.</p>
-<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Under 60 minutes
-sub_60 = client.get_race(season=7, location=&quot;london&quot;, total_time=60)
-
-<span class="gh">#</span> Open interval: 50 &lt; total_time &lt; 60
-mid_pack = client.get_race(season=7, location=&quot;london&quot;, total_time=(50, 60))
-
-<span class="gh">#</span> Only lower bound
-slow = client.get_race(season=7, location=&quot;london&quot;, total_time=(70, None))
+<p>Use it when you want Claude to answer natural-language questions about HYROX Race
+Results without downloading the DuckDB artifact or writing Python. The connector
+uses curated server-computed analytics: it does not expose raw SQL, arbitrary row
+exports, or write operations.</p>
+<h2 id="add-it-to-claude-code">Add It To Claude Code<a class="headerlink" href="#add-it-to-claude-code" title="Permanent link">&para;</a></h2>
+<p>Register the connector:</p>
+<div class="codehilite"><pre><span></span><code>claude<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>--transport<span class="w"> </span>http<span class="w"> </span>pyrox<span class="w"> </span>https://pyrox-api.fly.dev/mcp/
 </code></pre></div>
 
-<p>Notes:
-- Bounds are strict (<code>&gt;</code> and <code>&lt;</code>), not inclusive.
-- Filtering happens after time columns are converted to minutes.</p></div>
+<p>Verify it is available:</p>
+<div class="codehilite"><pre><span></span><code>claude<span class="w"> </span>mcp<span class="w"> </span>list
+</code></pre></div>
+
+<p>By default this registers the connector for the current project. To make it
+available across your Claude Code projects:</p>
+<div class="codehilite"><pre><span></span><code>claude<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>--transport<span class="w"> </span>http<span class="w"> </span>--scope<span class="w"> </span>user<span class="w"> </span>pyrox<span class="w"> </span>https://pyrox-api.fly.dev/mcp/
+</code></pre></div>
+
+<p>Remove it later with:</p>
+<div class="codehilite"><pre><span></span><code>claude<span class="w"> </span>mcp<span class="w"> </span>remove<span class="w"> </span>pyrox
+</code></pre></div>
+
+<h2 id="what-it-can-answer">What It Can Answer<a class="headerlink" href="#what-it-can-answer" title="Permanent link">&para;</a></h2>
+<p>The MCP server exposes ten intent-shaped tools:</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Use it for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>list_filters</code></td>
+<td>Discover available seasons, divisions, genders, locations, and age groups.</td>
+</tr>
+<tr>
+<td><code>list_races</code></td>
+<td>Find valid season and location pairs before asking for race-level stats.</td>
+</tr>
+<tr>
+<td><code>find_athlete</code></td>
+<td>Resolve an athlete name to candidate Results with <code>result_id</code> values.</td>
+</tr>
+<tr>
+<td><code>get_race_report</code></td>
+<td>Inspect one Result's full Race report and Segment breakdown.</td>
+</tr>
+<tr>
+<td><code>get_athlete_profile</code></td>
+<td>Summarize an athlete's historical Results and personal bests.</td>
+</tr>
+<tr>
+<td><code>get_distribution</code></td>
+<td>Get a Cohort Distribution as histogram bins and summary stats.</td>
+</tr>
+<tr>
+<td><code>get_race_summary</code></td>
+<td>Get timing stats for all Segments in one Race.</td>
+</tr>
+<tr>
+<td><code>get_cohort_segment_averages</code></td>
+<td>Compare Run and Station averages for all, top-N, or bottom-N athletes in one Race.</td>
+</tr>
+<tr>
+<td><code>get_rankings</code></td>
+<td>Query leaderboard rows and hypothetical target-time placement.</td>
+</tr>
+<tr>
+<td><code>get_deepdive</code></td>
+<td>Compare one Result against cross-location Cohorts for a metric.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="example-prompts">Example Prompts<a class="headerlink" href="#example-prompts" title="Permanent link">&para;</a></h2>
+<p>Start by discovering the available filters:</p>
+<div class="codehilite"><pre><span></span><code>Using Pyrox, what seasons, divisions, genders, and locations are available?
+</code></pre></div>
+
+<p>Find an athlete and inspect one Result:</p>
+<div class="codehilite"><pre><span></span><code>Using Pyrox, find results for James Ingham. Pick the most recent open Result and
+summarize the Race report, including strongest and weakest Segments.
+</code></pre></div>
+
+<p>Compare a target finish time:</p>
+<div class="codehilite"><pre><span></span><code>Using Pyrox, where would a 62-minute male open time rank in season 8?
+</code></pre></div>
+
+<p>Ask for a Cohort Distribution:</p>
+<div class="codehilite"><pre><span></span><code>Using Pyrox, show the Distribution of female open finish times in season 8.
+State the Cohort, sample size, and whether the sample is thin.
+</code></pre></div>
+
+<p>Build a profile:</p>
+<div class="codehilite"><pre><span></span><code>Using Pyrox, create an athlete profile for James Ingham and explain how his
+Segment strengths compare with his historical Results.
+</code></pre></div>
+
+<h2 id="how-to-read-the-answers">How To Read The Answers<a class="headerlink" href="#how-to-read-the-answers" title="Permanent link">&para;</a></h2>
+<p>Pyrox uses these terms consistently:</p>
+<ul>
+<li><strong>Race</strong>: one HYROX event instance, identified by season, location, and year.</li>
+<li><strong>Result</strong>: one athlete's performance in one Race.</li>
+<li><strong>Segment</strong>: one timed Run or Station.</li>
+<li><strong>Roxzone</strong>: transition time between Segments.</li>
+<li><strong>Cohort</strong>: the reference population used for rankings, Distributions, and Percentiles.</li>
+<li><strong>Distribution</strong>: histogram bins plus summary stats for a metric across a Cohort.</li>
+</ul>
+<p>When a user names an athlete, Claude usually needs to follow this flow:</p>
+<div class="codehilite"><pre><span></span><code>find_athlete -&gt; choose a result_id -&gt; get_race_report or get_deepdive
+</code></pre></div>
+
+<p>The <code>result_id</code> is an internal identifier. Users do not need to know it in advance.
+For common or ambiguous names, <code>find_athlete</code> returns candidate races so Claude
+can choose the right Result or ask for a narrower filter.</p>
+<h2 id="caveats">Caveats<a class="headerlink" href="#caveats" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Pyrox is based on public HYROX source data and may inherit source-data issues.</li>
+<li>Thin Cohorts are flagged with sample-size information and should be interpreted
+  cautiously.</li>
+<li>Divisions are not pooled by default because open, pro, doubles, and relay Results
+  are not directly comparable.</li>
+<li>Distributions default to the latest season and the <code>open</code> division when those
+  filters are omitted.</li>
+<li>Claude renders any charts from returned structured data; the server does not
+  return image files.</li>
+<li>The public MCP endpoint is open and read-only. It is rate-limited to protect
+  availability.</li>
+</ul>
+<h2 id="maintainer-smoke-test">Maintainer Smoke Test<a class="headerlink" href="#maintainer-smoke-test" title="Permanent link">&para;</a></h2>
+<p>Maintainers can verify the live connector with:</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">PYROX_MCP_URL</span><span class="o">=</span>https://pyrox-api.fly.dev/mcp/<span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>scripts/smoke_mcp.py<span class="w"> </span>--json
+</code></pre></div></div>
             </div>
         </div>
 

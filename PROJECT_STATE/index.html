@@ -6,9 +6,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         
         
-        <link rel="canonical" href="https://vmatei2.github.io/pyrox-client/filters/">
+        <link rel="canonical" href="https://vmatei2.github.io/pyrox-client/PROJECT_STATE/">
         <link rel="shortcut icon" href="../img/favicon.ico">
-        <title>Filtering - pyrox-client</title>
+        <title>Project State - pyrox-client</title>
         <link href="../css/bootstrap.min.css" rel="stylesheet">
         <link href="../css/fontawesome.min.css" rel="stylesheet">
         <link href="../css/brands.min.css" rel="stylesheet">
@@ -42,11 +42,11 @@
                                 <a href="../quickstart/" class="nav-link">Getting Started</a>
                             </li>
                             <li class="nav-item dropdown">
-                                <a href="#" class="nav-link dropdown-toggle active" aria-current="page" role="button" data-bs-toggle="dropdown"  aria-expanded="false">User Guide</a>
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">User Guide</a>
                                 <ul class="dropdown-menu">
                                     
 <li>
-    <a href="./" class="dropdown-item active" aria-current="page">Filtering</a>
+    <a href="../filters/" class="dropdown-item">Filtering</a>
 </li>
                                     
 <li>
@@ -97,16 +97,6 @@
                                 <i class="fa fa-search"></i> Search
                             </a>
                         </li>
-                            <li class="nav-item">
-                                <a rel="prev" href="../quickstart/" class="nav-link">
-                                    <i class="fa fa-arrow-left"></i> Previous
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a rel="next" href="../caching/" class="nav-link">
-                                    Next <i class="fa fa-arrow-right"></i>
-                                </a>
-                            </li>
                     </ul>
                 </div>
             </div>
@@ -125,13 +115,13 @@
     <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
         <ul class="nav flex-column">
             
-            <li class="nav-item" data-bs-level="1"><a href="#filtering" class="nav-link">Filtering</a>
+            <li class="nav-item" data-bs-level="1"><a href="#project-state" class="nav-link">Project State</a>
               <ul class="nav flex-column">
-            <li class="nav-item" data-bs-level="2"><a href="#gender-and-division" class="nav-link">Gender and division</a>
+            <li class="nav-item" data-bs-level="2"><a href="#hardening-rate-limiting-error-sanitization-2026-06-13" class="nav-link">Hardening: rate limiting + error sanitization (2026-06-13)</a>
               <ul class="nav flex-column">
               </ul>
             </li>
-            <li class="nav-item" data-bs-level="2"><a href="#total-time-windows" class="nav-link">Total time windows</a>
+            <li class="nav-item" data-bs-level="2"><a href="#mcp-server-built-2026-06-13" class="nav-link">MCP server (built 2026-06-13)</a>
               <ul class="nav flex-column">
               </ul>
             </li>
@@ -142,36 +132,77 @@
 </div></div>
                     <div class="col-md-9" role="main">
 
-<h1 id="filtering">Filtering<a class="headerlink" href="#filtering" title="Permanent link">&para;</a></h1>
-<p>Pyrox supports high-signal filtering at read time, so you can load only the rows you need.</p>
-<h2 id="gender-and-division">Gender and division<a class="headerlink" href="#gender-and-division" title="Permanent link">&para;</a></h2>
-<p>These filters are applied server-side for efficiency.</p>
-<div class="codehilite"><pre><span></span><code>race = client.get_race(
-    season=7,
-    location=&quot;london&quot;,
-    gender=&quot;male&quot;,      # &quot;male&quot; | &quot;female&quot; | &quot;mixed&quot;
-    division=&quot;open&quot;,   # &quot;open&quot; | &quot;pro&quot; | &quot;pro_doubles&quot;
-)
-</code></pre></div>
-
-<p>Notes:
-- Values are case-sensitive in the underlying parquet filter; prefer lowercase.
-- If the filtered dataset has no rows, Pyrox raises <code>RaceNotFound</code>.</p>
-<h2 id="total-time-windows">Total time windows<a class="headerlink" href="#total-time-windows" title="Permanent link">&para;</a></h2>
-<p><code>total_time</code> is expressed in minutes. You can pass a single value or an open interval.</p>
-<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Under 60 minutes
-sub_60 = client.get_race(season=7, location=&quot;london&quot;, total_time=60)
-
-<span class="gh">#</span> Open interval: 50 &lt; total_time &lt; 60
-mid_pack = client.get_race(season=7, location=&quot;london&quot;, total_time=(50, 60))
-
-<span class="gh">#</span> Only lower bound
-slow = client.get_race(season=7, location=&quot;london&quot;, total_time=(70, None))
-</code></pre></div>
-
-<p>Notes:
-- Bounds are strict (<code>&gt;</code> and <code>&lt;</code>), not inclusive.
-- Filtering happens after time columns are converted to minutes.</p></div>
+<h1 id="project-state">Project State<a class="headerlink" href="#project-state" title="Permanent link">&para;</a></h1>
+<p><em>Not tracked in git. Working notes on current state of the analytics workflow.</em></p>
+<h2 id="hardening-rate-limiting-error-sanitization-2026-06-13">Hardening: rate limiting + error sanitization (2026-06-13)<a class="headerlink" href="#hardening-rate-limiting-error-sanitization-2026-06-13" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong><code>pyrox_api_service/ratelimit.py</code></strong> (new): per-client-IP edge limiter behind a
+  pure-ASGI <code>RateLimitMiddleware</code>, keyed off <code>Fly-Client-IP</code>. Added <strong>once</strong>, on
+  the composed app (<code>app.py</code>), which wraps both the REST routes and the mounted
+  <code>/mcp</code> sub-app — adding it to the sub-app too double-counts MCP requests. The
+  <code>/mcp</code> 307→<code>/mcp/</code> redirect is handled by charging a slot only on the served
+  (non-redirect) response (<code>test()</code> to gate, <code>hit()</code> on a non-3xx response), so
+  each logical call counts once. Header-less requests (in-process MCP→REST calls,
+  tests) are exempt. Default <code>60/minute</code>, override via <code>PYROX_RATE_LIMIT</code>. Uses
+  the <code>limits</code> library (added to the <code>api</code> extra) directly — <code>slowapi</code>'s
+  <code>SlowAPIMiddleware</code> was rejected: it's route-endpoint coupled (unreliable on the
+  mounted MCP sub-app) and raises <code>AttributeError</code> on the request-exempt path.
+  Tested in <code>tests/test_ratelimit.py</code> (incl. a mount+redirect single-count guard).</li>
+<li><strong><code>app.py</code> <code>_raise_http</code></strong>: the <code>DatabaseConfigurationError → 500</code> branch now
+  logs the real cause and returns a generic <code>"internal server error"</code> instead of
+  leaking the DuckDB path. 400/404 messages (mistake-recovery) unchanged.</li>
+</ul>
+<h3 id="still-deferred-decided-2026-06-13">Still deferred (decided 2026-06-13)<a class="headerlink" href="#still-deferred-decided-2026-06-13" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong><code>/mcp</code> auth</strong> — endpoint stays open for now (bearer-token plan shelved).</li>
+<li><strong>Fly scale-to-zero / VM right-sizing</strong> — machine stays always-on for now.</li>
+<li>DNS-rebind protection is wired (<code>PYROX_MCP_ALLOWED_HOSTS</code>) but the env var is
+  not set in production yet.</li>
+</ul>
+<h2 id="mcp-server-built-2026-06-13">MCP server (built 2026-06-13)<a class="headerlink" href="#mcp-server-built-2026-06-13" title="Permanent link">&para;</a></h2>
+<p>Goal: let Claude (and later Codex) answer natural-language questions against the
+HYROX dataset by connecting to a remote MCP server. Design captured in
+<code>CONTEXT.md</code> and <code>docs/adr/0001-mcp-over-http-reporting-service.md</code>.</p>
+<h3 id="what-exists">What exists<a class="headerlink" href="#what-exists" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong><code>GET /api/distribution</code></strong> (<code>pyrox_api_service/app.py</code>): the only new backend
+  endpoint. Returns histogram bins + summary stats for a cohort.</li>
+<li><code>gender</code> required; <code>season</code> defaults to the latest season for the cohort;
+    <code>division</code> defaults to <code>open</code>; <code>metric</code> defaults to <code>overall</code>.</li>
+<li>Cohorts with <code>n &lt; 30</code> (<code>DISTRIBUTION_SMALL_SAMPLE_MIN_N</code>) come back with
+    <code>small_sample: true</code>, suppressed tail percentiles (<code>p10</code>/<code>p90</code> → null), and a
+    <code>note</code>. Tested in <code>tests/test_api.py</code> (8 cases).</li>
+<li><strong><code>pyrox_api_service/mcp_tools.py</code></strong>: seven intent-shaped tool functions
+  (<code>list_filters</code>, <code>find_athlete</code>, <code>get_distribution</code>, <code>get_rankings</code>,
+  <code>get_race_report</code>, <code>get_deepdive</code>, <code>get_athlete_profile</code>). They call the REST
+  app in-process via a Starlette <code>TestClient</code> (no network socket) and return
+  error dicts instead of raising. List tools are compact (capped + total).
+  Tested in <code>tests/test_mcp_tools.py</code>.</li>
+<li><strong><code>pyrox_api_service/mcp_app.py</code></strong>: registers the tools with <code>FastMCP</code>
+  (<code>stateless_http=True</code>) and mounts the streamable-HTTP app at <code>/mcp</code>. Composed
+  app served via <code>pyrox_api_service.mcp_app:app</code> (Dockerfile updated).</li>
+<li>Dependency <code>mcp&gt;=1.2.0</code> added to the <code>api</code> extra in <code>pyproject.toml</code>.</li>
+</ul>
+<h3 id="verified">Verified<a class="headerlink" href="#verified" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Full suite: 94 passed, 3 skipped (integration). Ruff clean.</li>
+<li>End-to-end MCP smoke: <code>initialize</code> → <code>tools/list</code> (7 tools) → <code>tools/call</code>
+  <code>list_filters</code> returns real cohort data, with the REST API still live on the
+  same app.</li>
+</ul>
+<h3 id="not-done-deferred">Not done / deferred<a class="headerlink" href="#not-done-deferred" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Pagination for list tools is approximated by an adjustable <code>limit</code> (the
+  <code>/api/rankings</code> endpoint has no offset). Add real offset only if needed.</li>
+<li>No auth (v1 decision). <code>PYROX_MCP_ALLOWED_HOSTS</code>/<code>_ORIGINS</code> enable DNS-rebinding
+  protection if an operator wants to lock to the Fly host.</li>
+<li>Rate-limiting now implemented at both edges (see the hardening section above).</li>
+<li><code>small_sample</code> threshold (30) and default division (<code>open</code>) were chosen from
+  reasoning, not from the data — worth tuning against actual cohort-size
+  distributions in <code>pyrox_duckdb</code>.</li>
+<li>Claude-side plotting from returned bins is by design (no server-rendered
+  images); not separately tested here.</li>
+</ul></div>
             </div>
         </div>
 
