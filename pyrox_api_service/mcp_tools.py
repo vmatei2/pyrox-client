@@ -72,23 +72,36 @@ def find_athlete(
     limit: int = DEFAULT_LIST_LIMIT,
     gender: Optional[str] = None,
     division: Optional[str] = None,
+    match: str = "best",
+    nationality: Optional[str] = None,
+    require_unique: bool = False,
 ) -> dict:
     """Resolve an athlete name to candidate races (each carries a `result_id`).
 
     Use this first when a user names an athlete: pick a `result_id` from
-    `matches`, then call get_race_report / get_deepdive with it.
+    `matches`, then call get_race_report / get_deepdive with it. Ambiguous
+    names return candidate races by default; set `require_unique=true` to force
+    strict disambiguation.
     """
     payload = _get(
         "/api/athletes/search",
-        {"name": name, "gender": gender, "division": division},
+        {
+            "name": name,
+            "gender": gender,
+            "division": division,
+            "match": match,
+            "nationality": nationality,
+            "require_unique": require_unique,
+            "limit": limit,
+        },
     )
     if "error" in payload:
         return payload
     races = payload.get("races", [])
     return {
-        "total": payload.get("count", len(races)),
-        "returned": min(len(races), limit),
-        "matches": races[:limit],
+        "total": payload.get("total", payload.get("count", len(races))),
+        "returned": len(races),
+        "matches": races,
     }
 
 

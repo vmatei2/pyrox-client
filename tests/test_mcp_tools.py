@@ -97,6 +97,38 @@ def _seed_search(con: duckdb.DuckDBPyConnection) -> None:
     )
 
 
+def _seed_ambiguous_search(con: duckdb.DuckDBPyConnection) -> None:
+    con.execute(
+        "CREATE TABLE athlete_index (athlete_id VARCHAR, canonical_name VARCHAR, "
+        "name_lc VARCHAR, gender VARCHAR, nationality VARCHAR, race_count INTEGER);"
+    )
+    con.execute("CREATE TABLE athlete_results (athlete_id VARCHAR, result_id VARCHAR);")
+    con.execute(
+        "CREATE TABLE race_results (result_id VARCHAR, event_id VARCHAR, season INTEGER, "
+        "location VARCHAR, year INTEGER, name VARCHAR, division VARCHAR, gender VARCHAR, "
+        "total_time_min DOUBLE);"
+    )
+    con.executemany(
+        "INSERT INTO athlete_index VALUES (?, ?, ?, ?, ?, ?)",
+        [
+            ("ath_1", "james ingham", "james ingham", "M", "GB", 2),
+            ("ath_2", "ingham james", "ingham james", "M", "US", 1),
+        ],
+    )
+    con.executemany(
+        "INSERT INTO athlete_results VALUES (?, ?)",
+        [("ath_1", "result_1"), ("ath_1", "result_2"), ("ath_2", "result_3")],
+    )
+    con.executemany(
+        "INSERT INTO race_results VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+            ("result_1", "event_1", 8, "london", 2024, "James Ingham", "open", "M", 62.0),
+            ("result_2", "event_2", 8, "manchester", 2024, "James Ingham", "open", "M", 64.0),
+            ("result_3", "event_3", 8, "newyork", 2024, "Ingham James", "open", "M", 66.0),
+        ],
+    )
+
+
 def test_find_athlete_caps_matches_and_reports_total(tmp_path, monkeypatch):
     """find_athlete returns the true total but only a capped page of matches."""
     db_path = tmp_path / "mcp-search.db"
@@ -110,6 +142,53 @@ def test_find_athlete_caps_matches_and_reports_total(tmp_path, monkeypatch):
     assert result["total"] == 2
     assert result["returned"] == 1
     assert len(result["matches"]) == 1
+
+
+def test_find_athlete_returns_candidates_for_ambiguous_names_by_default(tmp_path, monkeypatch):
+    db_path = tmp_path / "mcp-search-ambiguous.db"
+    con = _create_db(db_path)
+    _seed_ambiguous_search(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    result = mcp_tools.find_athlete("James Ingham", limit=2)
+
+    assert "error" not in result
+    assert result["total"] == 3
+    assert result["returned"] == 2
+    assert len(result["matches"]) == 2
+
+
+def test_find_athlete_strict_mode_keeps_ambiguity_error(tmp_path, monkeypatch):
+    db_path = tmp_path / "mcp-search-strict.db"
+    con = _create_db(db_path)
+    _seed_ambiguous_search(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    result = mcp_tools.find_athlete("James Ingham", require_unique=True)
+
+    assert result["status_code"] == 400
+    assert "Multiple athletes matched" in result["error"]
+
+
+def test_find_athlete_forwards_match_nationality_and_limit(tmp_path, monkeypatch):
+    db_path = tmp_path / "mcp-search-filters.db"
+    con = _create_db(db_path)
+    _seed_ambiguous_search(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    result = mcp_tools.find_athlete(
+        "James Ingham",
+        match="exact",
+        nationality="US",
+        limit=5,
+    )
+
+    assert result["total"] == 1
+    assert result["returned"] == 1
+    assert result["matches"][0]["athlete_id"] == "ath_2"
 
 
 def _seed_rankings(con: duckdb.DuckDBPyConnection) -> None:
@@ -142,6 +221,52 @@ def test_get_rankings_respects_limit_but_keeps_full_count(tmp_path, monkeypatch)
 
     assert result["count"] == 5
     assert len(result["rows"]) == 2
+
+
+def _seed_missing_report_lookup(con: duckdb.DuckDBPyConnection) -> None:
+    con.execute(
+        "CREATE TABLE race_results (result_id VARCHAR, season INTEGER, location VARCHAR, "
+        "division VARCHAR, gender VARCHAR, age_group VARCHAR, total_time_min DOUBLE);"
+    )
+    con.execute(
+        "CREATE TABLE race_rankings (result_id VARCHAR, season_rank INTEGER, "
+        "season_size INTEGER, season_percentile DOUBLE, overall_rank INTEGER, "
+        "overall_size INTEGER, overall_percentile DOUBLE);"
+    )
+
+
+def test_get_race_report_returns_404_error_dict_for_missing_result(tmp_path, monkeypatch):
+    db_path = tmp_path / "mcp-report-missing.db"
+    con = _create_db(db_path)
+    _seed_missing_report_lookup(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    result = mcp_tools.get_race_report("no_such_result")
+
+    assert result["status_code"] == 404
+    assert result["error"] == "result_id not found: no_such_result"
+
+
+def _seed_missing_deepdive_lookup(con: duckdb.DuckDBPyConnection) -> None:
+    con.execute(
+        "CREATE TABLE race_results (result_id VARCHAR, name VARCHAR, event_name VARCHAR, "
+        "event_id VARCHAR, location VARCHAR, season INTEGER, year INTEGER, "
+        "division VARCHAR, gender VARCHAR, age_group VARCHAR, total_time_min DOUBLE);"
+    )
+
+
+def test_get_deepdive_returns_404_error_dict_for_missing_result(tmp_path, monkeypatch):
+    db_path = tmp_path / "mcp-deepdive-missing.db"
+    con = _create_db(db_path)
+    _seed_missing_deepdive_lookup(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    result = mcp_tools.get_deepdive("no_such_result", season=8)
+
+    assert result["status_code"] == 404
+    assert result["error"] == "result_id not found: no_such_result"
 
 
 def test_get_athlete_profile_requires_name_or_id(tmp_path, monkeypatch):

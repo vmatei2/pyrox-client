@@ -462,6 +462,21 @@ def test_report_endpoint_event_rank_is_scoped_to_same_season(tmp_path, monkeypat
     assert race["event_size"] == 2
 
 
+def test_report_endpoint_returns_404_for_missing_result_id(tmp_path, monkeypatch):
+    """A missing Result id should be a not-found error, not a bad request."""
+    db_path = tmp_path / "report-missing-result.db"
+    con = _create_db(db_path)
+    _seed_report_tables(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+    resp = client.get("/api/reports/no_such_result")
+
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "result_id not found: no_such_result"
+
+
 def test_planner_endpoint_applies_time_and_run_filters(tmp_path, monkeypatch):
     """Planner endpoint should respect both total-time range and segment filters."""
     db_path = tmp_path / "planner.db"
@@ -539,6 +554,21 @@ def test_deepdive_endpoint_supports_podium_for_all_and_location_scope(tmp_path, 
     assert london_payload["group_distribution"]["podium"]["count"] == 3
     assert london_payload["locations"][0]["location"] == "london"
     assert london_payload["locations"][0]["podium"] == pytest.approx(62.0)
+
+
+def test_deepdive_endpoint_returns_404_for_missing_result_id(tmp_path, monkeypatch):
+    """A missing Result id should be a not-found error for deepdive reports."""
+    db_path = tmp_path / "deepdive-missing-result.db"
+    con = _create_db(db_path)
+    _seed_deepdive_tables(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+    resp = client.get("/api/deepdive/no_such_result", params={"season": 8})
+
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "result_id not found: no_such_result"
 
 
 def test_rankings_endpoint_returns_top_rows_and_time_lookup(tmp_path, monkeypatch):

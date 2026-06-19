@@ -429,6 +429,11 @@ def _resolve_distribution_metric(metric: str) -> tuple[str, str]:
     return column, key
 
 
+def _is_missing_result_error(exc: ValueError) -> bool:
+    """Return whether a library-layer ValueError means a Result was absent."""
+    return str(exc).startswith("result_id not found:")
+
+
 class ReportingQueries:
     """Deep query module used by REST and MCP-facing adapters.
 
@@ -868,10 +873,15 @@ class ReportingQueries:
         start = time.perf_counter()
         if cohort_time_window_min is not None and cohort_time_window_min <= 0:
             cohort_time_window_min = None
-        report = self.reporting().race_report(
-            result_id,
-            cohort_time_window_min=cohort_time_window_min,
-        )
+        try:
+            report = self.reporting().race_report(
+                result_id,
+                cohort_time_window_min=cohort_time_window_min,
+            )
+        except ValueError as exc:
+            if _is_missing_result_error(exc):
+                raise ReportingNotFoundError(str(exc)) from exc
+            raise
 
         race_rows = df_to_records(report["race"], limit=1)
         race = race_rows[0] if race_rows else {}
@@ -1023,16 +1033,21 @@ class ReportingQueries:
         Season is required by design. Division, gender, age group, and location
         override the selected Result's default Cohort when provided.
         """
-        report = self.reporting().deepdive_location_stats(
-            result_id,
-            season=season,
-            metric=metric,
-            bins=bins,
-            division=division,
-            gender=gender,
-            age_group=age_group,
-            location=location,
-        )
+        try:
+            report = self.reporting().deepdive_location_stats(
+                result_id,
+                season=season,
+                metric=metric,
+                bins=bins,
+                division=division,
+                gender=gender,
+                age_group=age_group,
+                location=location,
+            )
+        except ValueError as exc:
+            if _is_missing_result_error(exc):
+                raise ReportingNotFoundError(str(exc)) from exc
+            raise
         race_rows = df_to_records(report["race"], limit=1)
         return {
             "result_id": result_id,

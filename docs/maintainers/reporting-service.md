@@ -22,7 +22,8 @@ commands should use `pyrox_api_service.app:app` (REST only) or
 
 `pyrox_api_service/mcp_app.py` mounts a streamable-HTTP MCP server at `/mcp`
 on the FastAPI app (single deploy — see `docs/adr/0001-mcp-over-http-reporting-service.md`).
-It exposes intent-shaped tools (`list_filters`, `find_athlete`, `get_distribution`,
+It exposes intent-shaped tools (`list_filters`, `list_races`, `find_athlete`,
+`get_distribution`, `get_race_summary`, `get_cohort_segment_averages`,
 `get_rankings`, `get_race_report`, `get_deepdive`, `get_athlete_profile`) whose
 logic lives in `pyrox_api_service/mcp_tools.py` and calls the REST app in-process.
 Add the URL `https://<host>/mcp` as a remote connector in Claude.
@@ -34,6 +35,15 @@ Smoke-test the live connector before public launch or after deploy:
 
 ```bash
 PYROX_MCP_URL=https://pyrox-api.fly.dev/mcp/ uv run python scripts/smoke_mcp.py --json
+```
+
+## Docs: Deploy to GitHub Pages
+
+After docs changes are merged locally and checked with `uv run mkdocs build --strict`,
+publish the MkDocs site with:
+
+```bash
+uv run mkdocs gh-deploy --clean
 ```
 
 ## Rate Limiting
