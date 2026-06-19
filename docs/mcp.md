@@ -66,7 +66,7 @@ Using Pyrox, what seasons, divisions, genders, and locations are available?
 Find an athlete and inspect one Result:
 
 ```text
-Using Pyrox, find results for James Ingham. Pick the most recent open Result and
+Using Pyrox, find results for Vlad Matei. Pick the most recent open Result and
 summarize the Race report, including strongest and weakest Segments.
 ```
 
@@ -86,7 +86,7 @@ State the Cohort, sample size, and whether the sample is thin.
 Build a profile:
 
 ```text
-Using Pyrox, create an athlete profile for James Ingham and explain how his
+Using Pyrox, create an athlete profile for Your Name and explain how his
 Segment strengths compare with his historical Results.
 ```
 
@@ -101,15 +101,11 @@ Pyrox uses these terms consistently:
 - **Cohort**: the reference population used for rankings, Distributions, and Percentiles.
 - **Distribution**: histogram bins plus summary stats for a metric across a Cohort.
 
-When a user names an athlete, Claude usually needs to follow this flow:
-
-```text
-find_athlete -> choose a result_id -> get_race_report or get_deepdive
-```
 
 The `result_id` is an internal identifier. Users do not need to know it in advance.
 For common or ambiguous names, `find_athlete` returns candidate races so Claude
 can choose the right Result or ask for a narrower filter.
+i.e `Vlad Matei` and `Vlad Mateei` (typo when registering)
 
 ## Caveats
 
@@ -124,11 +120,3 @@ can choose the right Result or ask for a narrower filter.
   return image files.
 - The public MCP endpoint is open and read-only. It is rate-limited to protect
   availability.
-
-## Maintainer Smoke Test
-
-Maintainers can verify the live connector with:
-
-```bash
-PYROX_MCP_URL=https://pyrox-api.fly.dev/mcp/ uv run python scripts/smoke_mcp.py --json
-```
