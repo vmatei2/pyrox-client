@@ -131,6 +131,10 @@
               <ul class="nav flex-column">
               </ul>
             </li>
+            <li class="nav-item" data-bs-level="2"><a href="#add-it-to-codex" class="nav-link">Add It To Codex</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
             <li class="nav-item" data-bs-level="2"><a href="#what-it-can-answer" class="nav-link">What It Can Answer</a>
               <ul class="nav flex-column">
               </ul>
@@ -159,10 +163,11 @@
 <div class="codehilite"><pre><span></span><code>https://pyrox-api.fly.dev/mcp/
 </code></pre></div>
 
-<p>Use it when you want Claude to answer natural-language questions about HYROX Race
-Results without downloading the DuckDB artifact or writing Python. The connector
-uses curated server-computed analytics: it does not expose raw SQL, arbitrary row
-exports, or write operations.</p>
+<p>Use it when you want Claude, Codex, or another MCP client to answer
+natural-language questions about HYROX Race Results without downloading the
+DuckDB artifact or writing Python. The connector uses curated server-computed
+analytics: it does not expose raw SQL, arbitrary row exports, or write
+operations.</p>
 <h2 id="add-it-to-claude-code">Add It To Claude Code<a class="headerlink" href="#add-it-to-claude-code" title="Permanent link">&para;</a></h2>
 <p>Register the connector:</p>
 <div class="codehilite"><pre><span></span><code>claude<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>--transport<span class="w"> </span>http<span class="w"> </span>pyrox<span class="w"> </span>https://pyrox-api.fly.dev/mcp/
@@ -181,8 +186,21 @@ available across your Claude Code projects:</p>
 <div class="codehilite"><pre><span></span><code>claude<span class="w"> </span>mcp<span class="w"> </span>remove<span class="w"> </span>pyrox
 </code></pre></div>
 
+<h2 id="add-it-to-codex">Add It To Codex<a class="headerlink" href="#add-it-to-codex" title="Permanent link">&para;</a></h2>
+<p>Codex can use the same streamable-HTTP MCP endpoint. Register the connector:</p>
+<div class="codehilite"><pre><span></span><code>codex<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>pyrox<span class="w"> </span>--url<span class="w"> </span>https://pyrox-api.fly.dev/mcp/
+</code></pre></div>
+
+<p>In the Codex TUI, use <code>/mcp</code> to check that the server is available.</p>
+<p>You can also configure it directly in <code>~/.codex/config.toml</code>:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">[mcp_servers.pyrox]</span>
+<span class="n">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://pyrox-api.fly.dev/mcp/&quot;</span>
+</code></pre></div>
+
+<p>Codex shares MCP configuration between the CLI and IDE extension, so the same
+setup works across both.</p>
 <h2 id="what-it-can-answer">What It Can Answer<a class="headerlink" href="#what-it-can-answer" title="Permanent link">&para;</a></h2>
-<p>The MCP server exposes ten intent-shaped tools:</p>
+<p>The MCP server exposes ten tools:</p>
 <table>
 <thead>
 <tr>
