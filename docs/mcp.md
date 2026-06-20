@@ -6,10 +6,11 @@ Pyrox exposes a public, read-only MCP server at:
 https://pyrox-api.fly.dev/mcp/
 ```
 
-Use it when you want Claude to answer natural-language questions about HYROX Race
-Results without downloading the DuckDB artifact or writing Python. The connector
-uses curated server-computed analytics: it does not expose raw SQL, arbitrary row
-exports, or write operations.
+Use it when you want Claude, Codex, or another MCP client to answer
+natural-language questions about HYROX Race Results without downloading the
+DuckDB artifact or writing Python. The connector uses curated server-computed
+analytics: it does not expose raw SQL, arbitrary row exports, or write
+operations.
 
 ## Add It To Claude Code
 
@@ -38,9 +39,29 @@ Remove it later with:
 claude mcp remove pyrox
 ```
 
+## Add It To Codex
+
+Codex can use the same streamable-HTTP MCP endpoint. Register the connector:
+
+```bash
+codex mcp add pyrox --url https://pyrox-api.fly.dev/mcp/
+```
+
+In the Codex TUI, use `/mcp` to check that the server is available.
+
+You can also configure it directly in `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.pyrox]
+url = "https://pyrox-api.fly.dev/mcp/"
+```
+
+Codex shares MCP configuration between the CLI and IDE extension, so the same
+setup works across both.
+
 ## What It Can Answer
 
-The MCP server exposes ten intent-shaped tools:
+The MCP server exposes ten tools:
 
 | Tool | Use it for |
 | --- | --- |
