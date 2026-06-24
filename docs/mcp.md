@@ -8,9 +8,8 @@ https://pyrox-api.fly.dev/mcp/
 
 Use it when you want Claude, Codex, or another MCP client to answer
 natural-language questions about HYROX Race Results without downloading the
-DuckDB artifact or writing Python. The connector uses curated server-computed
-analytics: it does not expose raw SQL, arbitrary row exports, or write
-operations.
+DuckDB artifact or writing Python. The connector computes analytics server-side;
+it does not expose raw SQL, arbitrary row exports, or write operations.
 
 ## Add It To Claude Code
 
@@ -38,6 +37,26 @@ Remove it later with:
 ```bash
 claude mcp remove pyrox
 ```
+
+## Add It To Claude (claude.ai and Desktop)
+
+You can also use Pyrox as a custom connector in the Claude web app and Claude
+Desktop, not just the CLI.
+
+> Custom connectors require a paid Claude plan (Pro, Max, Team, or Enterprise).
+> On Team/Enterprise an admin may need to enable custom connectors first.
+
+1. Sign in at [claude.ai](https://claude.ai) (or open Claude Desktop).
+2. Go to **Settings** -> **Connectors**.
+3. Scroll down and click **Add custom connector**.
+4. Set:
+   - **Name:** `Pyrox`
+   - **URL:** `https://pyrox-api.fly.dev/mcp/` (keep the trailing slash)
+5. Click **Add**. The server is open and read-only, so there is no sign-in or
+   OAuth step — it connects straight away and discovers the Pyrox tools.
+6. In a chat, enable **Pyrox** from the tools menu in the composer, then prompt it
+   by name, e.g. *"Using Pyrox, what seasons and divisions are available?"*. The
+   first tool call asks you to approve it.
 
 ## Add It To Codex
 

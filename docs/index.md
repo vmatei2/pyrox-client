@@ -2,9 +2,9 @@
   <div class="hero-eyebrow">HYROX race analytics</div>
   <h1>pyrox-client</h1>
   <p>
-    A Python client for HYROX race results that keeps analysis fast, reliable, and
-    reproducible. Pull full races as pandas DataFrames, apply rigorous filters, and
-    build high-signal performance models.
+    A Python client for HYROX race results. Pull full races as pandas DataFrames
+    with splits already converted to minutes, filter by gender, division, and
+    finish time at read time, and cache everything locally so reruns stay cheap.
   </p>
   <div class="hero-actions">
     <a class="hero-button" href="quickstart/">Get started</a>
@@ -42,6 +42,6 @@ print(london["total_time"].describe())
 ```
 
 <div class="callout">
-  Use this documentation as a map: start with Quickstart, then move into Filtering,
-  Data Model, and the Analytics page once you are ready to dive into your data/performance.
+  Start with Quickstart, then read Filtering and Data Model to learn the columns
+  and query options. The Analytics page covers common race-analysis workflows.
 </div>

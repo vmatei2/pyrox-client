@@ -1,7 +1,7 @@
 # Errors
 
-Pyrox exposes a small, predictable hierarchy so your pipelines can fail fast and
-recover gracefully.
+Pyrox exposes a small, predictable exception hierarchy so your pipelines can
+catch the specific failure they expect and handle it.
 
 ## `PyroxError`
 

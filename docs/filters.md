@@ -1,6 +1,6 @@
 # Filtering
 
-Pyrox supports high-signal filtering at read time, so you can load only the rows you need.
+Pyrox filters at read time, so you load only the rows you need.
 
 ## Gender and division
 

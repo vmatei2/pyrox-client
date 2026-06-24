@@ -2,7 +2,7 @@
 
 This guide documents the workflow for the notebook
 `example_notebooks/impact_of_race_locations.ipynb`. The goal is to make results
-repeatable, auditable, and easy to refresh.
+repeatable and easy to refresh.
 
 ## What the notebook does
 

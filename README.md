@@ -134,6 +134,13 @@ To remove it:
 claude mcp remove pyrox
 ```
 
+### Claude web and Desktop
+
+Pyrox also works as a custom connector in the Claude web app and Claude Desktop
+(paid plans). Go to **Settings -> Connectors -> Add custom connector**, set the
+name to `Pyrox` and the URL to `https://pyrox-api.fly.dev/mcp/`, and click
+**Add**. The server is open and read-only, so it connects without a sign-in step.
+
 For example prompts, tool semantics, and caveats, see `docs/mcp.md`.
 
 ## Documentation
