@@ -169,9 +169,8 @@
 
 <p>Use it when you want Claude, Codex, or another MCP client to answer
 natural-language questions about HYROX Race Results without downloading the
-DuckDB artifact or writing Python. The connector uses curated server-computed
-analytics: it does not expose raw SQL, arbitrary row exports, or write
-operations.</p>
+DuckDB artifact or writing Python. The connector computes analytics server-side;
+it does not expose raw SQL, arbitrary row exports, or write operations.</p>
 <h2 id="add-it-to-claude-code">Add It To Claude Code<a class="headerlink" href="#add-it-to-claude-code" title="Permanent link">&para;</a></h2>
 <p>Register the connector:</p>
 <div class="codehilite"><pre><span></span><code>claude<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>--transport<span class="w"> </span>http<span class="w"> </span>pyrox<span class="w"> </span>https://pyrox-api.fly.dev/mcp/
