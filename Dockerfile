@@ -18,4 +18,8 @@ EXPOSE 8080
 ENV PYROX_DUCKDB_PATH=/app/pyrox_duckdb
 
 # Serve the composed app: REST API (/api/*) plus the mounted MCP server (/mcp).
-CMD ["uvicorn", "pyrox_api_service.mcp_app:app", "--host", "0.0.0.0", "--port", "8080"]
+# --proxy-headers + --forwarded-allow-ips lets uvicorn trust Fly's X-Forwarded-Proto,
+# so the /mcp -> /mcp/ mount redirect stays on https instead of downgrading to http
+# (an http downgrade makes MCP clients like claude.ai abort and fall back to a
+# failing OAuth sign-in flow).
+CMD ["uvicorn", "pyrox_api_service.mcp_app:app", "--host", "0.0.0.0", "--port", "8080", "--proxy-headers", "--forwarded-allow-ips", "*"]

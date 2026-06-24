@@ -7,7 +7,13 @@ primary_region = "lhr"
 [env]
   PYROX_DUCKDB_PATH = "/app/pyrox_duckdb"
   PYROX_API_ALLOW_ORIGINS = "https://pyrox-analytics.vercel.app,capacitor://localhost,ionic://localhost,http://localhost"
-  PYROX_MCP_ALLOWED_HOSTS = "pyrox-api.fly.dev"
+  # MCP DNS-rebinding protection is intentionally left off here. It validates the
+  # Host/Origin headers and exists to stop a malicious site pivoting through a
+  # victim's browser into a localhost-bound server. This endpoint is public,
+  # read-only, no-auth, and behind Fly's HTTPS proxy, so it adds no security here
+  # and only breaks browser/Electron MCP clients (e.g. the Claude web/Desktop
+  # connector, which sends an Origin header). Setting PYROX_MCP_ALLOWED_HOSTS
+  # re-enables it and will 403 those clients with "Invalid Origin header".
 
 [http_service]
   internal_port = 8080
