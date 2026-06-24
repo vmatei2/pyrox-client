@@ -235,9 +235,15 @@ npx<span class="w"> </span>cap<span class="w"> </span>open<span class="w"> </spa
 <li><code>PYROX_DUCKDB_PATH</code></li>
 <li><code>PYROX_API_ALLOW_ORIGINS</code></li>
 <li><code>PYROX_MCP_ALLOWED_HOSTS</code> (optional) — comma-separated Host allow-list. When
-    set, enables MCP DNS-rebinding protection (e.g. <code>pyrox-api.fly.dev</code>). The Fly
-    deploy sets this for the public host.</li>
-<li><code>PYROX_MCP_ALLOWED_ORIGINS</code> (optional) — comma-separated Origin allow-list.</li>
+    set, enables MCP DNS-rebinding protection (Host/Origin validation). Left unset
+    on the public Fly deploy on purpose: the endpoint is public, read-only, no-auth,
+    and behind Fly's HTTPS proxy, so the protection adds no security but rejects
+    browser/Electron MCP clients that send an <code>Origin</code> header (the Claude web /
+    Desktop connector 403s with "Invalid Origin header" when this is set). The
+    Claude Code CLI sends no <code>Origin</code>, so it works either way.</li>
+<li><code>PYROX_MCP_ALLOWED_ORIGINS</code> (optional) — comma-separated Origin allow-list.
+    Only relevant when <code>PYROX_MCP_ALLOWED_HOSTS</code> is set; use it to allow specific
+    browser origins (e.g. <code>https://claude.ai</code>) instead of disabling protection.</li>
 <li><code>PYROX_RATE_LIMIT</code> (optional) — per-client-IP edge rate (default <code>60/minute</code>).</li>
 </ul>
 <p>If backend code, Dockerfile, or service module paths change, redeploy the Fly

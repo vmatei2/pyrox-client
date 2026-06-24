@@ -131,6 +131,10 @@
               <ul class="nav flex-column">
               </ul>
             </li>
+            <li class="nav-item" data-bs-level="2"><a href="#add-it-to-claude-claudeai-and-desktop" class="nav-link">Add It To Claude (claude.ai and Desktop)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
             <li class="nav-item" data-bs-level="2"><a href="#add-it-to-codex" class="nav-link">Add It To Codex</a>
               <ul class="nav flex-column">
               </ul>
@@ -186,6 +190,26 @@ available across your Claude Code projects:</p>
 <div class="codehilite"><pre><span></span><code>claude<span class="w"> </span>mcp<span class="w"> </span>remove<span class="w"> </span>pyrox
 </code></pre></div>
 
+<h2 id="add-it-to-claude-claudeai-and-desktop">Add It To Claude (claude.ai and Desktop)<a class="headerlink" href="#add-it-to-claude-claudeai-and-desktop" title="Permanent link">&para;</a></h2>
+<p>You can also use Pyrox as a custom connector in the Claude web app and Claude
+Desktop, not just the CLI.</p>
+<blockquote>
+<p>Custom connectors require a paid Claude plan (Pro, Max, Team, or Enterprise).
+On Team/Enterprise an admin may need to enable custom connectors first.</p>
+</blockquote>
+<ol>
+<li>Sign in at <a href="https://claude.ai">claude.ai</a> (or open Claude Desktop).</li>
+<li>Go to <strong>Settings</strong> -&gt; <strong>Connectors</strong>.</li>
+<li>Scroll down and click <strong>Add custom connector</strong>.</li>
+<li>Set:</li>
+<li><strong>Name:</strong> <code>Pyrox</code></li>
+<li><strong>URL:</strong> <code>https://pyrox-api.fly.dev/mcp/</code> (keep the trailing slash)</li>
+<li>Click <strong>Add</strong>. The server is open and read-only, so there is no sign-in or
+   OAuth step — it connects straight away and discovers the Pyrox tools.</li>
+<li>In a chat, enable <strong>Pyrox</strong> from the tools menu in the composer, then prompt it
+   by name, e.g. <em>"Using Pyrox, what seasons and divisions are available?"</em>. The
+   first tool call asks you to approve it.</li>
+</ol>
 <h2 id="add-it-to-codex">Add It To Codex<a class="headerlink" href="#add-it-to-codex" title="Permanent link">&para;</a></h2>
 <p>Codex can use the same streamable-HTTP MCP endpoint. Register the connector:</p>
 <div class="codehilite"><pre><span></span><code>codex<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>pyrox<span class="w"> </span>--url<span class="w"> </span>https://pyrox-api.fly.dev/mcp/
