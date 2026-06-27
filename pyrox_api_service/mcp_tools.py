@@ -10,9 +10,66 @@ standing up an MCP session.
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Literal, Optional
 
 from starlette.testclient import TestClient
+
+# Stable, closed-vocabulary parameters are typed as Literals so their valid
+# values land in each tool's input schema. The model then picks from the enum
+# instead of guessing strings the service would reject, and usually skips a
+# list_filters round-trip. age_group and location are intentionally left as
+# free strings: they drift across seasons/events, so a frozen list here would
+# go stale and reject valid new values. Use list_filters to discover those.
+Gender = Literal["male", "female", "mixed"]
+Division = Literal["open", "pro", "doubles", "pro_doubles"]
+
+# Distribution accepts friendly segment keys (normalized to lowercase-alnum and
+# looked up in _DISTRIBUTION_METRIC_COLUMN_MAP).
+DistributionMetric = Literal[
+    "overall",
+    "run1",
+    "run2",
+    "run3",
+    "run4",
+    "run5",
+    "run6",
+    "run7",
+    "run8",
+    "skierg",
+    "sledpush",
+    "sledpull",
+    "burpeebroadjump",
+    "rowerg",
+    "farmerscarry",
+    "sandbaglunges",
+    "wallballs",
+]
+
+# Deepdive resolves against the canonical time columns (its default is already
+# a column name), so it carries the run/work/roxzone aggregates distribution
+# does not expose.
+DeepdiveMetric = Literal[
+    "total_time_min",
+    "run_time_min",
+    "work_time_min",
+    "roxzone_time_min",
+    "run1_time_min",
+    "run2_time_min",
+    "run3_time_min",
+    "run4_time_min",
+    "run5_time_min",
+    "run6_time_min",
+    "run7_time_min",
+    "run8_time_min",
+    "skiErg_time_min",
+    "sledPush_time_min",
+    "sledPull_time_min",
+    "burpeeBroadJump_time_min",
+    "rowErg_time_min",
+    "farmersCarry_time_min",
+    "sandbagLunges_time_min",
+    "wallBalls_time_min",
+]
 
 try:  # Prefer installed package import.
     from pyrox_api_service import app as api
@@ -42,10 +99,10 @@ def _get(path: str, params: Optional[dict] = None) -> dict:
 
 
 def get_distribution(
-    gender: str,
+    gender: Gender,
     season: Optional[int] = None,
-    division: Optional[str] = None,
-    metric: str = "overall",
+    division: Optional[Division] = None,
+    metric: DistributionMetric = "overall",
     age_group: Optional[str] = None,
     location: Optional[str] = None,
 ) -> dict:
@@ -70,8 +127,8 @@ def get_distribution(
 def find_athlete(
     name: str,
     limit: int = DEFAULT_LIST_LIMIT,
-    gender: Optional[str] = None,
-    division: Optional[str] = None,
+    gender: Optional[Gender] = None,
+    division: Optional[Division] = None,
     match: str = "best",
     nationality: Optional[str] = None,
     require_unique: bool = False,
@@ -107,8 +164,8 @@ def find_athlete(
 
 def get_rankings(
     season: int,
-    division: str,
-    gender: str,
+    division: Division,
+    gender: Gender,
     age_group: Optional[str] = None,
     athlete_name: Optional[str] = None,
     limit: int = DEFAULT_LIST_LIMIT,
@@ -144,11 +201,11 @@ def get_race_report(result_id: str, split_name: Optional[str] = None) -> dict:
 def get_deepdive(
     result_id: str,
     season: int,
-    division: Optional[str] = None,
-    gender: Optional[str] = None,
+    division: Optional[Division] = None,
+    gender: Optional[Gender] = None,
     age_group: Optional[str] = None,
     location: Optional[str] = None,
-    metric: str = "total_time_min",
+    metric: DeepdiveMetric = "total_time_min",
 ) -> dict:
     """Cross-location cohort deep dive for one race result (from a `result_id`)."""
     return _get(
@@ -167,7 +224,7 @@ def get_deepdive(
 def get_athlete_profile(
     name: Optional[str] = None,
     athlete_id: Optional[str] = None,
-    division: Optional[str] = None,
+    division: Optional[Division] = None,
 ) -> dict:
     """Career profile for an athlete, by `athlete_id` (preferred) or `name`."""
     if athlete_id:
@@ -179,8 +236,8 @@ def get_athlete_profile(
 
 def list_filters(
     season: Optional[int] = None,
-    division: Optional[str] = None,
-    gender: Optional[str] = None,
+    division: Optional[Division] = None,
+    gender: Optional[Gender] = None,
 ) -> dict:
     """Valid filter values (seasons, divisions, genders, locations, age groups).
 
@@ -194,7 +251,7 @@ def list_filters(
 
 def list_races(
     season: Optional[int] = None,
-    gender: Optional[str] = None,
+    gender: Optional[Gender] = None,
 ) -> dict:
     """Available races with participant counts, optionally filtered by season or gender.
 
@@ -211,8 +268,8 @@ def list_races(
 def get_race_summary(
     season: int,
     location: str,
-    gender: Optional[str] = None,
-    division: Optional[str] = None,
+    gender: Optional[Gender] = None,
+    division: Optional[Division] = None,
     age_group: Optional[str] = None,
     top_percentile: Optional[float] = None,
 ) -> dict:
@@ -241,8 +298,8 @@ def get_race_summary(
 def get_cohort_segment_averages(
     season: int,
     location: str,
-    gender: Optional[str] = None,
-    division: Optional[str] = None,
+    gender: Optional[Gender] = None,
+    division: Optional[Division] = None,
     age_group: Optional[str] = None,
     top_n: Optional[int] = None,
     bottom_n: Optional[int] = None,
