@@ -1,0 +1,49 @@
+name: Deploy API
+
+# Code-only deploys. The DuckDB artifact is built and published by the
+# hyrox_analysis pipeline; machines download it on boot (see
+# pyrox_api_service/fetch_db.py), so no data work happens here.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "pyrox_api_service/**"
+      - "fly.toml"
+      - "Dockerfile"
+      - "pyproject.toml"
+      - ".github/workflows/deploy.yml"
+
+concurrency:
+  group: deploy-api
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy API to Fly
+        run: flyctl deploy --config fly.toml --remote-only
+
+      - name: Sync dependencies
+        run: uv sync --all-extras
+
+      - name: Smoke test live MCP endpoint
+        env:
+          PYROX_MCP_URL: https://pyrox-api.fly.dev/mcp/
+        run: uv run python scripts/smoke_mcp.py --json

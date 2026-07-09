@@ -1,20 +1,15 @@
-# DuckDB Stabilization Tasks
-- Define schema contracts for `race_results`, `athletes`, `athlete_results`, and `athlete_index`
-- Add a `metadata` table with schema_version, build timestamp, and data source info
-- Store the hash/version of `scripts/sql_queries.py` and ingest macro in `metadata`
-- Validate ingest output (tables exist, required columns, non-zero row counts)
-- Add a client-side health check for schema_version mismatch
-- Build a minimal fixture DuckDB for tests (singles + doubles cases)
-- Document required env vars and lock behavior (read-only vs read-write)
+# DuckDB Schema Contracts
 
-## Remote DuckDB Usage Options
-- Publish the `.duckdb` file to object storage and download/cache locally
-- Query Parquet directly from S3 (no DB file; requires on-the-fly views)
-- Use a hosted DuckDB service (e.g., MotherDuck) for multi-user access
-- Use a database server (Postgres/ClickHouse) if concurrent writes are needed
+The database build lives in the upstream `hyrox_analysis` repository
+(`scraping_code/db_build/`), which publishes an immutable artifact plus a
+`latest.json` pointer to S3. This service downloads and checksum-verifies the
+artifact on boot via `pyrox_api_service/fetch_db.py`, and refuses pointers
+whose `schema_version` is newer than `fetch_db.SUPPORTED_SCHEMA_VERSION`. The
+artifact stamps a `build_info` table (schema_version, built_at, source S3 URI).
 
 ## Schema Contracts (v1)
-Source of truth: `scripts/sql_queries.py` and `scripts/ingest_duckdb_from_s3.py`.
+Source of truth: `scraping_code/db_build/sql_queries.py` and
+`scraping_code/db_build/ingest.py` in the `hyrox_analysis` repository.
 
 ### race_results
 Built from S3 parquet via `CREATE_RACE_RESULTS`. Non-nullable fields are required for
@@ -93,9 +88,9 @@ Pre-aggregated search index for fast lookup.
   `src/pyrox/reporting.py`.
 
 ## Build Integrity Gate
-The DuckDB ingest refuses to publish a build when any `(season, location, year, division)`
-group in `race_results` shows duplicate-roster fan-out: high rows per distinct
-athlete name within the same Race and Division. Explicit zero Roxzone values are
-allowed downstream and do not block the build. The gate is intentionally read-only;
-contaminated source partitions must be re-scraped or cleaned upstream. Set
-`ALLOW_DIRTY_INGEST=1` only for an explicit temporary backfill-window override.
+The upstream DuckDB build refuses to publish an artifact when any
+`(season, location, year, division)` group in `race_results` shows
+duplicate-roster fan-out: high rows per distinct athlete name within the same
+Race and Division. Explicit zero Roxzone values are allowed downstream and do
+not block the build. The gate lives beside the scraper in `hyrox_analysis`
+and shares its integrity thresholds (`scraping_code/integrity.py`).

@@ -1,0 +1,54 @@
+name: Refresh Data
+
+# Fired by the hyrox_analysis scraper workflow (repository_dispatch) after it
+# publishes a new DuckDB artifact to S3. Restarting the machines makes them
+# re-run fetch_db on boot and pick up the new artifact; no image rebuild.
+
+on:
+  repository_dispatch:
+    types: [hyrox-db-updated]
+  workflow_dispatch:
+
+concurrency:
+  group: refresh-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log dispatch payload
+        if: github.event_name == 'repository_dispatch'
+        run: |
+          echo "artifact: ${{ github.event.client_payload.key }}"
+          echo "built_at: ${{ github.event.client_payload.built_at }}"
+          echo "schema_version: ${{ github.event.client_payload.schema_version }}"
+
+      - name: Set up Flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      # Stopped machines (auto_stop + min_machines_running = 0) fetch the new
+      # artifact on their next cold start anyway, so a restart failure on a
+      # stopped machine is not an error worth failing the refresh over.
+      - name: Restart machines to pick up new artifact
+        run: |
+          flyctl apps restart pyrox-api \
+            || echo "restart failed (machines may be stopped); next cold start fetches the new artifact"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Sync dependencies
+        run: uv sync --all-extras
+
+      - name: Smoke test live MCP endpoint
+        env:
+          PYROX_MCP_URL: https://pyrox-api.fly.dev/mcp/
+        run: uv run python scripts/smoke_mcp.py --json

@@ -59,6 +59,19 @@ exempt, so internal traffic is never throttled. Default is `60/minute`; override
 with `PYROX_RATE_LIMIT` (a
 [`limits`](https://limits.readthedocs.io) rate string, e.g. `120/minute`).
 
+## Data Flow
+
+The DuckDB artifact is built and published by the `hyrox_analysis` repository
+(scrape → build → verify → publish to `s3://hyrox-results/db/` with a
+`latest.json` pointer). This service is a pure consumer:
+`pyrox_api_service/fetch_db.py` downloads the pointer, verifies the artifact's
+sha256, and swaps it into place on container boot. Data refreshes arrive via a
+`repository_dispatch` (`hyrox-db-updated`) from the pipeline, which triggers
+`.github/workflows/refresh-data.yml` to restart the Fly machines — no image
+rebuild. Code deploys are handled separately by
+`.github/workflows/deploy.yml`. To roll data back, repoint `latest.json` at an
+earlier artifact in `s3://hyrox-results/db/` and restart the machines.
+
 ## Backend: Local Run
 
 From repository root:
@@ -66,6 +79,7 @@ From repository root:
 ```bash
 uv pip install -e ".[api]"
 export PYROX_DUCKDB_PATH=pyrox_duckdb
+python -m pyrox_api_service.fetch_db  # download the published DuckDB artifact
 uvicorn pyrox_api_service.app:app --reload --port 8000
 ```
 
@@ -101,6 +115,8 @@ npx cap open ios
 - Fly configuration is in `fly.toml`.
 - Environment variables used by the service:
   - `PYROX_DUCKDB_PATH`
+  - `PYROX_DB_POINTER_URL` — URL of the pipeline-published `latest.json`
+    pointer that `fetch_db` resolves on boot (defaults to the public CDN).
   - `PYROX_API_ALLOW_ORIGINS`
   - `PYROX_MCP_ALLOWED_HOSTS` (optional) — comma-separated Host allow-list. When
     set, enables MCP DNS-rebinding protection (Host/Origin validation). Left unset
