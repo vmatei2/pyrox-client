@@ -1,0 +1,49 @@
+name: Refresh Data
+
+# The hyrox_analysis pipeline publishes a new DuckDB artifact to S3 weekly
+# (scraper starts Tuesday 12:00 UTC; its job is capped at 6h, so the artifact
+# is live by ~18:30 UTC). Restarting the machines afterwards makes them re-run
+# fetch_db on boot and pick up the new artifact; no image rebuild. Machines
+# that were stopped (auto_stop + min_machines_running = 0) fetch it on their
+# next cold start anyway — this schedule only covers machines that stayed warm.
+
+on:
+  schedule:
+    - cron: "0 20 * * 2"  # Tuesdays 20:00 UTC, after the upstream publish
+  workflow_dispatch:
+
+concurrency:
+  group: refresh-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      # A restart failure on stopped machines is not worth failing the
+      # refresh over; the next cold start fetches the new artifact.
+      - name: Restart machines to pick up new artifact
+        run: |
+          flyctl apps restart pyrox-api \
+            || echo "restart failed (machines may be stopped); next cold start fetches the new artifact"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Sync dependencies
+        run: uv sync --all-extras
+
+      - name: Smoke test live MCP endpoint
+        env:
+          PYROX_MCP_URL: https://pyrox-api.fly.dev/mcp/
+        run: uv run python scripts/smoke_mcp.py --json

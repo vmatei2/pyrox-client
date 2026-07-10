@@ -6,6 +6,9 @@ primary_region = "lhr"
 
 [env]
   PYROX_DUCKDB_PATH = "/app/pyrox_duckdb"
+  # latest.json pointer published by the hyrox_analysis pipeline; fetch_db
+  # downloads and checksum-verifies the referenced artifact on boot.
+  PYROX_DB_POINTER_URL = "https://d2wl4b7sx66tfb.cloudfront.net/db/latest.json"
   PYROX_API_ALLOW_ORIGINS = "https://pyrox-analytics.vercel.app,capacitor://localhost,ionic://localhost,http://localhost"
   # MCP DNS-rebinding protection is intentionally left off here. It validates the
   # Host/Origin headers and exists to stop a malicious site pivoting through a
