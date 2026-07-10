@@ -65,10 +65,11 @@ The DuckDB artifact is built and published by the `hyrox_analysis` repository
 (scrape → build → verify → publish to `s3://hyrox-results/db/` with a
 `latest.json` pointer). This service is a pure consumer:
 `pyrox_api_service/fetch_db.py` downloads the pointer, verifies the artifact's
-sha256, and swaps it into place on container boot. Data refreshes arrive via a
-`repository_dispatch` (`hyrox-db-updated`) from the pipeline, which triggers
-`.github/workflows/refresh-data.yml` to restart the Fly machines — no image
-rebuild. Code deploys are handled separately by
+sha256, and swaps it into place on container boot. Stopped machines therefore
+pick up new data on their next cold start; `.github/workflows/refresh-data.yml`
+additionally restarts any warm machines on a weekly schedule (after the
+upstream Tuesday publish) — no image rebuild, no cross-repo credentials.
+Code deploys are handled separately by
 `.github/workflows/deploy.yml`. To roll data back, repoint `latest.json` at an
 earlier artifact in `s3://hyrox-results/db/` and restart the machines.
 
