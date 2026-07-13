@@ -14,7 +14,10 @@ RUN pip install --no-cache-dir uv \
 
 EXPOSE 8080
 
-ENV PYROX_DUCKDB_PATH=/app/pyrox_duckdb
+# On Fly a persistent volume is mounted at /data (see fly.toml [mounts]); create
+# the dir so non-Fly/local runs without the mount still have a valid target.
+RUN mkdir -p /data
+ENV PYROX_DUCKDB_PATH=/data/pyrox_duckdb
 
 # The DuckDB artifact is no longer baked into the image: the scraping pipeline
 # publishes it to S3/CDN and fetch_db downloads + checksum-verifies it on boot,
