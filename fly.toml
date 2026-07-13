@@ -5,7 +5,11 @@ primary_region = "lhr"
   dockerfile = "Dockerfile"
 
 [env]
-  PYROX_DUCKDB_PATH = "/app/pyrox_duckdb"
+  # Store the DuckDB artifact on the persistent volume (see [mounts]) so it
+  # survives machine stops. fetch_db skips the download when the local file
+  # already matches the pointer's sha256, so only the first cold boot (or a new
+  # publish) pays the ~1.16GB download; later cold boots start in seconds.
+  PYROX_DUCKDB_PATH = "/data/pyrox_duckdb"
   # latest.json pointer published by the hyrox_analysis pipeline; fetch_db
   # downloads and checksum-verifies the referenced artifact on boot.
   PYROX_DB_POINTER_URL = "https://d2wl4b7sx66tfb.cloudfront.net/db/latest.json"
@@ -24,3 +28,13 @@ primary_region = "lhr"
   auto_stop_machines = "stop"
   auto_start_machines = true
   min_machines_running = 0
+
+# Persist the downloaded DuckDB artifact across machine stops. Without this the
+# rootfs is wiped on every stop, so each cold boot re-downloaded the full
+# ~1.16GB DB (~5 min) and Fly's auto-stop killed the machine mid-download before
+# uvicorn could bind -> boot loop. The volume lets fetch_db's sha256 skip-logic
+# reuse the artifact. The volume must be created once before deploy:
+#   fly volumes create pyrox_data --region lhr --size 3 -a pyrox-api
+[mounts]
+  source = "pyrox_data"
+  destination = "/data"
