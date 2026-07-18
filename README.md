@@ -1,183 +1,100 @@
 # pyrox-client
 
-Unofficial Python client for HYROX race results.
+Talk to the HYROX results dataset. A Python client and a public MCP server for
+analysing HYROX race results, either in code or by asking an AI assistant.
 
 ![Unit Tests](https://github.com/vmatei2/pyrox-client/actions/workflows/tests.yml/badge.svg)
 ![Integration Tests](https://github.com/vmatei2/pyrox-client/actions/workflows/integration.yml/badge.svg)
 [![Docs](https://img.shields.io/badge/docs-mkdocs-0b5d4a)](https://vmatei2.github.io/pyrox-client/)
 [![PyPI - Version](https://img.shields.io/pypi/v/pyrox-client.svg)](https://pypi.org/project/pyrox-client/)
-[![Wheel](https://img.shields.io/pypi/wheel/pyrox-client.svg)](https://pypi.org/project/pyrox-client/)
 
-## Install
+<!-- Demo: one HYROX question typed into Claude, one chart out. MP4 autoplays on GitHub. -->
+<p align="center">
+  <video src="docs/assets/pyrox-demo.mp4" autoplay loop muted playsinline width="720"></video>
+</p>
+
+Two ways in:
+
+- **Ask an AI.** Connect the MCP server and query the dataset in plain English,
+  e.g. *"where would a 62-minute open time rank in season 8?"*
+- **Write Python.** Pull a full race as a pandas DataFrame with splits already
+  converted to minutes, cached on disk so reruns are cheap.
+
+> Independent project, not affiliated with or endorsed by HYROX.
+
+## Ask an AI (MCP server)
+
+There's a public, read-only MCP server at `https://pyrox-api.fly.dev/mcp/`. Point
+Claude, Codex, or any MCP client at it and ask about distributions, rankings,
+athlete profiles, or a split-by-split race report. The assistant picks the right
+tool for the question on its own.
 
 ```bash
-uv pip install pyrox-client
+# Claude Code
+claude mcp add --transport http pyrox https://pyrox-api.fly.dev/mcp/
+
+# Codex
+codex mcp add pyrox --url https://pyrox-api.fly.dev/mcp/
 ```
 
-or
+Using Claude web or Desktop? No install needed; add it as a custom connector.
+The [MCP guide](docs/mcp.md) has the steps, the full tool list, and example
+prompts. If you connect a Strava MCP alongside it, you can ask the agent to check
+your splits against the effort your Strava data actually shows.
+
+## Use it in Python
 
 ```bash
 pip install pyrox-client
 ```
-
-DuckDB-backed reporting helpers are optional. The extra installs the DuckDB
-Python library, but it does not bundle a database file:
-
-```bash
-pip install "pyrox-client[reporting]"
-```
-
-## Quickstart
 
 ```python
 import pyrox
 
 client = pyrox.PyroxClient()
 
-# Discover races
-races = client.list_races()
-seasons = client.list_seasons()
-locations = client.list_locations(season=8)
-years = client.list_years(season=8, location="london")
+london = client.get_race(season=7, location="london", gender="male")
+print(london["total_time"].describe())
 
-# Fetch one race
-london = client.get_race(season=7, location="london")
-
-# Optional filters
-london_male_open = client.get_race(
-    season=7,
-    location="london",
-    gender="male",
-    division="open",
-)
-
-# Total time filter in minutes
-sub60 = client.get_race(season=7, location="london", total_time=60)
-range_50_60 = client.get_race(season=7, location="london", total_time=(50, 60))
-
-# Athlete lookup in a race
-athlete = client.get_athlete_in_race(
-    season=7,
-    location="london",
-    athlete_name="surname, name",
-)
+# Find what's available first
+client.list_seasons()
+client.list_locations(season=8)
 ```
+
+Station and run columns come back with readable names, already in minutes, so you
+can drop them straight into a stats workflow. See [docs/api.md](docs/api.md) for
+the full reference.
 
 ## Core API
 
-- `list_races(season: int | None = None, force_refresh: bool = False) -> pd.DataFrame`
-- `list_seasons(force_refresh: bool = False) -> list[int]`
-- `list_locations(season: int | None = None, force_refresh: bool = False) -> list[str]`
-- `list_years(season: int | None = None, location: str | None = None, force_refresh: bool = False) -> list[int]`
-- `get_race(season, location, year=None, gender=None, division=None, total_time=None, use_cache=True) -> pd.DataFrame`
-- `get_season(season, locations=None, gender=None, division=None, max_workers=8, use_cache=True) -> pd.DataFrame`
-- `get_athlete_in_race(season, location, athlete_name, year=None, gender=None, division=None, use_cache=True) -> pd.DataFrame`
-- `clear_cache(pattern="*") -> None`
-- `cache_info() -> dict`
+- `list_races(season=None)`, `list_seasons()`, `list_locations(...)`, `list_years(...)`
+- `get_race(season, location, year=None, gender=None, division=None, total_time=None)`
+- `get_season(season, locations=None, gender=None, division=None)`
+- `get_athlete_in_race(season, location, athlete_name, ...)`
+- `clear_cache(pattern="*")`, `cache_info()`
 
-## Mistake Recovery
+Mistype a location and `RaceNotFound` hands back the closest matches instead of a
+bare error.
 
-`RaceNotFound` includes manifest-backed suggestions when a race cannot be found:
+## Reporting helpers (optional)
 
-```python
-from pyrox.errors import RaceNotFound
-
-try:
-    client.get_race(season=8, location="londn")
-except RaceNotFound as exc:
-    print(exc)
-    print(exc.suggestions)
-```
-
-## Reporting Helpers
-
-The base install keeps the public client lightweight. `ReportingClient` requires
-`pyrox-client[reporting]` and a local DuckDB database path; the package does not
-ship the generated database artifact.
-
-```python
-from pyrox.reporting import ReportingClient
-
-reporting = ReportingClient(database="/path/to/pyrox_duckdb")
-```
-
-## MCP Server
-
-The hosted reporting service exposes a read-only MCP server over streamable HTTP at
-`https://pyrox-api.fly.dev/mcp/`. It lets Claude answer natural-language questions
-against the HYROX dataset through a small set of intent-shaped tools:
-`list_filters`, `find_athlete`, `get_distribution`, `get_rankings`,
-`get_race_report`, `get_deepdive`, and `get_athlete_profile`.
-
-Add it to Claude Code with the `claude mcp add` command:
+For heavier local analysis over a DuckDB file, install the extra:
 
 ```bash
-claude mcp add --transport http pyrox https://pyrox-api.fly.dev/mcp/
+pip install "pyrox-client[reporting]"
 ```
 
-Then verify the connection:
-
-```bash
-claude mcp list
-```
-
-By default this registers the server at the local (project) scope. Use
-`--scope user` to make it available across all your projects:
-
-```bash
-claude mcp add --transport http --scope user pyrox https://pyrox-api.fly.dev/mcp/
-```
-
-To remove it:
-
-```bash
-claude mcp remove pyrox
-```
-
-### Claude web and Desktop
-
-Pyrox also works as a custom connector in the Claude web app and Claude Desktop
-(paid plans). Go to **Settings -> Connectors -> Add custom connector**, set the
-name to `Pyrox` and the URL to `https://pyrox-api.fly.dev/mcp/`, and click
-**Add**. The server is open and read-only, so it connects without a sign-in step.
-
-For example prompts, tool semantics, and caveats, see `docs/mcp.md`.
+The database artifact isn't bundled; you point `ReportingClient` at a local path.
+Details in [docs/api.md](docs/api.md).
 
 ## Documentation
 
 - Live docs: https://vmatei2.github.io/pyrox-client/
-- Client API: `docs/api.md`
-- MCP guide: `docs/mcp.md`
-- Error model: `docs/errors.md`
-- Filters and usage notes: `docs/filters.md`
+- MCP guide, client API, filters, and the error model live under `docs/`
+- Background write-up: [Pyrox MCP server on Medium](https://medium.com/@vladmatei432/pyrox-mcp-server-access-to-and-analysis-of-hyrox-results-directly-via-llms-4e8ebf486525)
 
-## Repository Scope
-
-The PyPI package is the `pyrox` client library.
-
-This repository also contains a reporting service and UI (`pyrox_api_service/`, `ui/`) used for project workflows. Those are not part of the published `pyrox-client` wheel.
-
-Reporting-service contract note:
-
-- Athlete profile endpoints (`/api/athletes/profile` and `/api/athletes/{athlete_id}/profile`)
-  may include optional `personal_bests[*].percentile` values in `[0, 1]`.
-- `average_times[*].percentile` may also be present with the same semantics.
-- Missing percentile data is non-fatal and returned by omitting the `percentile` key
-  for that segment.
-- Profile percentile cohorts are computed against historical results in the same
-  division and gender.
-
-Maintainer-only operational docs:
-
-- `docs/maintainers/README.md`
-- `docs/maintainers/release.md`
-- `docs/maintainers/reporting-service.md`
+Maintaining or releasing? See [docs/maintainers/](docs/maintainers/README.md).
 
 ## License
 
-Released under the [MIT License](LICENSE) — free to use, modify, and distribute. Copyright (c) 2026 Vlad Matei.
-
-## Disclaimer
-
-Pyrox is an independent project and is not affiliated with, endorsed, or sponsored by HYROX.
-HYROX and related marks are trademarks of their respective owners and are used only for descriptive purposes.
+MIT. Free to use, modify, and distribute. © 2026 Vlad Matei.

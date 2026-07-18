@@ -2,7 +2,8 @@
 
 This repository includes a FastAPI reporting service and a Vite/React UI for
 project workflows. This stack is separate from the published `pyrox-client`
-package.
+package. The PyPI wheel ships only the `pyrox` client library (`src/pyrox`);
+`pyrox_api_service/` and `ui/` are not part of it.
 
 ## Canonical Backend Module
 
@@ -36,6 +37,16 @@ Smoke-test the live connector before public launch or after deploy:
 ```bash
 PYROX_MCP_URL=https://pyrox-api.fly.dev/mcp/ uv run python scripts/smoke_mcp.py --json
 ```
+
+## API Contract: Athlete Profile Percentiles
+
+The athlete profile endpoints (`/api/athletes/profile` and
+`/api/athletes/{athlete_id}/profile`) may include optional
+`personal_bests[*].percentile` values in `[0, 1]`. `average_times[*].percentile`
+may also be present with the same semantics. Missing percentile data is
+non-fatal: the `percentile` key is omitted for that segment rather than set to
+null. Profile percentile cohorts are computed against historical results in the
+same division and gender.
 
 ## Docs: Deploy to GitHub Pages
 
