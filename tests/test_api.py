@@ -403,6 +403,55 @@ def test_report_endpoint_filters_run_split_min_values(tmp_path, monkeypatch):
     assert selected_split["stats"]["cohort"]["mean"] == 2.0
 
 
+def test_report_endpoint_preserves_time_window_split_percentiles(tmp_path, monkeypatch):
+    """Bounded loading should preserve strict-less-than split percentile semantics."""
+    db_path = tmp_path / "report-percentiles.db"
+    con = _create_db(db_path)
+    _seed_report_tables(con)
+    con.execute(
+        "UPDATE split_percentiles SET split_time_min = 4.0 "
+        "WHERE result_id = 'result_2' AND split_name = 'rowErg'"
+    )
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+    resp = client.get("/api/reports/result_1")
+
+    assert resp.status_code == 200
+    splits = {row["split_name"]: row for row in resp.json()["splits"]}
+    assert splits["rowErg"]["split_percentile_time_window"] == pytest.approx(1.0)
+
+
+def test_report_endpoint_limits_requested_previews_in_sql(tmp_path, monkeypatch):
+    """Requested previews should stay capped while retaining full cardinalities."""
+    db_path = tmp_path / "report-previews.db"
+    con = _create_db(db_path)
+    _seed_report_tables(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    client = TestClient(api.app)
+    resp = client.get(
+        "/api/reports/result_1",
+        params={
+            "include_cohort": True,
+            "cohort_limit": 1,
+            "include_cohort_splits": True,
+            "cohort_splits_limit": 1,
+        },
+    )
+
+    assert resp.status_code == 200
+    payload = resp.json()
+    assert len(payload["cohort_preview"]["rows"]) == 1
+    assert payload["cohort_preview"]["total"] == 2
+    assert len(payload["cohort_splits_preview"]["rows"]) == 1
+    assert payload["cohort_splits_preview"]["total"] == 4
+    assert len(payload["cohort_time_window_splits_preview"]["rows"]) == 1
+    assert payload["cohort_time_window_splits_preview"]["total"] == 4
+
+
 def test_report_endpoint_includes_plot_data_series(tmp_path, monkeypatch):
     """Report payload should include derived plotting series with expected values."""
     db_path = tmp_path / "report-plots.db"

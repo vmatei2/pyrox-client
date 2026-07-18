@@ -17,6 +17,10 @@ import numpy as np
 import pandas as pd
 
 from pyrox_api_service.database import DuckDBRuntime, get_runtime
+from pyrox_api_service.race_report_loader import (
+    RaceReportLoadRequest,
+    load_bounded_race_report,
+)
 
 
 logger = logging.getLogger("pyrox.api")
@@ -873,81 +877,53 @@ class ReportingQueries:
         start = time.perf_counter()
         if cohort_time_window_min is not None and cohort_time_window_min <= 0:
             cohort_time_window_min = None
+        normalized_split = normalize_optional_text(split_name)
         try:
-            report = self.reporting().race_report(
-                result_id,
-                cohort_time_window_min=cohort_time_window_min,
+            report = load_bounded_race_report(
+                self.connection(),
+                RaceReportLoadRequest(
+                    result_id=result_id,
+                    cohort_time_window_min=cohort_time_window_min,
+                    selected_split=normalized_split,
+                    cohort_preview_limit=cohort_limit if include_cohort else None,
+                    cohort_splits_preview_limit=(
+                        cohort_splits_limit if include_cohort_splits else None
+                    ),
+                ),
             )
         except ValueError as exc:
             if _is_missing_result_error(exc):
                 raise ReportingNotFoundError(str(exc)) from exc
             raise
 
-        race_rows = df_to_records(report["race"], limit=1)
-        race = race_rows[0] if race_rows else {}
-        splits = df_to_records(report["splits"])
-        athlete_total_time = None
-        if not report["race"].empty and "total_time_min" in report["race"].columns:
-            value = report["race"]["total_time_min"].iloc[0]
-            if value is not None and not pd.isna(value):
-                athlete_total_time = float(value)
-
-        cohort_hist = None
-        if "total_time_min" in report["cohort"].columns:
-            cohort_hist = _build_histogram(report["cohort"]["total_time_min"], athlete_value=athlete_total_time)
-
-        time_window_hist = None
-        if "cohort_time_window" in report:
-            cohort_window = report["cohort_time_window"]
-            if "total_time_min" in cohort_window.columns:
-                time_window_hist = _build_histogram(
-                    cohort_window["total_time_min"],
-                    athlete_value=athlete_total_time,
-                )
+        race = report.race
+        splits = report.splits
+        splits_frame = pd.DataFrame(splits)
 
         selected_split = None
-        normalized_split = normalize_optional_text(split_name)
         if normalized_split:
-            split_key = normalized_split.casefold()
-            split_min_value = _min_value_for_split(split_key)
-            athlete_split_value = None
-            if "split_name" in report["splits"].columns and "split_time_min" in report["splits"].columns:
-                split_mask = report["splits"]["split_name"].astype(str).str.casefold() == split_key
-                if split_mask.any():
-                    split_value = report["splits"].loc[split_mask, "split_time_min"].iloc[0]
-                    if split_value is not None and not pd.isna(split_value):
-                        athlete_split_value = float(split_value)
-
-            def build_split_hist(df: pd.DataFrame) -> Optional[dict]:
-                """Build selected-split histogram data from split rows."""
-                if df.empty or "split_name" not in df.columns or "split_time_min" not in df.columns:
-                    return None
-                mask = df["split_name"].astype(str).str.casefold() == split_key
-                if not mask.any():
-                    return None
-                return _build_histogram(
-                    df.loc[mask, "split_time_min"],
-                    athlete_value=athlete_split_value,
-                    min_value=split_min_value,
-                )
-
-            def build_split_stats(df: pd.DataFrame) -> Optional[dict]:
-                """Build selected-split summary stats from split rows."""
-                if df.empty or "split_name" not in df.columns or "split_time_min" not in df.columns:
-                    return None
-                mask = df["split_name"].astype(str).str.casefold() == split_key
-                if not mask.any():
-                    return None
-                return _describe_series(df.loc[mask, "split_time_min"], min_value=split_min_value)
-
             selected_split = {
                 "name": normalized_split,
-                "cohort": build_split_hist(report["cohort_splits"]),
-                "time_window": build_split_hist(report.get("cohort_time_window_splits", pd.DataFrame())),
+                "cohort": (
+                    report.selected_split_cohort.histogram
+                    if report.selected_split_cohort is not None
+                    else None
+                ),
+                "time_window": (
+                    report.selected_split_time_window.histogram
+                    if report.selected_split_time_window is not None
+                    else None
+                ),
                 "stats": {
-                    "cohort": build_split_stats(report["cohort_splits"]),
-                    "time_window": build_split_stats(
-                        report.get("cohort_time_window_splits", pd.DataFrame())
+                    "cohort": (
+                        report.selected_split_cohort.stats
+                        if report.selected_split_cohort is not None
+                        else None
+                    ),
+                    "time_window": (
+                        report.selected_split_time_window.stats
+                        if report.selected_split_time_window is not None
+                        else None
                     ),
                 },
             }
@@ -958,40 +934,39 @@ class ReportingQueries:
             "splits": splits,
             "plot_data": {
                 "work_vs_run_split": _build_work_vs_run_split(race),
-                "run_change_series": _build_run_change_series(race, report["splits"]),
+                "run_change_series": _build_run_change_series(race, splits_frame),
             },
             "cohort_time_window_min": cohort_time_window_min,
-            "cohort_stats": _describe_times(report["cohort"]),
-            "cohort_time_window_stats": _describe_times(
-                report.get("cohort_time_window", pd.DataFrame())
+            "cohort_stats": report.cohort.stats,
+            "cohort_time_window_stats": (
+                report.time_window.stats if report.time_window is not None else None
             ),
             "distributions": {
-                "cohort_total_time": cohort_hist,
-                "time_window_total_time": time_window_hist,
+                "cohort_total_time": report.cohort.histogram,
+                "time_window_total_time": (
+                    report.time_window.histogram if report.time_window is not None else None
+                ),
                 "selected_split": selected_split,
             },
         }
 
-        if include_cohort:
+        if report.cohort_preview is not None:
             payload["cohort_preview"] = {
-                "columns": list(report["cohort"].columns),
-                "rows": df_to_records(report["cohort"], limit=cohort_limit),
-                "total": int(len(report["cohort"])),
+                "columns": report.cohort_preview.columns,
+                "rows": report.cohort_preview.rows,
+                "total": report.cohort_preview.total,
             }
-        if include_cohort_splits:
+        if report.cohort_splits_preview is not None:
             payload["cohort_splits_preview"] = {
-                "columns": list(report["cohort_splits"].columns),
-                "rows": df_to_records(report["cohort_splits"], limit=cohort_splits_limit),
-                "total": int(len(report["cohort_splits"])),
+                "columns": report.cohort_splits_preview.columns,
+                "rows": report.cohort_splits_preview.rows,
+                "total": report.cohort_splits_preview.total,
             }
-            if "cohort_time_window_splits" in report:
+            if report.time_window_splits_preview is not None:
                 payload["cohort_time_window_splits_preview"] = {
-                    "columns": list(report["cohort_time_window_splits"].columns),
-                    "rows": df_to_records(
-                        report["cohort_time_window_splits"],
-                        limit=cohort_splits_limit,
-                    ),
-                    "total": int(len(report["cohort_time_window_splits"])),
+                    "columns": report.time_window_splits_preview.columns,
+                    "rows": report.time_window_splits_preview.rows,
+                    "total": report.time_window_splits_preview.total,
                 }
 
         logger.info("report response ready in %.3fs", time.perf_counter() - start)
