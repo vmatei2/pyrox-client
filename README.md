@@ -9,9 +9,11 @@ analysing HYROX race results, either in code or by asking an AI assistant.
 [![PyPI - Version](https://img.shields.io/pypi/v/pyrox-client.svg)](https://pypi.org/project/pyrox-client/)
 
 <!-- Demo: one HYROX question typed into Claude, one chart out. MP4 autoplays on GitHub. -->
-<p align="center">
-  <video src="docs/assets/pyrox-demo.mp4" autoplay loop muted playsinline width="720"></video>
-</p>
+
+https://github.com/user-attachments/assets/2756c10f-166b-45ba-aa3d-089e1f40fe00
+
+
+
 
 Two ways in:
 
