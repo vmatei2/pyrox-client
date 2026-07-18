@@ -173,6 +173,10 @@ Maintainer-only operational docs:
 - `docs/maintainers/release.md`
 - `docs/maintainers/reporting-service.md`
 
+## License
+
+Released under the [MIT License](LICENSE) — free to use, modify, and distribute. Copyright (c) 2026 Vlad Matei.
+
 ## Disclaimer
 
 Pyrox is an independent project and is not affiliated with, endorsed, or sponsored by HYROX.
