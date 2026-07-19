@@ -24,3 +24,6 @@ ui/ios/DerivedData/
 node_modules/
 pyrox_duckdb
 test.sql
+
+.DS_Store
+.claude/settings.local.json

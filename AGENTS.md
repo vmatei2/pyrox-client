@@ -1,9 +1,9 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- Docs: `README.md`, `NOTES.md`.
+- Docs: `README.md`, `docs/` (mkdocs user docs + `docs/maintainers/` runbooks), `wiki/` (agent-maintained engineering wiki).
 - Build config: `pyproject.toml` (Hatch build, dependencies, metadata).
-- Main client code: `src/core.py`
+- Main client code: `src/pyrox/core.py`; reporting service: `pyrox_api_service/`; frontend: `ui/`
 
 ## Build, Test, and Development Commands
 - Install (editable): `uv pip install -e .` or `pip install -e .`
@@ -18,7 +18,7 @@
 ## Testing Guidelines
 - Framework: pytest (recommended). Place tests under `tests/` mirroring `src/pyrox/` paths.
 - Naming: test files `test_*.py`; functions `test_*`.
-- Source the virutal environment located in .venv folder
+- Source the virtual environment located in the .venv folder
 - Run: `pytest -q`; coverage (optional) `pytest --cov=pyrox`.
 - Aim for coverage of public functions in `core.py` and error paths in `errors.py`.
 
@@ -28,5 +28,9 @@
 - PRs: include purpose, approach, and testing notes; link issues; add screenshots or logs for API/CLI runs. Ensure lint passes and tests green.
 
 ## Security & Configuration Tips
-- API URL and key: prefer env variables consumed in `config.py`. Avoid committing secrets; use `.env` locally and CI secrets in pipelines.
-- Network calls: `core._client` uses `httpx`; set reasonable timeouts and retries in changes. Keep error surfaces mapped to `errors.py` types.
+- Service configuration comes from env variables (`PYROX_DUCKDB_PATH` and friends; see `docs/maintainers/reporting-service.md`). Avoid committing secrets; use `.env` locally and CI secrets in pipelines.
+- Network calls use `httpx`; set reasonable timeouts and retries in changes. Keep error surfaces mapped to `errors.py` types.
+
+## Wiki
+
+The agent-maintained wiki lives in `wiki/`; read `wiki/index.md` before starting work and keep it in sync with code changes. Rules are in `CLAUDE.md`.
