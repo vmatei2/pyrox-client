@@ -27,3 +27,6 @@ test.sql
 
 .DS_Store
 .claude/settings.local.json
+
+# CodeWiki session workspaces (codewiki_docs/ itself is committed)
+.codewiki/

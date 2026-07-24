@@ -21,7 +21,7 @@ from starlette.testclient import TestClient
 # free strings: they drift across seasons/events, so a frozen list here would
 # go stale and reject valid new values. Use list_filters to discover those.
 Gender = Literal["male", "female", "mixed"]
-Division = Literal["open", "pro", "doubles", "pro_doubles"]
+Division = Literal["open", "pro", "doubles", "pro_doubles", "relay", "adaptive"]
 
 # Distribution accepts friendly segment keys (normalized to lowercase-alnum and
 # looked up in _DISTRIBUTION_METRIC_COLUMN_MAP).

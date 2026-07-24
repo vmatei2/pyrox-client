@@ -1,11 +1,14 @@
 ---
-updated: 2026-07-19
+updated: 2026-07-24
 sources:
   - README.md
   - pyproject.toml
   - fly.toml
   - Dockerfile
   - .github/workflows
+  - .claude/hooks/codewiki-freshness.py
+  - .claude/skills/codewiki/SKILL.md
+  - .claude/skills/codewiki/analyze.py
   - docs/adr/0001-mcp-over-http-reporting-service.md
   - docs/maintainers
   - pyrox_api_service/fetch_db.py
@@ -75,6 +78,7 @@ fails the release if that discipline slips.
 | `tests/` | pytest suite; UI tests live in `ui/` under vitest |
 | `docs/` | User-facing mkdocs site, plus `docs/maintainers/` runbooks and `docs/adr/` |
 | `scripts/` | `release.sh`, `smoke_mcp.py`, `verify_wheel_contents.py` |
+| `codewiki_docs/` | Machine-generated architecture wiki. Disposable; regenerate rather than hand-edit. See below |
 
 ## Operating it
 
@@ -85,6 +89,23 @@ download; `refresh-data.yml` restarts warm machines weekly after the upstream
 Tuesday publish; releasing means `./scripts/release.sh <version>` then pushing
 the tag. `fetch_db.SUPPORTED_SCHEMA_VERSION` refuses artifacts newer than the
 code understands.
+
+## Three documentation surfaces, one rule each
+
+`docs/` is written for users and is canonical. `wiki/` (this) is written by
+agents for the human and is curated. `codewiki_docs/` is generated wholesale by
+the `/codewiki` skill and is authoritative about nothing — it is a navigable map
+of the import graph, unverified by tests. When they disagree, `docs/` beats
+`wiki/` beats `codewiki_docs/`, and code beats all three.
+
+The skill is self-contained — stdlib `ast` plus import regex, no CodeWiki
+install and no MCP server; it borrows the paper's approach, not its runtime.
+`analyze.py analyze` builds the import graph, `lint.py` checks Mermaid and
+cross-links, `analyze.py finalize` validates the module tree and writes the
+baseline. A `SessionStart` hook (`.claude/hooks/codewiki-freshness.py`) diffs
+the working tree against that baseline and names the modules that drifted; it
+only speaks when a changed file maps to a documented module, so editing a README
+or a workflow stays silent. Run it by hand with `--text`.
 
 ## Commands
 

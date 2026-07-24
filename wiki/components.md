@@ -1,5 +1,5 @@
 ---
-updated: 2026-07-19
+updated: 2026-07-24
 sources:
   - src/pyrox/core.py
   - src/pyrox/reporting.py
@@ -76,6 +76,8 @@ Choices to preserve:
 - Stable vocabularies (`Gender`, `Division`, metric names) are `Literal` types
   so valid values land in the tool schema. `age_group` and `location` stay free
   strings because they drift by season; a frozen list would reject new values.
+  The current division vocabulary is `open`, `pro`, `doubles`, `pro_doubles`,
+  `relay`, and `adaptive`; keep it aligned with the reporting artifact.
 - Default list limit is 20 to protect model context. Callers raise `limit`.
 - DNS-rebinding protection is off deliberately. The endpoint is public,
   read-only, and behind Fly's HTTPS proxy; enabling it (by setting

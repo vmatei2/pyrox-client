@@ -615,3 +615,20 @@ def test_mcp_server_registers_expected_tools():
     assert all(tool.title for tool in tools)
     assert all(tool.annotations.readOnlyHint for tool in tools)
     assert all(tool.annotations.destructiveHint is False for tool in tools)
+
+
+def test_mcp_tool_schemas_include_all_supported_divisions():
+    """Division schemas must not hide supported relay or adaptive cohorts."""
+    import asyncio
+
+    from pyrox_api_service import mcp_app
+
+    tools = asyncio.run(mcp_app.mcp_server.list_tools())
+    expected_divisions = {"open", "pro", "doubles", "pro_doubles", "relay", "adaptive"}
+
+    for tool in tools:
+        division_schema = tool.inputSchema["properties"].get("division")
+        if division_schema is None:
+            continue
+        choices = division_schema.get("enum") or division_schema["anyOf"][0]["enum"]
+        assert set(choices) == expected_divisions

@@ -1,13 +1,13 @@
 {
   "hooks": {
-    "Stop": [
+    "SessionStart": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/wiki-drift-guard.sh",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/codewiki-freshness.py",
             "timeout": 15,
-            "statusMessage": "Checking wiki sync..."
+            "statusMessage": "Checking generated docs freshness..."
           }
         ]
       }

@@ -152,8 +152,8 @@ i.e `Vlad Matei` and `Vlad Mateei` (typo when registering)
 - Pyrox is based on public HYROX source data and may inherit source-data issues.
 - Thin Cohorts are flagged with sample-size information and should be interpreted
   cautiously.
-- Divisions are not pooled by default because open, pro, doubles, and relay Results
-  are not directly comparable.
+- Divisions are not pooled by default because open, pro, doubles, relay, and adaptive
+  Results are not directly comparable.
 - Distributions default to the latest season and the `open` division when those
   filters are omitted.
 - Claude renders any charts from returned structured data; the server does not
