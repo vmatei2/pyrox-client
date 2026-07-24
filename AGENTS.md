@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- Docs: `README.md`, `docs/` (mkdocs user docs + `docs/maintainers/` runbooks), `wiki/` (agent-maintained engineering wiki).
+- Docs: `README.md`, `docs/` (mkdocs user docs + `docs/maintainers/` runbooks), and `codewiki_docs/overview.md` (the engineering architecture map).
 - Build config: `pyproject.toml` (Hatch build, dependencies, metadata).
 - Main client code: `src/pyrox/core.py`; reporting service: `pyrox_api_service/`; frontend: `ui/`
 
@@ -31,6 +31,25 @@
 - Service configuration comes from env variables (`PYROX_DUCKDB_PATH` and friends; see `docs/maintainers/reporting-service.md`). Avoid committing secrets; use `.env` locally and CI secrets in pipelines.
 - Network calls use `httpx`; set reasonable timeouts and retries in changes. Keep error surfaces mapped to `errors.py` types.
 
-## Wiki
+## Architecture Map
 
-The agent-maintained wiki lives in `wiki/`; read `wiki/index.md` before starting work and keep it in sync with code changes. Rules are in `CLAUDE.md`.
+Read `codewiki_docs/overview.md` before substantial code work.
+
+After changing repository files, review the diff for architecture impact.
+Update the overview through `/codewiki` only when the change affects at least
+one of:
+
+- system boundaries or component ownership;
+- a durable domain, data, API, or MCP contract;
+- a cross-component request or data flow;
+- deployment, runtime, or operator workflow.
+
+Do not edit the overview for local implementation details, routine bug fixes,
+tests, styling, or refactors that preserve those contracts. In the final
+response for any file-changing task, state one of:
+
+- `Architecture map: updated — <reason>`
+- `Architecture map: reviewed; no update needed — <reason>`
+
+This explicit decision is the enforcement point. The `/codewiki` skill owns
+overview generation and validation.

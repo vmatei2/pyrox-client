@@ -1,139 +1,207 @@
-# pyrox-client — architecture overview
+# pyrox-client architecture
 
-One repository, three deliverables, and a single upstream data source none of
-them own. The `pyrox` client library is a published PyPI package. The reporting
-service is a FastAPI app over a DuckDB artifact, deployed to Fly.io, which also
-exposes a public read-only MCP endpoint. The UI is a Vite/React frontend that
-doubles as an iOS app via Capacitor. The race data itself is built elsewhere —
-the external `hyrox_analysis` repo scrapes and publishes everything consumed
-here.
+Pyrox makes HYROX race-result data available through three surfaces: a Python
+package, a REST/MCP reporting service, and a React application that can also be
+packaged for iOS. This page is the engineering map for humans and agents. It
+describes durable boundaries and operating contracts; the source remains the
+authority.
 
-This page is generated. It maps the code as it exists at the baseline commit,
-grounded in a static import graph of 48 source files, 217 top-level components
-and 87 in-repo import edges. Nothing here is verified by tests, and where a
-module page inferred rather than read, it says so. When this disagrees with
-`docs/` or with the code, they win.
+Use [README.md](../README.md) and [docs/](../docs/) for user-facing guides,
+maintenance runbooks, and architecture decisions. When documentation and code
+disagree, trust code and tests first, then `docs/`, then this overview.
 
-## The seven modules
+## How the system operates
 
 ```mermaid
-graph TD
-    subgraph external ["external"]
-        CDN["CloudFront CDN"]
+flowchart LR
+    subgraph upstream ["External data pipeline"]
+        SCRAPE["hyrox_analysis<br/>scrape and build"]
+        CDN["CloudFront<br/>manifest, Parquet, DuckDB pointer"]
+        SCRAPE --> CDN
     end
 
-    subgraph pkg ["published package"]
-        PC["python_client<br/>src/pyrox"]
+    subgraph package ["Published Python package"]
+        CLIENT["PyroxClient<br/>download and cache Parquet"]
+        REPORTING["ReportingClient<br/>read DuckDB"]
     end
 
-    subgraph svc ["reporting service on Fly.io"]
-        SR["service_runtime<br/>FastAPI routes, DuckDB seam"]
-        RE["reporting_engine<br/>cohort math, 2522 LOC"]
-        MCP["mcp_surface<br/>FastMCP at /mcp"]
+    subgraph fly ["Fly.io reporting service"]
+        FETCH["fetch_db<br/>download and verify artifact"]
+        VOLUME["Persistent volume<br/>pyrox_duckdb"]
+        QUERY["ReportingQueries<br/>cohort and report logic"]
+        REST["FastAPI<br/>/api/*"]
+        TOOLS["MCP tools<br/>typed intent functions"]
+        MCP["FastMCP<br/>/mcp/"]
+        FETCH --> VOLUME
+        VOLUME --> REPORTING
+        REPORTING --> QUERY
+        QUERY --> REST
+        TOOLS -->|"in-process HTTP"| REST
+        MCP --> TOOLS
     end
 
-    subgraph web ["React UI, iOS via Capacitor"]
-        SHELL["ui_shell<br/>bootstrap, primitives"]
-        MODES["ui_modes<br/>six page modes"]
-        DATA["ui_data_and_charts<br/>api client, charts, utils"]
+    subgraph ui ["React and Capacitor UI"]
+        MODES["Profile, report, compare,<br/>deep dive, rankings, planner"]
+        APICLIENT["api/client.js<br/>timeouts and REST calls"]
+        MODES --> APICLIENT
     end
 
-    CDN -->|"manifest + race parquet"| PC
-    CDN -->|"DuckDB artifact on boot"| SR
-    SR --> RE
-    RE --> SR
-    MCP --> SR
-    SR -->|"reuses ReportingClient"| PC
-    MODES --> DATA
-    MODES --> SHELL
-    SHELL --> MODES
-    SHELL --> DATA
-    DATA -->|"REST /api/*"| SR
-    MCP --> LLM["MCP clients"]
-    PC --> NB["Python users, notebooks"]
+    CDN --> CLIENT
+    CDN --> FETCH
+    CLIENT --> PYUSER["Python users"]
+    REST --> APICLIENT
+    MCP --> AGENT["Claude, Codex,<br/>other MCP clients"]
 ```
 
-| Module | Files | LOC | What it is |
-|---|---|---|---|
-| [python_client](python_client.md) | 9 | 2,171 | The PyPI wheel: `PyroxClient` over CDN parquet, `ReportingClient` over DuckDB |
-| [service_runtime](service_runtime.md) | 5 | 721 | Fifteen read-only REST routes, rate limiting, the DuckDB seam, artifact boot |
-| [reporting_engine](reporting_engine.md) | 2 | 2,522 | Every analytical question the product can answer |
-| [mcp_surface](mcp_surface.md) | 3 | 654 | Ten intent-shaped MCP tools, mounted into the same ASGI app |
-| [ui_shell](ui_shell.md) | 10 | 685 | Entry point, boot sequence, shared primitives, build config |
-| [ui_modes](ui_modes.md) | 6 | 4,218 | The six analytical screens, one component each |
-| [ui_data_and_charts](ui_data_and_charts.md) | 13 | 1,660 | The UI's leaf foundation: REST client, formatters, segment vocabulary, seven hand-built charts |
+The important boundary is the reporting engine. REST routes adapt HTTP inputs
+to `ReportingQueries`; MCP tools call those same REST routes in-process instead
+of reimplementing analytics. The UI calls REST over the network. The Python
+client's Parquet path is independent of the hosted service.
 
-## Two read paths over the same data
+## Deliverables and ownership
 
-The most important structural fact is that there are two independent ways to
-read HYROX results, and they do not share a schema.
+| Deliverable | Primary code | Runtime and consumers |
+|---|---|---|
+| `pyrox-client` package | [`src/pyrox/`](../src/pyrox/) | PyPI library for notebooks and Python applications |
+| Reporting API and MCP | [`pyrox_api_service/`](../pyrox_api_service/) | One FastAPI process on Fly.io, backed by DuckDB |
+| Web and mobile UI | [`ui/src/`](../ui/src/) | Vite/React web app; Capacitor produces the iOS shell |
 
-`PyroxClient` pulls a CSV manifest and per-race Parquet straight from the CDN
-and caches locally under `~/.cache/pyrox`; no server is involved. The service
-instead opens one ~1.16 GB DuckDB artifact, downloaded and sha256-verified on
-container boot, and serves aggregates from it. As
-[python_client](python_client.md) records, the two halves produce differently
-named columns (`total_time` versus `total_time_min`) and no code path bridges
-them — and nothing in production actually *creates* the DuckDB artifact's
-tables, which are only ever built in tests.
+The repository consumes race data but does not scrape or build the production
+DuckDB database. The external `hyrox_analysis` pipeline publishes immutable
+artifacts and a `latest.json` pointer. On service boot,
+[`fetch_db.py`](../pyrox_api_service/fetch_db.py) downloads the referenced
+artifact, checks its schema version and SHA-256, then atomically installs it at
+`PYROX_DUCKDB_PATH`.
 
-The service does reuse the client library, but narrowly: `database.py` reaches
-through `ReportingClient._ensure_connection()` — a private method — for a
-DuckDB handle, and writes its own SQL for everything else. That reach-through
-is the single most load-bearing coupling in the repo, and it is undeclared by
-any interface.
+## Runtime paths
 
-## Request paths
+### Python client
 
-A UI request goes `ui_modes` → `ui_data_and_charts`'s `apiFetch` → REST route
-in `service_runtime` → `ReportingQueries` in `reporting_engine` → DuckDB. An
-MCP request goes FastMCP → an in-process `TestClient` call that re-enters the
-*same* REST route, so both protocols share one implementation and one deploy.
-That is the ADR's intent — cohort math in exactly one place — and it holds at
-the boundary, though [reporting_engine](reporting_engine.md) notes three
-distinct cohort definitions coexisting *inside* the engine.
+[`PyroxClient`](../src/pyrox/core.py) reads a CDN manifest and race Parquet
+files, caching them under the configured cache directory. It is the direct,
+serverless access path. [`ReportingClient`](../src/pyrox/reporting.py) is an
+optional DuckDB-backed helper and supplies the connection seam reused by the
+hosted reporting service.
 
-## What generation surfaced
+These paths have related but different schemas. Do not assume a column name
+from CDN Parquet is identical to the reporting database's canonical
+`*_time_min` columns.
 
-Findings from reading the source, worth triaging rather than taking on faith:
+### REST reporting
 
-- **`/api/health` returns the DuckDB filesystem path** on a public,
-  unauthenticated endpoint, while the shared error handler goes out of its way
-  to redact exactly that path elsewhere. See
-  [service_runtime](service_runtime.md).
-- **No connection reuse.** A fresh `ReportingClient`, and therefore a fresh
-  `duckdb.connect`, is constructed per call; `athlete_profile_by_name` opens
-  two per request. This corroborates the existing slowness investigation.
-- **Profile percentile cost is multiplicative** — roughly 110 full-table
-  queries for a ten-race athlete, per [reporting_engine](reporting_engine.md).
-  A plausible next hotspot.
-- **Sync MCP tool functions block the event loop** for the duration of each
-  DuckDB query, so MCP calls serialize with each other and with REST on a
-  single machine. Flagged as inference in [mcp_surface](mcp_surface.md).
-- **Dead code with live CSS**: `SeasonProgressionChart.jsx` was added in a WIP
-  commit and never wired to anything; `AppLoadingScreen.jsx` has zero
-  importers. Both retain stylesheet vocabulary that is now unreachable.
-- **Two of `useAppBootstrap`'s three boot steps are no-ops**, reading and
-  discarding localStorage keys nothing else writes.
-- **Substantial duplication across the six page modes** — the filter-options
-  query block, the athlete-search handler and the race-card JSX are each
-  copy-pasted four or five times. See [ui_modes](ui_modes.md).
-- **Client/server contract gaps**: four client functions treat parameters as
-  optional that the FastAPI routes declare required, so omission surfaces as a
-  422 rather than a client-side guard. Five server routes have no client
-  function at all.
+[`app.py`](../pyrox_api_service/app.py) owns FastAPI routes, query validation,
+CORS, logging, rate-limit placement, and error-to-HTTP mapping. It should not
+contain cohort math. [`reporting_queries.py`](../pyrox_api_service/reporting_queries.py)
+owns searches, filters, race reports, distributions, rankings, profiles, and
+planner/deep-dive calculations. [`database.py`](../pyrox_api_service/database.py)
+resolves the concrete read-only DuckDB runtime.
 
-## Reading order
+The main request shape is:
 
-New to the repo: start with [service_runtime](service_runtime.md) for the
-request path, then [reporting_engine](reporting_engine.md) for what the product
-actually computes. For the frontend, [ui_shell](ui_shell.md) then
-[ui_data_and_charts](ui_data_and_charts.md) before
-[ui_modes](ui_modes.md) — the modes make far more sense once the shared
-foundation is familiar. [python_client](python_client.md) is independent of all
-of it, and [mcp_surface](mcp_surface.md) is a thin, readable layer best read
-last.
+`HTTP parameters → FastAPI route → ReportingQueries → ReportingClient/DuckDB → JSON`
 
-Canonical human-written material lives in `docs/` — runbooks under
-`docs/maintainers/`, decisions under `docs/adr/`. This wiki links to them
-rather than restating them.
+### MCP
+
+[`mcp_tools.py`](../pyrox_api_service/mcp_tools.py) contains plain,
+intent-shaped functions. Each uses Starlette `TestClient` to enter the real
+REST route in-process, so validation and reporting behavior stay shared.
+[`mcp_app.py`](../pyrox_api_service/mcp_app.py) derives tool schemas from those
+functions' type hints and docstrings, registers read-only annotations, and
+mounts stateless streamable HTTP at `/mcp`.
+
+Closed vocabularies must be represented in the type hints because MCP clients
+discover their valid values from the generated JSON schema. The supported
+`Division` values are:
+
+`open`, `pro`, `doubles`, `pro_doubles`, `relay`, `adaptive`
+
+Age groups and locations deliberately remain strings because their valid
+values change with the dataset; agents discover them with `list_filters`.
+
+### UI
+
+[`App.jsx`](../ui/src/App.jsx) owns the six lazy-loaded page modes and the
+small amount of cross-mode navigation. Page components live in
+[`ui/src/pages/`](../ui/src/pages/). Shared charts, primitives, hooks, and
+formatting utilities live beside them. [`api/client.js`](../ui/src/api/client.js)
+is the browser's network boundary and owns request construction, React Query
+defaults, endpoint-specific timeouts, and error parsing.
+
+Capacitor wraps the same built frontend for iOS; it is not a separate data or
+business-logic implementation.
+
+## Durable contracts and constraints
+
+- `result_id` is the stable hand-off from athlete search to race report and
+  deep-dive requests. Preserve it across REST, MCP, and UI changes.
+- Reporting time values use canonical `*_time_min` columns. Friendly metric
+  aliases are resolved at the reporting boundary rather than interpolated
+  into SQL.
+- `reporting_queries.py` is the single home for analytical behavior shared by
+  REST and MCP. Protocol adapters validate and reshape; they do not fork the
+  calculations.
+- The public MCP surface is read-only, idempotent, and unauthenticated.
+  External REST and MCP traffic share rate-limit storage; in-process MCP calls
+  are exempt from double charging.
+- The Fly machine may stop when idle. The persistent `/data` volume prevents a
+  full DuckDB download on every cold start.
+- `PYROX_MCP_ALLOWED_HOSTS` enables MCP Host/Origin validation. It is
+  intentionally unset for the public Fly endpoint because browser/Electron
+  connectors send Origin headers and the service is already public,
+  read-only, and behind Fly HTTPS.
+- The service refuses a data artifact whose schema version is newer than
+  [`SUPPORTED_SCHEMA_VERSION`](../pyrox_api_service/fetch_db.py).
+
+## Change this here
+
+| Change | Start here | Keep in sync |
+|---|---|---|
+| CDN download, manifest, or cache behavior | [`src/pyrox/core.py`](../src/pyrox/core.py) | Client tests and public client docs |
+| DuckDB metric aliases or low-level reports | [`src/pyrox/reporting.py`](../src/pyrox/reporting.py) | Reporting tests |
+| Cohort/reporting behavior | [`reporting_queries.py`](../pyrox_api_service/reporting_queries.py) | FastAPI adapter tests and relevant UI/MCP consumers |
+| REST endpoint or validation | [`app.py`](../pyrox_api_service/app.py) | [`ui/src/api/client.js`](../ui/src/api/client.js), MCP wrapper, API tests |
+| MCP input schema or tool behavior | [`mcp_tools.py`](../pyrox_api_service/mcp_tools.py) | registration in [`mcp_app.py`](../pyrox_api_service/mcp_app.py), schema tests, [MCP guide](../docs/mcp.md) |
+| New MCP tool | [maintainer guide](../docs/maintainers/adding-mcp-tools.md) | REST route first, then tool, registration, tests, smoke script |
+| UI mode or chart | [`ui/src/pages/`](../ui/src/pages/) or [`ui/src/charts/`](../ui/src/charts/) | API client and Vitest coverage |
+| Service boot or deployment | [`Dockerfile`](../Dockerfile), [`fly.toml`](../fly.toml) | [reporting runbook](../docs/maintainers/reporting-service.md) |
+
+## Build, test, and deploy
+
+Source the repository virtual environment before Python commands:
+
+```bash
+source .venv/bin/activate
+pytest -q
+ruff check .
+```
+
+The UI has its own Node workflow:
+
+```bash
+cd ui
+npm test -- --run
+npm run build
+```
+
+Pushes to `main` run Python tests and integration checks. The
+[`Deploy API`](../.github/workflows/deploy.yml) workflow deploys Fly
+automatically only when backend/package code, `Dockerfile`, `fly.toml`,
+`pyproject.toml`, or that workflow changes. Documentation-only and UI-only
+commits do not trigger the API deploy. Tagged `v*` commits build and publish the
+Python package to PyPI. A weekly workflow restarts Fly machines after the
+upstream data publish so warm machines fetch the new artifact.
+
+There is no UI deployment workflow in this repository; the Vite and Capacitor
+builds are configured here, while hosting/release automation lives elsewhere.
+
+## Maintaining this map
+
+`codewiki_docs/overview.md` must remain the only file in this directory. Run
+the `/codewiki` skill after architecture, ownership, stable contracts,
+cross-component flows, or operating workflows change.
+
+Do not update the overview for routine internal refactors that leave these
+boundaries intact. Do not turn it into an issue tracker or symbol reference;
+link to code and durable `docs/` instead. Every file-changing agent task must
+finish by recording either that this map was updated or that the diff was
+reviewed and did not change the map.

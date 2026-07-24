@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Lint the generated wiki in codewiki_docs/: Mermaid syntax, links, structure.
+"""Lint the generated architecture overview: Mermaid syntax, links, structure.
 
 Replaces the validation CodeWiki's `write_doc_file` did via a Node subprocess.
 This is a *lint*, not a parse: it catches the syntax mistakes LLMs actually
@@ -7,10 +7,8 @@ make in Mermaid rather than proving a diagram renders. For true parsing,
 `npx -y @mermaid-js/mermaid-cli -i file.md` will do it at the cost of pulling
 Chromium; this runs in milliseconds with no dependencies.
 
-Usage:
-    lint.py                 # lint every .md in codewiki_docs/
-    lint.py path/to/one.md  # lint specific files
-    lint.py --strict        # exit 1 on warnings as well as errors
+The directory contract is deliberately strict: overview.md is the only file
+allowed in codewiki_docs/.
 """
 
 from __future__ import annotations
@@ -189,7 +187,12 @@ def lint_file(path: Path, repo: Path, known_docs: set[str]) -> list[tuple[str, s
                     "warn", f"{rel}:{lineno}: link target {clean!r} does not exist"
                 ))
 
-    if not text.lstrip().startswith("#"):
+    heading_text = text
+    if text.startswith("---\n"):
+        frontmatter_end = text.find("\n---\n", 4)
+        if frontmatter_end >= 0:
+            heading_text = text[frontmatter_end + 5 :]
+    if not heading_text.lstrip().startswith("#"):
         findings.append(("warn", f"{rel}: does not start with a top-level heading"))
 
     return findings
@@ -204,13 +207,15 @@ def main() -> int:
     repo = repo_root()
     docs = repo / DOCS_DIR
 
+    unexpected: list[Path] = []
     if args.files:
         targets = [f if f.is_absolute() else repo / f for f in args.files]
     else:
         if not docs.exists():
             print(f"No {DOCS_DIR}/ to lint.", file=sys.stderr)
             return 2
-        targets = sorted(docs.glob("*.md"))
+        targets = [docs / "overview.md"]
+        unexpected = sorted(path for path in docs.iterdir() if path.name != "overview.md")
 
     if not targets:
         print(f"No markdown files found in {DOCS_DIR}/.", file=sys.stderr)
@@ -219,6 +224,9 @@ def main() -> int:
     known_docs = {p.name for p in docs.glob("*.md")} if docs.exists() else set()
 
     errors = warnings = 0
+    for path in unexpected:
+        print(f"ERROR {path.relative_to(repo)}: overview.md must be the only generated file")
+        errors += 1
     for path in targets:
         for level, message in lint_file(path, repo, known_docs):
             print(f"{level.upper():<5} {message}")

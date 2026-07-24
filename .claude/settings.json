@@ -1,13 +1,13 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "hooks": {
-    "SessionStart": [
+    "Stop": [
       {
         "hooks": [
           {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/codewiki-freshness.py",
-            "timeout": 15,
-            "statusMessage": "Checking generated docs freshness..."
+            "type": "prompt",
+            "prompt": "Evaluate only the last_assistant_message in this Stop event: $ARGUMENTS. If stop_hook_active is true, return {\"ok\": true}. If the message is not a completed work handoff reporting repository file changes (for example it is a question, explanation, status update, or no-file-change answer), return {\"ok\": true}. For a completed handoff that reports file changes, allow stopping only when it includes either `Architecture map: updated — <specific reason>` or `Architecture map: reviewed; no update needed — <specific reason>`. Reject vague or missing reasons and reject a self-contradictory no-update claim when the same message says the change affected system boundaries, component ownership, a durable domain/data/API/MCP contract, a cross-component request/data flow, or deployment/runtime/operator workflow. Return {\"ok\": false, \"reason\": \"Review the diff for architecture impact, update codewiki_docs/overview.md through /codewiki if required, and include the required Architecture map decision in the final handoff.\"} when the requirement is not met.",
+            "timeout": 30
           }
         ]
       }
