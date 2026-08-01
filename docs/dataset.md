@@ -139,22 +139,21 @@ Pyrox doesn't pool divisions by default: an open athlete and a pro athlete
 aren't doing the same work, so a combined average benchmarks nothing and a
 combined percentile misleads.
 
-## How it is built and how often it updates
+## How often it updates
 
-An upstream pipeline scrapes and compiles the race results, then publishes
-immutable Parquet files and a DuckDB artifact to a CDN on a **weekly cadence**
-(the scraper starts Tuesdays at 12:00 UTC; the artifact is typically live by
-around 18:30 UTC). The hosted service picks up the new artifact on its next
-boot, and a scheduled job at 20:00 UTC on Tuesdays restarts warm machines so
-they refresh promptly.
+New results land on a **weekly cadence**, published each Tuesday.
 
-Nothing gets installed unverified: the service checks the schema version and a
-SHA-256 checksum, and refuses any artifact whose schema version is newer than
-the one it supports. A bad or unexpected upstream publish therefore can't
-silently change the answers you get.
+That's the server side. The Python client also caches locally, on top of
+that: races and the manifest for 2 hours, a full season for 1 hour. If you're
+after this week's publish and it isn't showing up yet, don't wait out the TTL
+— clear the cache:
 
-The Python client caches whatever it downloads locally, so a notebook you ran
-last month gives the same answer today unless you clear the cache.
+```python
+client.clear_cache()
+```
+
+See [Caching](caching.md) for the full set of defaults and how to opt out
+per call.
 
 ## Three ways to query it
 
@@ -182,5 +181,5 @@ appreciated if you publish analysis built on the dataset, though not required;
 what you may do with the underlying race data is yours to check independently.
 
 Pyrox is built on public source data and may inherit issues present in it.
-Where a cohort is small, the reporting surfaces say so rather than quietly
-reporting a percentile from a handful of finishers.
+Where a cohort is small, the reporting surfaces say so rather than reporting a
+percentile from a handful of finishers as if it meant something.

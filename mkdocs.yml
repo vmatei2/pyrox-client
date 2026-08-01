@@ -60,7 +60,9 @@ nav:
       - Caching: caching.md
       - Data model: data-model.md
       - Analytics: analytics.md
-      - Reproducible research: reproducible-research.md
+      - Reproducible research:
+          - Overview: reproducible-research.md
+          - Notebook: notebooks/impact_of_race_locations.ipynb
   - Reference:
       - The dataset: dataset.md
       - Client API: api.md
@@ -96,6 +98,15 @@ markdown_extensions:
 
 plugins:
   - search
+  # Renders docs/notebooks/impact_of_race_locations.ipynb (a symlink into
+  # example_notebooks/, so the notebook has one source of truth) using its
+  # already-saved cell outputs. execute: false means no kernel runs during
+  # the docs build — CI never re-executes the analysis or touches the CDN.
+  # `include` is scoped to notebooks/ only so this plugin never touches the
+  # site's regular Markdown pages.
+  - mkdocs-jupyter:
+      include: ["notebooks/*.ipynb"]
+      execute: false
 
 extra_css:
   - assets/styles.css

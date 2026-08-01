@@ -361,29 +361,94 @@
   font-size: 0.85em;
 }
 
-/* Question chips — the "what can I ask" strip. */
-.md-typeset .pyrox-asks {
+/* Three questions, expandable to the code that answers them.
+   Material treats every bare <details> as an admonition by default: a blue
+   accent, an absolutely-positioned icon reserving left padding, and its own
+   chevron icon. All of that has to be explicitly cancelled, not just
+   overridden by higher specificity, because the icons are separate pseudo-
+   elements layered independently of the text padding. */
+.md-typeset .pyrox-queries {
   display: grid;
   gap: 0.6rem;
   margin: 1.2rem 0 2rem;
-  padding: 0;
-  list-style: none;
 }
 
-.md-typeset .pyrox-asks li {
-  background: var(--pyrox-surface-soft);
+.md-typeset details.pyrox-query {
+  background-color: var(--pyrox-surface-soft);
   border: 1px solid var(--pyrox-border);
   border-left: 3px solid var(--md-accent-fg-color);
   border-radius: 10px;
-  padding: 0.7rem 0.95rem;
-  font-size: 0.85rem;
-  line-height: 1.5;
-  color: var(--pyrox-ink);
-  margin: 0;
+  box-shadow: none;
+  padding: 0;
+  overflow: hidden;
 }
 
-.md-typeset .pyrox-asks li::before {
+.md-typeset details.pyrox-query > summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  min-height: 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--pyrox-ink);
+}
+
+.md-typeset details.pyrox-query > summary:hover {
+  color: var(--md-accent-fg-color);
+}
+
+.md-typeset details.pyrox-query > summary::marker,
+.md-typeset details.pyrox-query > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Cancel Material's absolutely-positioned admonition icon. */
+.md-typeset details.pyrox-query > summary::before {
   content: none;
+}
+
+/* Replace Material's mask-image chevron with a plain border triangle, laid
+   out as a flex item (not absolutely positioned) so `margin-left: auto`
+   pins it to the right edge regardless of question length. */
+.md-typeset details.pyrox-query > summary::after {
+  content: "";
+  position: static;
+  background: none;
+  mask-image: none;
+  -webkit-mask-image: none;
+  flex-shrink: 0;
+  margin-left: auto;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid var(--pyrox-muted);
+  border-bottom: 2px solid var(--pyrox-muted);
+  transform: rotate(-45deg);
+  transition: transform 0.15s ease;
+}
+
+.md-typeset details.pyrox-query[open] > summary::after {
+  transform: rotate(45deg);
+}
+
+.md-typeset details.pyrox-query > .highlight {
+  margin: 0;
+  border-top: 1px solid var(--pyrox-border);
+}
+
+.md-typeset details.pyrox-query > .highlight pre {
+  margin: 0;
+  border-radius: 0;
+}
+
+.md-typeset details.pyrox-query > :last-child {
+  margin-bottom: 0;
 }
 
 /* Split panel: two routes in, side by side. */

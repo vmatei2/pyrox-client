@@ -86,6 +86,7 @@ dev = [
     "ipykernel>=7.1.0",
     "mkdocs>=1.6.1",
     "mkdocs-material>=9.7",
+    "mkdocs-jupyter>=0.26",
     "python-dotenv>=1.0.0",
     "s3fs>=2024.2.0",
     "scikit-learn>=1.8.0",

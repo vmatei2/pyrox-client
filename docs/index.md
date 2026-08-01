@@ -70,19 +70,57 @@ london["total_time"].describe()
 </div>
 </div>
 
-## Questions Pyrox is built to answer
+## Three questions it answers
 
-Every one of these is painful to answer by clicking through a results portal,
-and straightforward once the results are a dataset.
+Click one to see the actual call behind it.
 
-<ul class="pyrox-asks" markdown>
-<li>Where would a 62-minute open time rank in season 8?</li>
-<li>How does my sled push compare with everyone who finished within a minute of me?</li>
-<li>Is my roxzone time costing me more than my running?</li>
-<li>Which station separates the top 10% from the middle of the field?</li>
-<li>How have finish-time distributions moved between seasons?</li>
-<li>What split profile does a sub-60 open athlete actually run?</li>
-</ul>
+<div class="pyrox-queries" markdown>
+
+<details class="pyrox-query" markdown>
+<summary>Where would a 62-minute open time rank overall in season 8?</summary>
+
+```python
+# MCP tool call — this is what an AI assistant runs on your behalf
+get_rankings(season=8, division="open", gender="male", target_time_min=62)
+```
+
+</details>
+
+<details class="pyrox-query" markdown>
+<summary>How does my sled push compare with everyone who finished within a minute of me?</summary>
+
+```python
+import pyrox
+
+client = pyrox.PyroxClient()
+race = client.get_race(season=7, location="london", gender="male", division="open")
+me = client.get_athlete_in_race(
+    season=7, location="london", athlete_name="surname, name"
+).iloc[0]
+
+nearby = race[(race["total_time"] - me["total_time"]).abs() <= 1]
+nearby["sledPush_time"].describe()
+```
+
+</details>
+
+<details class="pyrox-query" markdown>
+<summary>What's the time distribution of burpee broad jumps for women pro athletes, with optional time-filtering?</summary>
+
+```python
+import pyrox
+
+client = pyrox.PyroxClient()
+season8 = client.get_season(season=8, gender="female", division="pro")
+season8["burpeeBroadJump_time"].describe()
+
+# optional: only sub-70-minute finishers
+season8[season8["total_time"] < 70]["burpeeBroadJump_time"].describe()
+```
+
+</details>
+
+</div>
 
 ## What you get back
 
@@ -92,7 +130,7 @@ and straightforward once the results are a dataset.
 ### Every segment, not just the finish
 
 Each run and station comes back as its own column, along with roxzone
-transition time, where plenty of races are quietly lost.
+transition time, where plenty of races are actually lost.
 
 </div>
 <div class="pyrox-card" markdown>
@@ -115,8 +153,9 @@ default, because pooling them produces meaningless averages.
 
 ### Cohorts, stated honestly
 
-Rankings and distributions name the cohort they used and flag thin samples
-instead of quietly reporting a percentile from a handful of finishers.
+Rankings and distributions name the cohort they used and flag thin samples,
+rather than reporting a percentile from a handful of finishers as if it meant
+something.
 
 </div>
 <div class="pyrox-card" markdown>
@@ -162,13 +201,9 @@ arbitrary SQL or bulk row exports.
 
 ## Don't write another HYROX scraper
 
-Scraping a results portal is a weekend of work and a permanent maintenance bill:
-pagination, rate limits, `HH:MM:SS` parsing, inconsistent division labels, and a
-markup change that silently breaks your notebook mid-analysis.
-
-Pyrox is the maintained version of that job: races ship as Parquet on a CDN, the
-client caches them locally, normalisation happens once, and when the upstream
-shape changes the fix lands in a release instead of in your scraper.
+The idea behind Pyrox is simple: make HYROX results easy to get at, so you can
+go straight to running the numbers. Pyrox handles the scraping and delivery —
+races land as Parquet on a CDN, cached locally when you pull them.
 
 ## Pair it with your training data
 
@@ -215,6 +250,11 @@ the whole field rather than on their own.
     redistribute it freely, including commercially. The underlying race
     results are public HYROX data; Pyrox claims no ownership of it, and what
     you may do with that data is yours to check independently.
+
+??? question "What if I spot a data issue?"
+
+    Open an issue on the [pyrox-client GitHub repo](https://github.com/vmatei2/pyrox-client/issues).
+    We read every one and try to fix real problems quickly.
 
 <div class="pyrox-note" markdown>
 **Independent project.** Pyrox is not affiliated with or endorsed by HYROX. It's

@@ -5,6 +5,7 @@ __pycache__/
 
 site/
 dist/
+.cache/
 
 .env
 

@@ -4,6 +4,10 @@ This guide documents the workflow for the notebook
 `example_notebooks/impact_of_race_locations.ipynb`. The goal is to make results
 repeatable and easy to refresh.
 
+[Read the notebook itself →](notebooks/impact_of_race_locations.ipynb), full
+code, output and plots as originally run. Everything below is how to run it
+yourself.
+
 ## What the notebook does
 
 - Pulls Season 7 Open Singles data.
