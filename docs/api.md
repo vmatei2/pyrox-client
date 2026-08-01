@@ -55,7 +55,9 @@ Key behaviors:
 - Converts time columns into minutes.
 - Supports strict time windows using `total_time`.
 
-Division values seen in the dataset include `open`, `pro`, and `pro_doubles`.
+The supported division vocabulary is `open`, `pro`, `doubles`, `pro_doubles`,
+`relay` and `adaptive`. Which of them show up depends on what the race actually
+ran, so check `df["division"].unique()` rather than assuming.
 
 If the manifest lookup fails, `RaceNotFound` includes discovery context such as
 available seasons, available years, and close location suggestions:

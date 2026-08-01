@@ -1,0 +1,71 @@
+name: Docs
+
+# Builds the MkDocs site on every relevant change and publishes it to the
+# gh-pages branch on main. GitHub Pages for this repo serves from gh-pages
+# (legacy build type), so `mkdocs gh-deploy` is the whole deployment: no
+# Pages settings change is needed and no environment has to be configured.
+#
+# Pull requests build with --strict but never deploy, so a broken link or a
+# bad nav entry fails the PR instead of the live site.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "overrides/**"
+      - "mkdocs.yml"
+      - ".github/workflows/docs.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "overrides/**"
+      - "mkdocs.yml"
+      - ".github/workflows/docs.yml"
+
+concurrency:
+  group: docs-deploy
+  cancel-in-progress: false
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+
+    permissions:
+      # gh-deploy pushes the built site to the gh-pages branch.
+      contents: write
+
+    steps:
+      # Full history: gh-deploy commits onto an existing gh-pages branch, so a
+      # shallow clone leaves it unable to find that ref.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      # Only the dev group is needed here; the reporting and api extras pull in
+      # DuckDB and FastAPI, which the docs build never touches.
+      - name: Sync docs dependencies
+        run: uv sync --group dev
+
+      # Runs on pushes and pull requests alike. --strict turns broken internal
+      # links and unrecognised nav entries into failures.
+      - name: Build site
+        run: uv run mkdocs build --strict
+
+      - name: Configure git identity
+        if: github.event_name != 'pull_request'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Publish to gh-pages
+        if: github.event_name != 'pull_request'
+        run: uv run mkdocs gh-deploy --force

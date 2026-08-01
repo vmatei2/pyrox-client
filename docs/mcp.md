@@ -1,3 +1,10 @@
+---
+title: "HYROX MCP server: query race results with Claude or Codex"
+description: >-
+  Connect the free, read-only Pyrox MCP server and ask Claude, Codex or any MCP
+  client about HYROX splits, rankings and distributions. No API key needed.
+---
+
 # Try Pyrox MCP
 
 Pyrox exposes a public, read-only MCP server at:

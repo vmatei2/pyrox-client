@@ -1,0 +1,81 @@
+{% extends "main.html" %}
+
+{#- Landing page: the hero replaces the tab bar so it sits full-bleed directly
+    under the header. Everything below it comes from docs/index.md. -#}
+
+{% block tabs %}
+  {{ super() }}
+  <section class="pyrox-hero">
+    <div class="pyrox-hero__inner">
+      <div>
+        <p class="pyrox-hero__eyebrow">Public MCP server &middot; read-only &middot; open source</p>
+        <h1>HYROX race results data, <em>free and query-ready</em></h1>
+        <p class="pyrox-hero__lede">
+          Pull any HYROX race into a pandas DataFrame, or just ask your AI
+          assistant. Every season and division, down to each station split,
+          already parsed into minutes; no API key, MIT licensed.
+        </p>
+        <div class="pyrox-hero__actions">
+          <a class="pyrox-btn pyrox-btn--primary" href="{{ 'mcp/' | url }}">
+            Connect the MCP server
+          </a>
+          <a class="pyrox-btn pyrox-btn--ghost" href="{{ 'quickstart/' | url }}">
+            Start with Python
+          </a>
+        </div>
+        <div class="pyrox-hero__meta">
+          <span><code>pip install pyrox-client</code></span>
+          <span>MIT licensed</span>
+          <span>Read-only &middot; no API key</span>
+        </div>
+
+        {#- Measured from the published manifest, 2026-07-30. Floor values:
+            they only grow, so "1.2M+" stays true between refreshes. -#}
+        <dl class="pyrox-stats">
+          <div>
+            <dt>1.2M+</dt>
+            <dd>race results</dd>
+          </div>
+          <div>
+            <dt>316</dt>
+            <dd>races</dd>
+          </div>
+          <div>
+            <dt>134</dt>
+            <dd>locations</dd>
+          </div>
+          <div>
+            <dt>2018&ndash;2026</dt>
+            <dd>seasons 1&ndash;9</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="pyrox-chat" aria-hidden="true">
+        <div class="pyrox-chat__bar">
+          <span class="pyrox-chat__dot"></span>
+          <span class="pyrox-chat__dot"></span>
+          <span class="pyrox-chat__dot"></span>
+          <span class="pyrox-chat__label">pyrox &middot; connected</span>
+        </div>
+        <div class="pyrox-chat__body">
+          <p class="pyrox-msg pyrox-msg--user">
+            Where would a 62-minute open time rank in season 8?
+          </p>
+          <p class="pyrox-msg pyrox-msg--tool">
+            → get_rankings(season=8, division="open", target_time=62)
+          </p>
+          <p class="pyrox-msg pyrox-msg--reply">
+            <strong>Placement, percentile and the leaderboard around that
+            time</strong>, computed server-side across the season 8 cohort,
+            with the sample size stated so you know how much to trust it.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+{% endblock %}
+
+{% block content %}
+  {{ super() }}
+{% endblock %}

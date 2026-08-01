@@ -1,7 +1,10 @@
 # pyrox-client
 
-Talk to the HYROX results dataset. A Python client and a public MCP server for
-analysing HYROX race results, either in code or by asking an AI assistant.
+HYROX race results as data. A Python client and a public MCP server for
+analysing them, either in code or by asking an AI assistant.
+
+**1.2M+ race results · 316 races · 134 locations · seasons 1–9 (2018–2026)**,
+free and MIT licensed, with no API key to sign up for.
 
 ![Unit Tests](https://github.com/vmatei2/pyrox-client/actions/workflows/tests.yml/badge.svg)
 ![Integration Tests](https://github.com/vmatei2/pyrox-client/actions/workflows/integration.yml/badge.svg)
@@ -92,6 +95,8 @@ Details in [docs/api.md](docs/api.md).
 ## Documentation
 
 - Live docs: https://vmatei2.github.io/pyrox-client/
+- [What's in the dataset](https://vmatei2.github.io/pyrox-client/dataset/):
+  coverage, the full column schema, how often it updates, and the licence
 - MCP guide, client API, filters, and the error model live under `docs/`
 - Background write-up: [Pyrox MCP server on Medium](https://medium.com/@vladmatei432/pyrox-mcp-server-access-to-and-analysis-of-hyrox-results-directly-via-llms-4e8ebf486525)
 

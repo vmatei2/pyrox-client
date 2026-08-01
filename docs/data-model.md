@@ -9,7 +9,8 @@ Expect these columns in most races:
 
 - `name`: athlete name as shown on the official results site.
 - `gender`: `male` | `female` | `mixed`.
-- `division`: `open` | `pro` | `pro_doubles` (case preserved as stored).
+- `division`: `open` | `pro` | `doubles` | `pro_doubles` | `relay` | `adaptive`
+  (case preserved as stored; not every division appears in every race).
 - `total_time`: total race time, minutes (float).
 - `work_time`: total station time, minutes.
 - `roxzone_time`: transition time, minutes.

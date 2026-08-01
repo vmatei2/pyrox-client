@@ -1,0 +1,70 @@
+# Pyrox — HYROX race results data
+
+> Pyrox makes HYROX race results available as structured data. It's an
+> independent, MIT-licensed open-source project, not affiliated with or endorsed
+> by HYROX. Two access paths: a Python package (`pyrox-client`) that returns
+> races as pandas DataFrames, and a public, read-only MCP server that lets AI
+> assistants answer questions about HYROX results directly.
+
+## Access points
+
+- MCP endpoint (public, read-only, no authentication, rate-limited):
+  `https://pyrox-api.fly.dev/mcp/`
+- Python package: `pip install pyrox-client`
+- Source: https://github.com/vmatei2/pyrox-client
+- Docs: https://vmatei2.github.io/pyrox-client/
+
+## MCP tools
+
+- `list_filters`: available seasons, divisions, genders, locations, age groups
+- `list_races`: valid season and location pairs
+- `find_athlete`: resolve an athlete name to candidate results (`result_id`)
+- `get_race_report`: one result's full race, split by split
+- `get_athlete_profile`: historical results and personal bests
+- `get_distribution`: histogram bins and summary stats for a cohort
+- `get_race_summary`: timing stats for every segment in one race
+- `get_cohort_segment_averages`: run/station averages for all, top-N, bottom-N
+- `get_rankings`: leaderboard rows and hypothetical target-time placement
+- `get_deepdive`: one result against cross-location cohorts for a metric
+
+All tools are read-only and idempotent. The server computes analytics; it
+doesn't expose arbitrary SQL or bulk row exports.
+
+## Vocabulary
+
+- **Race**: one HYROX event instance (season, location, year)
+- **Result**: one athlete's performance in one Race
+- **Segment**: one timed Run or Station
+- **Roxzone**: transition time between Segments
+- **Cohort**: the reference population for rankings, distributions, percentiles
+- **Distribution**: histogram bins plus summary stats for a metric in a cohort
+
+Divisions are `open`, `pro`, `doubles`, `pro_doubles`, `relay`, `adaptive`.
+Pyrox doesn't pool them by default because they aren't directly comparable.
+Seasons, locations and age groups change with the dataset, so discover them with
+`list_filters` rather than assuming.
+
+## Example questions it can answer
+
+- Where would a 62-minute male open time rank in season 8?
+- Show the distribution of female open finish times in season 8.
+- Summarise this athlete's race report and name their strongest segment.
+- How do the top 10% of finishers split their runs versus the field?
+
+## Docs
+
+- [MCP server guide](https://vmatei2.github.io/pyrox-client/mcp/): install steps
+  for Claude Code, Claude web/Desktop and Codex, full tool list, example prompts
+- [Quickstart](https://vmatei2.github.io/pyrox-client/quickstart/): Python setup
+- [Client API](https://vmatei2.github.io/pyrox-client/api/): full method reference
+- [Data model](https://vmatei2.github.io/pyrox-client/data-model/): columns and units
+- [Filtering](https://vmatei2.github.io/pyrox-client/filters/): query options
+- [Analytics](https://vmatei2.github.io/pyrox-client/analytics/): worked recipes
+- [FAQ](https://vmatei2.github.io/pyrox-client/faq/)
+
+## Caveats
+
+Pyrox is built on public HYROX source data and may inherit issues present in it.
+Thin cohorts come back flagged with sample-size information, and distributions
+default to the latest season and the `open` division when those filters are
+omitted.

@@ -2,7 +2,9 @@
 
 ## Which seasons are covered?
 
-Historical coverage for seasons 2-7 (with season 5-6 being most used in analysis).
+Seasons 1 to 9, spanning 2018 to 2026: 316 races across 134 locations as of the
+July 2026 data publish. Coverage grows weekly, so check `client.list_seasons()`
+for the current picture, and see [the dataset](dataset.md) for a full breakdown.
 
 ## Why are times in minutes?
 

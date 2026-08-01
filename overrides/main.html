@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{#- Pages that exist for maintainers, not for search. Kept out of the sitemap
+    (see sitemap.xml) and marked noindex so they stop diluting the site. -#}
+{% set noindex_prefixes = ["maintainers/", "adr/", "research/", "duckdb-stabilization"] %}
+{% set ns = namespace(internal=false) %}
+{% if page %}
+  {% for prefix in noindex_prefixes %}
+    {% if page.file.src_uri.startswith(prefix) %}
+      {% set ns.internal = true %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
+{#- Keyword-led title on the homepage; Material's default elsewhere. -#}
+{% block htmltitle %}
+  {% if page and page.is_homepage %}
+    <title>Pyrox - HYROX Race Results Data: Python API &amp; MCP Server</title>
+  {% else %}
+    {{ super() }}
+  {% endif %}
+{% endblock %}
+
+{% block extrahead %}
+  {% if ns.internal %}
+    <meta name="robots" content="noindex, follow">
+  {% endif %}
+  {#- Social/preview metadata. Material emits title/description already; these
+      complete the Open Graph and Twitter cards so shared links look right. -#}
+  {% set title = config.site_name %}
+  {% if page and page.meta and page.meta.title %}
+    {% set title = page.meta.title ~ " - " ~ config.site_name %}
+  {% elif page and page.title and not page.is_homepage %}
+    {% set title = page.title | striptags ~ " - " ~ config.site_name %}
+  {% endif %}
+  {% set description = config.site_description %}
+  {% if page and page.meta and page.meta.description %}
+    {% set description = page.meta.description %}
+  {% endif %}
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{ config.site_name }}">
+  <meta property="og:title" content="{{ title }}">
+  <meta property="og:description" content="{{ description }}">
+  <meta property="og:url" content="{{ page.canonical_url }}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ title }}">
+  <meta name="twitter:description" content="{{ description }}">
+
+  {#- Structured data. SoftwareSourceCode describes the package; WebSite gives
+      search engines the canonical name for the docs. -#}
+  {% if page and page.is_homepage %}
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "SoftwareSourceCode",
+            "name": "pyrox-client",
+            "description": {{ config.site_description | tojson }},
+            "codeRepository": "https://github.com/vmatei2/pyrox-client",
+            "programmingLanguage": "Python",
+            "runtimePlatform": "Python 3.12+",
+            "license": "https://opensource.org/licenses/MIT",
+            "url": "{{ config.site_url }}",
+            "author": {
+              "@type": "Person",
+              "name": "Vlad Matei"
+            },
+            "keywords": "HYROX, HYROX data, HYROX results, HYROX API, HYROX dataset, race analytics, pandas, MCP server"
+          },
+          {
+            "@type": "WebSite",
+            "name": "Pyrox",
+            "alternateName": "pyrox-client",
+            "url": "{{ config.site_url }}",
+            "description": {{ config.site_description | tojson }}
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Is there an official HYROX API?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Not a public, documented one. HYROX publishes results through a timing portal built for looking up one athlete at a time, with no bulk export and no developer API, which is why Pyrox exists."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Do I need an API key to use Pyrox?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. Both the MCP server and the REST API are open and read-only. They're rate-limited to keep the load sane, but nothing asks you to sign up, paste a key or go through OAuth."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is Pyrox affiliated with HYROX?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. It's an independent open-source project built on publicly available results, and it is not affiliated with or endorsed by HYROX."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Which seasons, divisions and locations does the HYROX dataset cover?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Coverage tracks the upstream dataset and grows over time, so the question is best put to the data itself: call list_filters from an AI assistant, or client.list_seasons() and client.list_locations() in Python. Divisions are open, pro, doubles, pro_doubles, relay and adaptive."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can Claude or ChatGPT query HYROX results?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes; that's what the MCP server is for. Any MCP-capable client (Claude Code, Claude web and Desktop, Codex, and others) can connect to https://pyrox-api.fly.dev/mcp/ and query the dataset in plain English."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can I use Pyrox commercially?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "The pyrox-client code is MIT licensed, so you can use, modify and redistribute it freely, including commercially. The underlying race results are public HYROX data; Pyrox claims no ownership of it, and what you may do with that data is yours to check independently."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  {% endif %}
+
+  {#- Dataset markup makes the page eligible for Google Dataset Search. -#}
+  {% if page and page.file.src_uri == "dataset.md" %}
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Dataset",
+        "name": "HYROX race results dataset",
+        "alternateName": "Pyrox HYROX results dataset",
+        "description": "HYROX race results as analysis-ready data. One row per entry per race, with all eight run legs, all eight station splits, roxzone transition time, work time and total time as numeric columns in minutes, across open, pro, doubles, pro_doubles, relay and adaptive divisions.",
+        "url": "{{ page.canonical_url }}",
+        "license": "https://opensource.org/licenses/MIT",
+        "isAccessibleForFree": true,
+        "creator": {
+          "@type": "Person",
+          "name": "Vlad Matei",
+          "sameAs": "https://github.com/vmatei2"
+        },
+        "keywords": [
+          "HYROX",
+          "HYROX results",
+          "HYROX data",
+          "race results",
+          "fitness racing",
+          "split times",
+          "sports analytics"
+        ],
+        "variableMeasured": [
+          {"@type": "PropertyValue", "name": "total_time", "description": "Total race time", "unitText": "minutes"},
+          {"@type": "PropertyValue", "name": "work_time", "description": "Total station time", "unitText": "minutes"},
+          {"@type": "PropertyValue", "name": "run_time", "description": "Total running time", "unitText": "minutes"},
+          {"@type": "PropertyValue", "name": "roxzone_time", "description": "Total transition time between segments", "unitText": "minutes"},
+          {"@type": "PropertyValue", "name": "skiErg_time", "description": "SkiErg station split", "unitText": "minutes"},
+          {"@type": "PropertyValue", "name": "sledPush_time", "description": "Sled push station split", "unitText": "minutes"},
+          {"@type": "PropertyValue", "name": "sledPull_time", "description": "Sled pull station split", "unitText": "minutes"},
+          {"@type": "PropertyValue", "name": "burpeeBroadJump_time", "description": "Burpee broad jump station split", "unitText": "minutes"},
+          {"@type": "PropertyValue", "name": "rowErg_time", "description": "RowErg station split", "unitText": "minutes"},
+          {"@type": "PropertyValue", "name": "farmersCarry_time", "description": "Farmers carry station split", "unitText": "minutes"},
+          {"@type": "PropertyValue", "name": "sandbagLunges_time", "description": "Sandbag lunges station split", "unitText": "minutes"},
+          {"@type": "PropertyValue", "name": "wallBalls_time", "description": "Wall balls station split", "unitText": "minutes"},
+          {"@type": "PropertyValue", "name": "run1_time - run8_time", "description": "Each 1 km run leg as its own split", "unitText": "minutes"}
+        ],
+        "distribution": [
+          {
+            "@type": "DataDownload",
+            "encodingFormat": "application/vnd.apache.parquet",
+            "contentUrl": "https://pypi.org/project/pyrox-client/",
+            "description": "Race-level Parquet files, downloaded and cached by the pyrox-client Python package."
+          },
+          {
+            "@type": "DataDownload",
+            "encodingFormat": "application/json",
+            "contentUrl": "https://pyrox-api.fly.dev/api/filter-options",
+            "description": "Public read-only REST API returning computed reports, distributions and rankings."
+          }
+        ],
+        "measurementTechnique": "Compiled from publicly published HYROX race results",
+        "isBasedOn": "Public HYROX race results"
+      }
+    </script>
+  {% endif %}
+{% endblock %}

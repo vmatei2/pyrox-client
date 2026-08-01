@@ -1,0 +1,25 @@
+{#- Sitemap that lists only pages meant for readers. Maintainer runbooks, ADRs
+    and research notes are excluded here and marked noindex in main.html. -#}
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{%- set skip = ["maintainers/", "adr/", "research/", "duckdb-stabilization"] -%}
+{%- for file in pages %}
+  {%- if not file.page.is_link %}
+    {%- set ns = namespace(hide=false) %}
+    {%- for prefix in skip %}
+      {%- if file.src_uri.startswith(prefix) %}{% set ns.hide = true %}{% endif %}
+    {%- endfor %}
+    {%- if not ns.hide %}
+    <url>
+        <loc>{{ file.page.canonical_url }}</loc>
+        {%- if file.page.is_homepage %}
+        <priority>1.0</priority>
+        {%- endif %}
+        {%- if file.page.update_date %}
+        <lastmod>{{ file.page.update_date }}</lastmod>
+        {%- endif %}
+    </url>
+    {%- endif %}
+  {%- endif %}
+{%- endfor %}
+</urlset>

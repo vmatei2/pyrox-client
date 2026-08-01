@@ -50,10 +50,22 @@ same division and gender.
 
 ## Docs: Deploy to GitHub Pages
 
-After docs changes are merged locally and checked with `uv run mkdocs build --strict`,
-publish the MkDocs site with:
+Publishing is automatic. The [`Docs`](https://github.com/vmatei2/pyrox-client/blob/main/.github/workflows/docs.yml)
+workflow builds the site with `--strict` on every pull request that touches `docs/`,
+`overrides/` or `mkdocs.yml`, and publishes to the `gh-pages` branch when those
+changes land on `main`. Pages serves that branch, so nothing else has to happen.
+
+To preview locally before opening the PR:
 
 ```bash
+uv run mkdocs serve
+```
+
+Manual publishing stays available for the rare case where CI can't run — it
+targets the same branch the workflow does:
+
+```bash
+uv run mkdocs build --strict
 uv run mkdocs gh-deploy --clean
 ```
 

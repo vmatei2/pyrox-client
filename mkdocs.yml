@@ -1,33 +1,120 @@
-site_name: pyrox-client
-site_description: Unofficial Python client for HYROX race results.
+site_name: Pyrox
+site_description: >-
+  HYROX race results as data. A Python client, a REST API, and a public MCP
+  server so you can analyse HYROX splits, rankings and distributions in pandas
+  or just ask an AI assistant.
 site_url: https://vmatei2.github.io/pyrox-client/
+site_author: Vlad Matei
+repo_url: https://github.com/vmatei2/pyrox-client
+repo_name: vmatei2/pyrox-client
+edit_uri: edit/main/docs/
+copyright: >-
+  &copy; 2026 Vlad Matei &middot; MIT licensed &middot; Independent project, not
+  affiliated with or endorsed by HYROX.
 
 theme:
-  name: mkdocs
+  name: material
+  custom_dir: overrides
+  language: en
+  font:
+    text: Inter
+    code: JetBrains Mono
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - navigation.footer
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.action.edit
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
 
 nav:
   - Home: index.md
-  - Getting Started: quickstart.md
-  - User Guide:
+  - Ask an AI:
+      - MCP server: mcp.md
+  - Python client:
+      - Getting started: quickstart.md
       - Filtering: filters.md
       - Caching: caching.md
-      - Data Model: data-model.md
+      - Data model: data-model.md
       - Analytics: analytics.md
-      - Reproducible Research: reproducible-research.md
-      - Try Pyrox MCP: mcp.md
-
-  - API Reference:
+      - Reproducible research: reproducible-research.md
+  - Reference:
+      - The dataset: dataset.md
       - Client API: api.md
       - Errors: errors.md
-  - FAQ: faq.md
-  - Privacy Policy: privacy.md
+      - FAQ: faq.md
+  - About:
+      - Privacy policy: privacy.md
 
 markdown_extensions:
+  - abbr
   - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
   - toc:
       permalink: true
-  - tables
-  - codehilite
+      title: On this page
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+plugins:
+  - search
 
 extra_css:
   - assets/styles.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/vmatei2/pyrox-client
+      name: pyrox-client on GitHub
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/pyrox-client/
+      name: pyrox-client on PyPI
+  generator: false
+
+not_in_nav: |
+  duckdb-stabilization.md
+  adr/
+  maintainers/
+  research/
+
+watch:
+  - overrides

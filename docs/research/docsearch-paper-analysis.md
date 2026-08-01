@@ -5,8 +5,8 @@
 This note analyses Cheng et al., *Escaping Whack-a-Mole: Optimizing
 Documentation as Repo-Specific Playbooks for Coding Agents* (ICML 2026), using
 the repository copy at
-[`papers/16785_Escaping_Whack_a_Mole_Op.pdf`](../../papers/16785_Escaping_Whack_a_Mole_Op.pdf)
-as the primary source. Page references below are PDF pages. The authors' public
+a local copy of the paper (`papers/16785_Escaping_Whack_a_Mole_Op.pdf`, not
+checked into this repository) as the primary source. Page references below are PDF pages. The authors' public
 implementation was also inspected at commit
 [`48d3c4a`](https://github.com/ccsnow127/docsearch/tree/48d3c4a2d0bd17b843f8751c2936f7a3ffd744db).
 
