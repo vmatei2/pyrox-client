@@ -2312,7 +2312,7 @@ requires-dist = [
     { name = "fsspec", specifier = ">=2024.2.0" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "limits", marker = "extra == 'api'", specifier = ">=3.0" },
-    { name = "mcp", marker = "extra == 'api'", specifier = ">=1.2.0" },
+    { name = "mcp", marker = "extra == 'api'", specifier = ">=1.2.0,<2" },
     { name = "numpy", marker = "extra == 'api'", specifier = ">=1.26.4" },
     { name = "numpy", marker = "extra == 'reporting'", specifier = ">=1.26.4" },
     { name = "pandas", specifier = ">=2.3.3" },
