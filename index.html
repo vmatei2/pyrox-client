@@ -1,264 +1,1915 @@
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
-    <head>
-        <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="description" content="Unofficial Python client for HYROX race results.">
-        
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="HYROX race results as data: a Python client that returns full races as pandas DataFrames, plus a public MCP server your AI assistant can query.">
+      
+      
+        <meta name="author" content="Vlad Matei">
+      
+      
         <link rel="canonical" href="https://vmatei2.github.io/pyrox-client/">
-        <link rel="shortcut icon" href="img/favicon.ico">
-        <title>pyrox-client</title>
-        <link href="css/bootstrap.min.css" rel="stylesheet">
-        <link href="css/fontawesome.min.css" rel="stylesheet">
-        <link href="css/brands.min.css" rel="stylesheet">
-        <link href="css/solid.min.css" rel="stylesheet">
-        <link href="css/v4-font-face.min.css" rel="stylesheet">
-        <link href="css/base.css" rel="stylesheet">
-        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
-        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
-        <link href="assets/styles.css" rel="stylesheet">
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
-        <script>hljs.highlightAll();</script> 
-    </head>
-
-    <body class="homepage">
-        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
-            <div class="container">
-                <a class="navbar-brand" href=".">pyrox-client</a>
-                <!-- Expander button -->
-                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-
-                <!-- Expanded navigation -->
-                <div id="navbar-collapse" class="navbar-collapse collapse">
-                        <!-- Main navigation -->
-                        <ul class="nav navbar-nav">
-                            <li class="nav-item">
-                                <a href="." class="nav-link active" aria-current="page">Home</a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="quickstart/" class="nav-link">Getting Started</a>
-                            </li>
-                            <li class="nav-item dropdown">
-                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">User Guide</a>
-                                <ul class="dropdown-menu">
-                                    
-<li>
-    <a href="filters/" class="dropdown-item">Filtering</a>
-</li>
-                                    
-<li>
-    <a href="caching/" class="dropdown-item">Caching</a>
-</li>
-                                    
-<li>
-    <a href="data-model/" class="dropdown-item">Data Model</a>
-</li>
-                                    
-<li>
-    <a href="analytics/" class="dropdown-item">Analytics</a>
-</li>
-                                    
-<li>
-    <a href="reproducible-research/" class="dropdown-item">Reproducible Research</a>
-</li>
-                                    
-<li>
-    <a href="mcp/" class="dropdown-item">Try Pyrox MCP</a>
-</li>
-                                </ul>
-                            </li>
-                            <li class="nav-item dropdown">
-                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">API Reference</a>
-                                <ul class="dropdown-menu">
-                                    
-<li>
-    <a href="api/" class="dropdown-item">Client API</a>
-</li>
-                                    
-<li>
-    <a href="errors/" class="dropdown-item">Errors</a>
-</li>
-                                </ul>
-                            </li>
-                            <li class="nav-item">
-                                <a href="faq/" class="nav-link">FAQ</a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="privacy/" class="nav-link">Privacy Policy</a>
-                            </li>
-                        </ul>
-
-                    <ul class="nav navbar-nav ms-md-auto">
-                        <li class="nav-item">
-                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#mkdocs_search_modal">
-                                <i class="fa fa-search"></i> Search
-                            </a>
-                        </li>
-                            <li class="nav-item">
-                                <a rel="prev" class="nav-link disabled">
-                                    <i class="fa fa-arrow-left"></i> Previous
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a rel="next" href="quickstart/" class="nav-link">
-                                    Next <i class="fa fa-arrow-right"></i>
-                                </a>
-                            </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <div class="container">
-            <div class="row">
-                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
-    <div class="navbar-header">
-        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
-            <span class="fa fa-angle-down"></span>
-        </button>
-    </div>
+      
+      
+      
+        <link rel="next" href="mcp/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+  
+    <title>Pyrox - HYROX Race Results Data: Python API &amp; MCP Server</title>
+  
 
     
-    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
-        <ul class="nav flex-column">
+      <link rel="stylesheet" href="assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="assets/styles.css">
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  
+  
+    
+  
+  
+  
+    
+  
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Pyrox">
+  <meta property="og:title" content="HYROX data for analysts, coaches and athletes - Pyrox">
+  <meta property="og:description" content="HYROX race results as data: a Python client that returns full races as pandas DataFrames, plus a public MCP server your AI assistant can query.">
+  <meta property="og:url" content="https://vmatei2.github.io/pyrox-client/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="HYROX data for analysts, coaches and athletes - Pyrox">
+  <meta name="twitter:description" content="HYROX race results as data: a Python client that returns full races as pandas DataFrames, plus a public MCP server your AI assistant can query.">
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "SoftwareSourceCode",
+            "name": "pyrox-client",
+            "description": "HYROX race results as data. A Python client, a REST API, and a public MCP server so you can analyse HYROX splits, rankings and distributions in pandas or just ask an AI assistant.",
+            "codeRepository": "https://github.com/vmatei2/pyrox-client",
+            "programmingLanguage": "Python",
+            "runtimePlatform": "Python 3.12+",
+            "license": "https://opensource.org/licenses/MIT",
+            "url": "https://vmatei2.github.io/pyrox-client/",
+            "author": {
+              "@type": "Person",
+              "name": "Vlad Matei"
+            },
+            "keywords": "HYROX, HYROX data, HYROX results, HYROX API, HYROX dataset, race analytics, pandas, MCP server"
+          },
+          {
+            "@type": "WebSite",
+            "name": "Pyrox",
+            "alternateName": "pyrox-client",
+            "url": "https://vmatei2.github.io/pyrox-client/",
+            "description": "HYROX race results as data. A Python client, a REST API, and a public MCP server so you can analyse HYROX splits, rankings and distributions in pandas or just ask an AI assistant."
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Is there an official HYROX API?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Not a public, documented one. HYROX publishes results through a timing portal built for looking up one athlete at a time, with no bulk export and no developer API, which is why Pyrox exists."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Do I need an API key to use Pyrox?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. Both the MCP server and the REST API are open and read-only. They're rate-limited to keep the load sane, but nothing asks you to sign up, paste a key or go through OAuth."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is Pyrox affiliated with HYROX?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. It's an independent open-source project built on publicly available results, and it is not affiliated with or endorsed by HYROX."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Which seasons, divisions and locations does the HYROX dataset cover?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Coverage tracks the upstream dataset and grows over time, so the question is best put to the data itself: call list_filters from an AI assistant, or client.list_seasons() and client.list_locations() in Python. Divisions are open, pro, doubles, pro_doubles, relay and adaptive."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can Claude or ChatGPT query HYROX results?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes; that's what the MCP server is for. Any MCP-capable client (Claude Code, Claude web and Desktop, Codex, and others) can connect to https://pyrox-api.fly.dev/mcp/ and query the dataset in plain English."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Can I use Pyrox commercially?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "The pyrox-client code is MIT licensed, so you can use, modify and redistribute it freely, including commercially. The underlying race results are public HYROX data; Pyrox claims no ownership of it, and what you may do with that data is yours to check independently."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
+  
+
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#two-ways-into-hyrox-results-data" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="." title="Pyrox" class="md-header__button md-logo" aria-label="Pyrox" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Pyrox
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
             
-            <li class="nav-item" data-bs-level="2"><a href="#quickstart" class="nav-link">Quickstart</a>
-              <ul class="nav flex-column">
-              </ul>
-            </li>
-        </ul>
+              HYROX data for analysts, coaches and athletes
+            
+          </span>
+        </div>
+      </div>
     </div>
-</div></div>
-                    <div class="col-md-9" role="main">
-
-<div class="hero">
-  <div class="hero-eyebrow">HYROX race analytics</div>
-  <h1>pyrox-client</h1>
-  <p>
-    A Python client for HYROX race results. Pull full races as pandas DataFrames
-    with splits already converted to minutes, filter by gender, division, and
-    finish time at read time, and cache everything locally so reruns stay cheap.
-  </p>
-  <div class="hero-actions">
-    <a class="hero-button" href="quickstart/">Get started</a>
-    <a class="hero-button secondary" href="analytics/">Analytics</a>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/vmatei2/pyrox-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vmatei2/pyrox-client
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+  
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
 
-<div class="feature-grid">
-  <div class="feature-card">
-    <h3>Clean race pulls</h3>
-    <p>Download race data straight from the CDN and cache it locally for repeatable work.</p>
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="mcp/" class="md-tabs__link">
+          
+  
+  
+  Ask an AI
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="quickstart/" class="md-tabs__link">
+          
+  
+  
+  Python client
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="dataset/" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="privacy/" class="md-tabs__link">
+          
+  
+  
+  About
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
   </div>
-  <div class="feature-card">
-    <h3>Clear filters</h3>
-    <p>Server-side gender and division filters plus exact time-window slicing in minutes.</p>
+</nav>
+          
+        
+      
+  <section class="pyrox-hero">
+    <div class="pyrox-hero__inner">
+      <div>
+        <p class="pyrox-hero__eyebrow">Public MCP server &middot; read-only &middot; open source</p>
+        <h1>HYROX race results data, <em>free and query-ready</em></h1>
+        <p class="pyrox-hero__lede">
+          Pull any HYROX race into a pandas DataFrame, or just ask your AI
+          assistant. Every season and division, down to each station split,
+          already parsed into minutes; no API key, MIT licensed.
+        </p>
+        <div class="pyrox-hero__actions">
+          <a class="pyrox-btn pyrox-btn--primary" href="mcp/">
+            Connect the MCP server
+          </a>
+          <a class="pyrox-btn pyrox-btn--ghost" href="quickstart/">
+            Start with Python
+          </a>
+        </div>
+        <div class="pyrox-hero__meta">
+          <span><code>pip install pyrox-client</code></span>
+          <span>MIT licensed</span>
+          <span>Read-only &middot; no API key</span>
+        </div><dl class="pyrox-stats">
+          <div>
+            <dt>1.2M+</dt>
+            <dd>race results</dd>
+          </div>
+          <div>
+            <dt>316</dt>
+            <dd>races</dd>
+          </div>
+          <div>
+            <dt>134</dt>
+            <dd>locations</dd>
+          </div>
+          <div>
+            <dt>2018&ndash;2026</dt>
+            <dd>seasons 1&ndash;9</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="pyrox-chat" aria-hidden="true">
+        <div class="pyrox-chat__bar">
+          <span class="pyrox-chat__dot"></span>
+          <span class="pyrox-chat__dot"></span>
+          <span class="pyrox-chat__dot"></span>
+          <span class="pyrox-chat__label">pyrox &middot; connected</span>
+        </div>
+        <div class="pyrox-chat__body">
+          <p class="pyrox-msg pyrox-msg--user">
+            Where would a 62-minute open time rank in season 8?
+          </p>
+          <p class="pyrox-msg pyrox-msg--tool">
+            → get_rankings(season=8, division="open", target_time=62)
+          </p>
+          <p class="pyrox-msg pyrox-msg--reply">
+            <strong>Placement, percentile and the leaderboard around that
+            time</strong>, computed server-side across the season 8 cohort,
+            with the sample size stated so you know how much to trust it.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+                
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" hidden>
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="." title="Pyrox" class="md-nav__button md-logo" aria-label="Pyrox" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Pyrox
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/vmatei2/pyrox-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
   </div>
-  <div class="feature-card">
-    <h3>Analysis ready</h3>
-    <p>Station and run splits are already renamed and normalized for modeling.</p>
+  <div class="md-source__repository">
+    vmatei2/pyrox-client
   </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="." class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#two-ways-into-hyrox-results-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two ways into HYROX results data
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Two ways into HYROX results data">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#just-ask-your-ai-assistant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Just ask your AI assistant
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#or-get-hyrox-results-in-three-lines-of-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Or get HYROX results in three lines of Python
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#questions-pyrox-is-built-to-answer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Questions Pyrox is built to answer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-you-get-back" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What you get back
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What you get back">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#every-segment-not-just-the-finish" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Every segment, not just the finish
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#already-in-minutes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Already in minutes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#real-divisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real divisions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cohorts-stated-honestly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cohorts, stated honestly
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cached-and-reproducible" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cached and reproducible
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#helpful-when-youre-wrong" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Helpful when you're wrong
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ten-tools-one-endpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ten tools, one endpoint
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dont-write-another-hyrox-scraper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Don't write another HYROX scraper
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pair-it-with-your-training-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pair it with your training data
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common questions
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ask an AI
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Ask an AI
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python client
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Python client
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="filters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Filtering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="caching/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Caching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="data-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="analytics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analytics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reproducible-research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reproducible research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="dataset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The dataset
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Client API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="errors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Errors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    About
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="privacy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Privacy policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+                
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" hidden>
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#two-ways-into-hyrox-results-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two ways into HYROX results data
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Two ways into HYROX results data">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#just-ask-your-ai-assistant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Just ask your AI assistant
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#or-get-hyrox-results-in-three-lines-of-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Or get HYROX results in three lines of Python
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#questions-pyrox-is-built-to-answer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Questions Pyrox is built to answer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-you-get-back" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What you get back
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What you get back">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#every-segment-not-just-the-finish" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Every segment, not just the finish
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#already-in-minutes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Already in minutes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#real-divisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Real divisions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cohorts-stated-honestly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cohorts, stated honestly
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cached-and-reproducible" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cached and reproducible
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#helpful-when-youre-wrong" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Helpful when you're wrong
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ten-tools-one-endpoint" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ten tools, one endpoint
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dont-write-another-hyrox-scraper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Don't write another HYROX scraper
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pair-it-with-your-training-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pair it with your training data
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common questions
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+  
+                  
+  
+
+
+
+  
+    <a href="https://github.com/vmatei2/pyrox-client/edit/main/docs/index.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+  <h1>Home</h1>
+
+<h2 id="two-ways-into-hyrox-results-data">Two ways into HYROX results data<a class="headerlink" href="#two-ways-into-hyrox-results-data" title="Permanent link">&para;</a></h2>
+<p>Pyrox is the data layer, not another leaderboard site, so pick whichever route
+fits how you already work.</p>
+<div class="pyrox-split">
+<div>
+<h3 id="just-ask-your-ai-assistant">Just ask your AI assistant<a class="headerlink" href="#just-ask-your-ai-assistant" title="Permanent link">&para;</a></h3>
+<p>Point any MCP client at the public endpoint and ask in plain English. There's no
+sign-up and no key to paste, and you never write SQL: the assistant picks the
+right tool and the analytics run server-side.</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>https://pyrox-api.fly.dev/mcp/
+</span></code></pre></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:3"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Claude Code</label><label for="__tabbed_1_2">Codex</label><label for="__tabbed_1_3">Claude web / Desktop</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>claude<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>--transport<span class="w"> </span>http<span class="w"> </span>pyrox<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span>https://pyrox-api.fly.dev/mcp/
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>codex<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>pyrox<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span>--url<span class="w"> </span>https://pyrox-api.fly.dev/mcp/
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<p>Settings → Connectors → <strong>Add custom connector</strong>, then paste the URL
+above. No OAuth step; it connects straight away.</p>
+</div>
+</div>
+</div>
+<p><a href="mcp/">Connect it in 60 seconds →</a></p>
+</div>
+<div>
+<h3 id="or-get-hyrox-results-in-three-lines-of-python">Or get HYROX results in three lines of Python<a class="headerlink" href="#or-get-hyrox-results-in-three-lines-of-python" title="Permanent link">&para;</a></h3>
+<p>A whole race as a <code>pandas.DataFrame</code>, splits already parsed into minutes and
+columns already named. The first call downloads; everything after that reads
+your local cache.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyrox</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">client</span> <span class="o">=</span> <span class="n">pyrox</span><span class="o">.</span><span class="n">PyroxClient</span><span class="p">()</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">london</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_race</span><span class="p">(</span><span class="n">season</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="s2">&quot;london&quot;</span><span class="p">)</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">london</span><span class="p">[</span><span class="s2">&quot;total_time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span>
+</span></code></pre></div>
+<p><a href="quickstart/">Read the quickstart →</a></p>
+</div>
+</div>
+<h2 id="questions-pyrox-is-built-to-answer">Questions Pyrox is built to answer<a class="headerlink" href="#questions-pyrox-is-built-to-answer" title="Permanent link">&para;</a></h2>
+<p>Every one of these is painful to answer by clicking through a results portal,
+and straightforward once the results are a dataset.</p>
+<ul class="pyrox-asks">
+<li>Where would a 62-minute open time rank in season 8?</li>
+<li>How does my sled push compare with everyone who finished within a minute of me?</li>
+<li>Is my roxzone time costing me more than my running?</li>
+<li>Which station separates the top 10% from the middle of the field?</li>
+<li>How have finish-time distributions moved between seasons?</li>
+<li>What split profile does a sub-60 open athlete actually run?</li>
+</ul>
+<h2 id="what-you-get-back">What you get back<a class="headerlink" href="#what-you-get-back" title="Permanent link">&para;</a></h2>
+<div class="pyrox-cards">
+<div class="pyrox-card">
+<h3 id="every-segment-not-just-the-finish">Every segment, not just the finish<a class="headerlink" href="#every-segment-not-just-the-finish" title="Permanent link">&para;</a></h3>
+<p>Each run and station comes back as its own column, along with roxzone
+transition time, where plenty of races are quietly lost.</p>
+</div>
+<div class="pyrox-card">
+<h3 id="already-in-minutes">Already in minutes<a class="headerlink" href="#already-in-minutes" title="Permanent link">&para;</a></h3>
+<p>Nothing to parse out of <code>HH:MM:SS</code>: times arrive as numeric minutes in
+canonical columns, so they drop straight into pandas, DuckDB or a model.</p>
+</div>
+<div class="pyrox-card">
+<h3 id="real-divisions">Real divisions<a class="headerlink" href="#real-divisions" title="Permanent link">&para;</a></h3>
+<p><code>open</code>, <code>pro</code>, <code>doubles</code>, <code>pro_doubles</code>, <code>relay</code> and <code>adaptive</code> stay separate by
+default, because pooling them produces meaningless averages.</p>
+</div>
+<div class="pyrox-card">
+<h3 id="cohorts-stated-honestly">Cohorts, stated honestly<a class="headerlink" href="#cohorts-stated-honestly" title="Permanent link">&para;</a></h3>
+<p>Rankings and distributions name the cohort they used and flag thin samples
+instead of quietly reporting a percentile from a handful of finishers.</p>
+</div>
+<div class="pyrox-card">
+<h3 id="cached-and-reproducible">Cached and reproducible<a class="headerlink" href="#cached-and-reproducible" title="Permanent link">&para;</a></h3>
+<p>Races are cached locally on first pull, so notebooks re-run cheaply and give the
+same answer tomorrow.</p>
+</div>
+<div class="pyrox-card">
+<h3 id="helpful-when-youre-wrong">Helpful when you're wrong<a class="headerlink" href="#helpful-when-youre-wrong" title="Permanent link">&para;</a></h3>
+<p>Mistype a location and <code>RaceNotFound</code> hands back the closest matches rather than
+a bare stack trace.</p>
+</div>
+</div>
+<h2 id="ten-tools-one-endpoint">Ten tools, one endpoint<a class="headerlink" href="#ten-tools-one-endpoint" title="Permanent link">&para;</a></h2>
+<p>The MCP server exposes intent-shaped tools rather than raw SQL, so an assistant
+can go from a vague question to a defensible answer without inventing the maths.</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Use it for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>list_filters</code></td>
+<td>Discover available seasons, divisions, genders, locations and age groups.</td>
+</tr>
+<tr>
+<td><code>list_races</code></td>
+<td>Find valid season and location pairs.</td>
+</tr>
+<tr>
+<td><code>find_athlete</code></td>
+<td>Resolve a name to candidate results.</td>
+</tr>
+<tr>
+<td><code>get_race_report</code></td>
+<td>One athlete's full race, split by split.</td>
+</tr>
+<tr>
+<td><code>get_athlete_profile</code></td>
+<td>Historical results and personal bests.</td>
+</tr>
+<tr>
+<td><code>get_distribution</code></td>
+<td>Histogram bins and summary stats for a cohort.</td>
+</tr>
+<tr>
+<td><code>get_race_summary</code></td>
+<td>Timing stats for every segment in one race.</td>
+</tr>
+<tr>
+<td><code>get_cohort_segment_averages</code></td>
+<td>Run and station averages for all, top-N or bottom-N finishers.</td>
+</tr>
+<tr>
+<td><code>get_rankings</code></td>
+<td>Leaderboard rows and hypothetical target-time placement.</td>
+</tr>
+<tr>
+<td><code>get_deepdive</code></td>
+<td>One result against cross-location cohorts for a metric.</td>
+</tr>
+</tbody>
+</table>
+<p>The server is read-only and idempotent. It computes analytics; it doesn't expose
+arbitrary SQL or bulk row exports.</p>
+<p><a href="mcp/">See every tool, with example prompts →</a></p>
+<h2 id="dont-write-another-hyrox-scraper">Don't write another HYROX scraper<a class="headerlink" href="#dont-write-another-hyrox-scraper" title="Permanent link">&para;</a></h2>
+<p>Scraping a results portal is a weekend of work and a permanent maintenance bill:
+pagination, rate limits, <code>HH:MM:SS</code> parsing, inconsistent division labels, and a
+markup change that silently breaks your notebook mid-analysis.</p>
+<p>Pyrox is the maintained version of that job: races ship as Parquet on a CDN, the
+client caches them locally, normalisation happens once, and when the upstream
+shape changes the fix lands in a release instead of in your scraper.</p>
+<h2 id="pair-it-with-your-training-data">Pair it with your training data<a class="headerlink" href="#pair-it-with-your-training-data" title="Permanent link">&para;</a></h2>
+<p>Connect a Strava MCP alongside Pyrox and one assistant can see both your race
+splits and the training that led into them, so your own numbers get read against
+the whole field rather than on their own.</p>
+<h2 id="common-questions">Common questions<a class="headerlink" href="#common-questions" title="Permanent link">&para;</a></h2>
+<details class="question">
+<summary>Is there an official HYROX API?</summary>
+<p>Not a public, documented one. HYROX publishes results through a timing
+portal built for looking up one athlete at a time, with no bulk export and
+no developer API, which is why Pyrox exists.</p>
+</details>
+<details class="question">
+<summary>Do I need an API key?</summary>
+<p>No. Both the MCP server and the REST API are open and read-only. They're
+rate-limited to keep the load sane, but nothing asks you to sign up, paste
+a key or go through OAuth.</p>
+</details>
+<details class="question">
+<summary>Is Pyrox affiliated with HYROX?</summary>
+<p>No. It's an independent open-source project built on publicly available
+results, and it is not affiliated with or endorsed by HYROX.</p>
+</details>
+<details class="question">
+<summary>Which seasons, divisions and locations are covered?</summary>
+<p>Coverage tracks the upstream dataset and grows over time, so the question
+is best put to the data itself: call <code>list_filters</code> from an AI assistant,
+or <code>client.list_seasons()</code> and <code>client.list_locations()</code> in Python.
+Divisions are <code>open</code>, <code>pro</code>, <code>doubles</code>, <code>pro_doubles</code>, <code>relay</code> and
+<code>adaptive</code>.</p>
+</details>
+<details class="question">
+<summary>Can Claude or ChatGPT query HYROX results?</summary>
+<p>Yes; that's what the MCP server is for. Any MCP-capable client (Claude
+Code, Claude web and Desktop, Codex, and others) can connect to
+<code>https://pyrox-api.fly.dev/mcp/</code> and query the dataset in plain English.</p>
+</details>
+<details class="question">
+<summary>Can I use this commercially?</summary>
+<p>The <code>pyrox-client</code> code is MIT licensed, so you can use, modify and
+redistribute it freely, including commercially. The underlying race
+results are public HYROX data; Pyrox claims no ownership of it, and what
+you may do with that data is yours to check independently.</p>
+</details>
+<div class="pyrox-note">
+<p><strong>Independent project.</strong> Pyrox is not affiliated with or endorsed by HYROX. It's
+built on public HYROX results and may inherit issues present in the source data.
+MIT licensed, so you're free to use, modify and distribute it.</p>
 </div>
 
-<h2 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h2>
-<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">pyrox</span>
 
-<span class="n">client</span> <span class="o">=</span> <span class="n">pyrox</span><span class="o">.</span><span class="n">PyroxClient</span><span class="p">()</span>
 
-<span class="n">races</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">list_races</span><span class="p">(</span><span class="n">season</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">races</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
 
-<span class="n">london</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_race</span><span class="p">(</span><span class="n">season</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="s2">&quot;london&quot;</span><span class="p">,</span> <span class="n">gender</span><span class="o">=</span><span class="s2">&quot;male&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">london</span><span class="p">[</span><span class="s2">&quot;total_time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">describe</span><span class="p">())</span>
-</code></pre></div>
 
-<div class="callout">
-  Start with Quickstart, then read Filtering and Data Model to learn the columns
-  and query options. The Analytics page covers common race-analysis workflows.
-</div></div>
+
+
+  
+  
+
+
+
+
+  
+
+
+
+                
+
+              </article>
             </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
         </div>
-
-        <footer class="col-md-12">
-            <hr>
-            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
-        </footer>
-        <script src="js/bootstrap.bundle.min.js"></script>
-        <script>
-            var base_url = ".",
-                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
-        </script>
-        <script src="js/base.js"></script>
-        <script src="search/main.js"></script>
-
-        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h4 class="modal-title" id="searchModalLabel">Search</h4>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+        
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+        
+          
+          <a href="mcp/" class="md-footer__link md-footer__link--next" aria-label="Next: MCP server">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                MCP server
+              </div>
             </div>
-            <div class="modal-body">
-                <p>From here you can search these documents. Enter your search terms below.</p>
-                <form>
-                    <div class="form-group">
-                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
-                    </div>
-                </form>
-                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
             </div>
-            <div class="modal-footer">
-            </div>
-        </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      &copy; 2026 Vlad Matei &middot; MIT licensed &middot; Independent project, not affiliated with or endorsed by HYROX.
     </div>
-</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th style="width: 20%;">Keys</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td class="help shortcut"><kbd>?</kbd></td>
-                    <td>Open this help</td>
-                  </tr>
-                  <tr>
-                    <td class="next shortcut"><kbd>n</kbd></td>
-                    <td>Next page</td>
-                  </tr>
-                  <tr>
-                    <td class="prev shortcut"><kbd>p</kbd></td>
-                    <td>Previous page</td>
-                  </tr>
-                  <tr>
-                    <td class="search shortcut"><kbd>s</kbd></td>
-                    <td>Search</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div class="modal-footer">
-            </div>
-        </div>
-    </div>
+  
+  
 </div>
-
-    </body>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/vmatei2/pyrox-client" target="_blank" rel="noopener" title="pyrox-client on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/pyrox-client/" target="_blank" rel="noopener" title="pyrox-client on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.tracking", "navigation.footer", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.action.edit"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
 </html>
-
-<!--
-MkDocs version : 1.6.1
-Build Date UTC : 2026-06-24 21:35:48.923841+00:00
--->

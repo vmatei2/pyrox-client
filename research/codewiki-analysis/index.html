@@ -1,0 +1,1539 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="HYROX race results as data. A Python client, a REST API, and a public MCP server so you can analyse HYROX splits, rankings and distributions in pandas or just ask an AI assistant.">
+      
+      
+        <meta name="author" content="Vlad Matei">
+      
+      
+        <link rel="canonical" href="https://vmatei2.github.io/pyrox-client/research/codewiki-analysis/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+  
+    
+      
+        <title>CodeWiki: paper and implementation analysis - Pyrox</title>
+      
+    
+  
+
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/styles.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  
+    <meta name="robots" content="noindex, follow">
+  
+  
+    
+  
+  
+  
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Pyrox">
+  <meta property="og:title" content="CodeWiki: paper and implementation analysis - Pyrox">
+  <meta property="og:description" content="HYROX race results as data. A Python client, a REST API, and a public MCP server so you can analyse HYROX splits, rankings and distributions in pandas or just ask an AI assistant.">
+  <meta property="og:url" content="https://vmatei2.github.io/pyrox-client/research/codewiki-analysis/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="CodeWiki: paper and implementation analysis - Pyrox">
+  <meta name="twitter:description" content="HYROX race results as data. A Python client, a REST API, and a public MCP server so you can analyse HYROX splits, rankings and distributions in pandas or just ask an AI assistant.">
+
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#codewiki-paper-and-implementation-analysis" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Pyrox" class="md-header__button md-logo" aria-label="Pyrox" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Pyrox
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CodeWiki: paper and implementation analysis
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/vmatei2/pyrox-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vmatei2/pyrox-client
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../mcp/" class="md-tabs__link">
+          
+  
+  
+  Ask an AI
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../quickstart/" class="md-tabs__link">
+          
+  
+  
+  Python client
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../dataset/" class="md-tabs__link">
+          
+  
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../privacy/" class="md-tabs__link">
+          
+  
+  
+  About
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Pyrox" class="md-nav__button md-logo" aria-label="Pyrox" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Pyrox
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/vmatei2/pyrox-client" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    vmatei2/pyrox-client
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Ask an AI
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Ask an AI
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../mcp/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    MCP server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python client
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Python client
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../filters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Filtering
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../caching/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Caching
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../data-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Data model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analytics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reproducible-research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reproducible research
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dataset/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The dataset
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Client API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../errors/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Errors
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    About
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    About
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../privacy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Privacy policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#executive-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Executive summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-problem-it-addresses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The problem it addresses
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pipeline" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pipeline
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Pipeline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-static-repository-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Static repository analysis
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-hierarchical-module-decomposition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Hierarchical module decomposition
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-agent-based-leaf-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Agent-based leaf documentation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-bottom-up-synthesis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Bottom-up synthesis
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inputs-and-outputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inputs and outputs
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-actually-agentic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is actually agentic?
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#evaluation-in-the-paper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Evaluation in the paper
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#paper-versus-current-repository" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Paper versus current repository
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#important-limitations-and-risks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Important limitations and risks
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Important limitations and risks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#no-behavioral-correctness-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        No behavioral correctness loop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#llm-based-architecture-decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LLM-based architecture decisions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#simpler-delegation-than-the-paper-suggests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Simpler delegation than the paper suggests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#security-issue-in-current-clustering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security issue in current clustering
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gpt-5-temperature-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GPT-5 temperature compatibility
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#project-maturity" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Project maturity
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#codewiki-versus-docsearch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CodeWiki versus DocSearch
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#recommended-pyrox-experiment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommended Pyrox experiment
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/vmatei2/pyrox-client/edit/main/docs/research/codewiki-analysis.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="codewiki-paper-and-implementation-analysis">CodeWiki: paper and implementation analysis<a class="headerlink" href="#codewiki-paper-and-implementation-analysis" title="Permanent link">&para;</a></h1>
+<p>Date reviewed: 2026-07-19<br />
+Paper: <a href="https://arxiv.org/abs/2510.24428">CodeWiki: Evaluating AI's Ability to Generate Holistic Documentation for Large-Scale Codebases</a><br />
+Repository: <a href="https://github.com/FSoft-AI4Code/CodeWiki">FSoft-AI4Code/CodeWiki</a><br />
+Source snapshot inspected: <a href="https://github.com/FSoft-AI4Code/CodeWiki/tree/763d08f2c7a95048ee979c520a12e268ef98344c"><code>763d08f</code></a></p>
+<h2 id="executive-summary">Executive summary<a class="headerlink" href="#executive-summary" title="Permanent link">&para;</a></h2>
+<p>CodeWiki generates a human-facing wiki for an entire repository. It uses static analysis to identify code components and their relationships, groups those components into a module hierarchy, lets agents write leaf-module documentation, and then summarizes the leaf documents upward into parent-module and repository overviews. The output includes Markdown, cross-links, and Mermaid diagrams.</p>
+<p>This is different from DocSearch. CodeWiki asks, “Can we explain the whole repository in a navigable way?” DocSearch asks, “Are these behavioral instructions precise enough for an agent to reconstruct code that passes tests?” CodeWiki has breadth and architectural context; DocSearch has executable behavioral feedback. They are complementary.</p>
+<p>For Pyrox, the sensible experiment is to generate a separate architecture wiki for <code>src/pyrox</code>, <code>pyrox_api_service</code>, and <code>ui/src</code>, while continuing to use DocSearch for exact behavioral documentation of critical surfaces such as <code>pyrox_api_service/mcp_tools.py</code>.</p>
+<h2 id="the-problem-it-addresses">The problem it addresses<a class="headerlink" href="#the-problem-it-addresses" title="Permanent link">&para;</a></h2>
+<p>Function-level documentation does not explain how a large system fits together. CodeWiki targets repository-level questions:</p>
+<ul>
+<li>What are the major modules?</li>
+<li>Which modules depend on each other?</li>
+<li>What are the main entry points and data flows?</li>
+<li>How should a new developer navigate the codebase?</li>
+<li>How can detailed component documentation be rolled up into architectural summaries?</li>
+</ul>
+<p>The paper calls CodeWiki a <strong>semi-agentic</strong> framework. Its central scaling idea is hierarchical decomposition: split a repository into bounded modules, document the leaves, and synthesize higher-level documents from the results. <a href="https://arxiv.org/pdf/2510.24428#page=1">Paper, Sections 1 and 3</a></p>
+<h2 id="pipeline">Pipeline<a class="headerlink" href="#pipeline" title="Permanent link">&para;</a></h2>
+<h3 id="1-static-repository-analysis">1. Static repository analysis<a class="headerlink" href="#1-static-repository-analysis" title="Permanent link">&para;</a></h3>
+<p>CodeWiki parses source files into components such as functions, methods, classes, and modules. It extracts calls, imports, inheritance, and other structural relationships to construct a directed dependency graph. The paper describes this as Tree-sitter-based parsing normalized into a common <code>depends_on</code> relation. <a href="https://arxiv.org/pdf/2510.24428#page=4">Paper, Section 3.1</a></p>
+<p>The current repository uses language-specific analyzers and a dependency graph builder. Python has a native AST path, while several other languages use Tree-sitter. <a href="https://github.com/FSoft-AI4Code/CodeWiki/blob/763d08f2c7a95048ee979c520a12e268ef98344c/codewiki/src/be/dependency_analyzer/dependency_graphs_builder.py#L18-L70">Dependency graph builder</a></p>
+<h3 id="2-hierarchical-module-decomposition">2. Hierarchical module decomposition<a class="headerlink" href="#2-hierarchical-module-decomposition" title="Permanent link">&para;</a></h3>
+<p>CodeWiki identifies potential core or entry components and asks an LLM to group them into coherent modules. It recursively repeats clustering for groups that remain above the token threshold. If the repository or module already fits under the threshold, clustering is skipped and it is documented as a whole. <a href="https://github.com/FSoft-AI4Code/CodeWiki/blob/763d08f2c7a95048ee979c520a12e268ef98344c/codewiki/src/be/cluster_modules.py#L75-L110">Clustering implementation</a></p>
+<p>The result is a module tree rather than a flat list of files. Modules are intended to represent features or architectural responsibilities, although the grouping remains an LLM judgment.</p>
+<h3 id="3-agent-based-leaf-documentation">3. Agent-based leaf documentation<a class="headerlink" href="#3-agent-based-leaf-documentation" title="Permanent link">&para;</a></h3>
+<p>Each leaf module is assigned an agent with:</p>
+<ul>
+<li>source code for its core components;</li>
+<li>the repository's module tree;</li>
+<li>a tool for reading additional components;</li>
+<li>a constrained Markdown file editor;</li>
+<li>for complex modules, a delegation tool that creates submodules and sub-agents.</li>
+</ul>
+<p>The agent writes module documentation and Mermaid diagrams. <a href="https://github.com/FSoft-AI4Code/CodeWiki/blob/763d08f2c7a95048ee979c520a12e268ef98344c/codewiki/src/be/pydantic_ai_backend.py#L56-L121">Agent setup</a></p>
+<p>Delegation is genuine agent delegation: a parent agent can propose submodule specifications, update the module tree, and invoke new agents recursively. <a href="https://github.com/FSoft-AI4Code/CodeWiki/blob/763d08f2c7a95048ee979c520a12e268ef98344c/codewiki/src/be/agent_tools/generate_sub_module_documentations.py#L16-L91">Delegation implementation</a></p>
+<h3 id="4-bottom-up-synthesis">4. Bottom-up synthesis<a class="headerlink" href="#4-bottom-up-synthesis" title="Permanent link">&para;</a></h3>
+<p>CodeWiki processes children before parents. After leaf documents exist, an LLM reads the immediate child documentation and produces a parent overview. It repeats this up the tree and finally generates <code>overview.md</code> for the repository. <a href="https://github.com/FSoft-AI4Code/CodeWiki/blob/763d08f2c7a95048ee979c520a12e268ef98344c/codewiki/src/be/documentation_generator.py#L157-L241">Documentation orchestrator</a></p>
+<p>The paper calls this “dynamic programming-inspired.” In implementation terms, that mostly means bottom-up reuse of already-generated child documents, caching, and skipping work whose artifact already exists. It is not an optimization search like DocSearch.</p>
+<h2 id="inputs-and-outputs">Inputs and outputs<a class="headerlink" href="#inputs-and-outputs" title="Permanent link">&para;</a></h2>
+<p>The ordinary CLI takes the current Git repository as its main input. It does <strong>not</strong> require a target file or test file. Optional controls include include/exclude patterns, focus paths, documentation style, custom instructions, token thresholds, and maximum hierarchy depth. <a href="https://github.com/FSoft-AI4Code/CodeWiki/blob/763d08f2c7a95048ee979c520a12e268ef98344c/codewiki/cli/commands/generate.py#L211-L307">CLI options</a></p>
+<p>Typical output is:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>generated-wiki/
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── overview.md
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>├── &lt;module&gt;.md
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>├── module_tree.json
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>├── first_module_tree.json
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>├── metadata.json
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>└── index.html              # optional GitHub Pages viewer
+</span></code></pre></div>
+<p>The Markdown includes architecture, dependency, data-flow, and sequence diagrams where the agent considers them useful. <a href="https://github.com/FSoft-AI4Code/CodeWiki/blob/763d08f2c7a95048ee979c520a12e268ef98344c/README.md#L311-L340">README output description</a></p>
+<h2 id="what-is-actually-agentic">What is actually agentic?<a class="headerlink" href="#what-is-actually-agentic" title="Permanent link">&para;</a></h2>
+<p>There are two current modes:</p>
+<ol>
+<li><strong>One-shot CLI/web mode:</strong> CodeWiki owns the LLM calls. Agents inspect code, write docs through tools, and may delegate submodules to agents.</li>
+<li><strong>MCP/IDE-driven mode:</strong> CodeWiki supplies deterministic tools for analysis, source retrieval, module-tree persistence, Mermaid-validated writing, and incremental state. The host agent performs the clustering and writing itself. <a href="https://github.com/FSoft-AI4Code/CodeWiki/blob/763d08f2c7a95048ee979c520a12e268ef98344c/skills/codewiki-wiki-generator/SKILL.md">MCP skill workflow</a></li>
+</ol>
+<p>The system is agentic because an LLM chooses which components to inspect, writes and revises files through tools, and can delegate work. Static analysis, processing order, persistence, and diagram validation remain deterministic scaffolding.</p>
+<h2 id="evaluation-in-the-paper">Evaluation in the paper<a class="headerlink" href="#evaluation-in-the-paper" title="Permanent link">&para;</a></h2>
+<p>The authors introduce CodeWikiBench because BLEU/ROUGE-style similarity is unsuitable for repository documentation. The benchmark:</p>
+<ol>
+<li>derives a hierarchical rubric from a project's official documentation;</li>
+<li>asks multiple judge models whether generated documentation satisfies concrete leaf requirements;</li>
+<li>aggregates binary leaf scores upward with weights;</li>
+<li>propagates judge disagreement as a reliability measure.</li>
+</ol>
+<p><a href="https://arxiv.org/pdf/2510.24428#page=6">Paper, Section 4</a></p>
+<p>Across seven repositories, the paper reports:</p>
+<ul>
+<li>CodeWiki: <strong>68.79%</strong> average;</li>
+<li>closed-source DeepWiki: <strong>64.06%</strong>;</li>
+<li>CodeWiki won on five of seven repositories;</li>
+<li>CodeWiki was weaker than DeepWiki on the C and C++ repositories.</li>
+</ul>
+<p><a href="https://arxiv.org/pdf/2510.24428#page=7">Paper, Table 1 and Section 5</a></p>
+<p>These figures are rubric-coverage scores from LLM judges. They are not executable correctness scores and do not establish that every generated claim is factually correct. The human evaluation was only a pilot involving three people, three repositories, and nine comparisons. <a href="https://arxiv.org/pdf/2510.24428#page=10">Paper limitations</a></p>
+<h2 id="paper-versus-current-repository">Paper versus current repository<a class="headerlink" href="#paper-versus-current-repository" title="Permanent link">&para;</a></h2>
+<p>The codebase has evolved since the evaluated paper:</p>
+<ul>
+<li>The paper evaluates seven languages; the current README lists nine, adding Kotlin and PHP. <a href="https://github.com/FSoft-AI4Code/CodeWiki/blob/763d08f2c7a95048ee979c520a12e268ef98344c/README.md#L138-L152">Current README</a></li>
+<li>The current project supports API providers, Claude Code/Codex subscription routing, incremental updates, and a fine-grained MCP server.</li>
+<li>The paper describes delegation criteria including cyclomatic complexity, nesting depth, semantic diversity, and context utilization. The current <code>is_complex_module</code> heuristic is substantially simpler: a module is complex when its components span more than one file; recursive delegation is additionally bounded by token and depth thresholds. <a href="https://github.com/FSoft-AI4Code/CodeWiki/blob/763d08f2c7a95048ee979c520a12e268ef98344c/codewiki/src/be/utils.py#L36-L44">Current heuristic</a></li>
+<li>Paper experiments used a maximum delegation depth of three and a 32,768-token leaf threshold. Current CLI defaults are depth two and 16,000 tokens per leaf module.</li>
+</ul>
+<p>The paper therefore explains the research design, but current source is the authority for installation and runtime behavior.</p>
+<h2 id="important-limitations-and-risks">Important limitations and risks<a class="headerlink" href="#important-limitations-and-risks" title="Permanent link">&para;</a></h2>
+<h3 id="no-behavioral-correctness-loop">No behavioral correctness loop<a class="headerlink" href="#no-behavioral-correctness-loop" title="Permanent link">&para;</a></h3>
+<p>Generation does not run the project's tests and does not refine docs based on failures. A polished diagram or explanation can still be wrong. CodeWikiBench is a separate paper evaluation, not a validator executed during <code>codewiki generate</code>.</p>
+<h3 id="llm-based-architecture-decisions">LLM-based architecture decisions<a class="headerlink" href="#llm-based-architecture-decisions" title="Permanent link">&para;</a></h3>
+<p>Module grouping and narrative synthesis are LLM judgments. Static analysis supplies evidence, but the resulting feature boundaries and architectural interpretation can still be arbitrary or incomplete.</p>
+<h3 id="simpler-delegation-than-the-paper-suggests">Simpler delegation than the paper suggests<a class="headerlink" href="#simpler-delegation-than-the-paper-suggests" title="Permanent link">&para;</a></h3>
+<p>Current complexity detection does not implement the full set of metrics described in the paper. It is best understood as recursive multi-file/token partitioning, not a sophisticated complexity optimizer.</p>
+<h3 id="security-issue-in-current-clustering">Security issue in current clustering<a class="headerlink" href="#security-issue-in-current-clustering" title="Permanent link">&para;</a></h3>
+<p>The current CLI clustering path parses LLM-generated text with unrestricted Python <code>eval</code>. That creates a code-execution risk, especially when analyzing an untrusted repository that can inject instructions into model context or when using an untrusted model endpoint. <a href="https://github.com/FSoft-AI4Code/CodeWiki/blob/763d08f2c7a95048ee979c520a12e268ef98344c/codewiki/src/be/cluster_modules.py#L112-L139">Clustering parser</a></p>
+<p>The MCP mode avoids asking CodeWiki's internal LLM to emit this value—the host agent passes a structured module tree—but it should still be treated as beta tooling.</p>
+<h3 id="gpt-5-temperature-compatibility">GPT-5 temperature compatibility<a class="headerlink" href="#gpt-5-temperature-compatibility" title="Permanent link">&para;</a></h3>
+<p>The API-backed implementation currently sets temperature to <code>0.0</code> in model settings and single-shot calls. GPT-5 endpoints that only accept the default temperature can therefore fail in the same way observed with DocSearch. <a href="https://github.com/FSoft-AI4Code/CodeWiki/blob/763d08f2c7a95048ee979c520a12e268ef98344c/codewiki/src/be/llm_services.py#L29-L53">LLM service</a></p>
+<p>Using the Codex subscription backend avoids depending on this specific OpenAI-compatible Chat Completions path.</p>
+<h3 id="project-maturity">Project maturity<a class="headerlink" href="#project-maturity" title="Permanent link">&para;</a></h3>
+<p>The package describes itself as Beta. The inspected repository currently contains one MCP smoke-test script rather than a broad automated unit-test suite. Generated content should be reviewed before publication.</p>
+<h2 id="codewiki-versus-docsearch">CodeWiki versus DocSearch<a class="headerlink" href="#codewiki-versus-docsearch" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Dimension</th>
+<th>CodeWiki</th>
+<th>DocSearch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Primary goal</td>
+<td>Navigable repository wiki</td>
+<td>Behaviorally sufficient agent documentation</td>
+</tr>
+<tr>
+<td>Scope</td>
+<td>Whole repository, modules, cross-file architecture</td>
+<td>Target file/module and individual entities</td>
+</tr>
+<tr>
+<td>Source access</td>
+<td>Agents can inspect source code</td>
+<td>Regeneration agent reconstructs target from docs</td>
+</tr>
+<tr>
+<td>Tests required</td>
+<td>No</td>
+<td>Yes, for meaningful φ</td>
+</tr>
+<tr>
+<td>Feedback during generation</td>
+<td>Mostly one-pass agent writing and synthesis</td>
+<td>Iterative black-box search driven by test results</td>
+</tr>
+<tr>
+<td>Quality signal</td>
+<td>Separate LLM-judge rubric benchmark</td>
+<td>Executable test pass rate φ</td>
+</tr>
+<tr>
+<td>Main audience</td>
+<td>Humans learning and maintaining the system</td>
+<td>Agents reconstructing exact behavior</td>
+</tr>
+<tr>
+<td>Best Pyrox use</td>
+<td>Architecture, onboarding, cross-service/client/UI flows</td>
+<td>Precise MCP/API behavioral contracts</td>
+</tr>
+</tbody>
+</table>
+<h2 id="recommended-pyrox-experiment">Recommended Pyrox experiment<a class="headerlink" href="#recommended-pyrox-experiment" title="Permanent link">&para;</a></h2>
+<p>Do not point the first run at the existing <code>docs/</code> or <code>wiki/</code> directories. Pyrox already has maintained documentation and an OpenWiki output. Use a separate directory such as <code>codewiki_docs/</code> so the result can be reviewed and compared without overwriting anything.</p>
+<p>Focus the first run on:</p>
+<ul>
+<li><code>src/pyrox</code> — public Python client;</li>
+<li><code>pyrox_api_service</code> — service, reporting queries, MCP app and tools;</li>
+<li><code>ui/src</code> — JavaScript/React client and its API/data flow.</li>
+</ul>
+<p>Explicitly exclude:</p>
+<ul>
+<li><code>.venv</code>, generated runs and caches;</li>
+<li>existing <code>docs/</code>, <code>wiki/</code>, and <code>papers/</code>;</li>
+<li>notebooks and large generated images;</li>
+<li><code>ui/node_modules</code> and build output;</li>
+<li><code>ui/ios</code>, because Swift is not currently among CodeWiki's supported analyzers.</li>
+</ul>
+<p>Useful questions for reviewing the result:</p>
+<ol>
+<li>Does the module tree separate the Python client, reporting service, MCP surface, and UI appropriately?</li>
+<li>Does the repository overview correctly describe data flow from UI/MCP request to service/query/client layers?</li>
+<li>Are module links and diagrams grounded in real imports and calls?</li>
+<li>Does it expose architectural gaps or duplicated concepts that the current OpenWiki misses?</li>
+<li>Are claims about API behavior consistent with tests and existing ADRs?</li>
+</ol>
+<p>If the result is useful, keep CodeWiki for broad architecture and incremental wiki refreshes. Continue using DocSearch selectively for high-risk behavioral interfaces. Do not replace hand-written ADRs, operational runbooks, or test-backed contracts with generated prose.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      &copy; 2026 Vlad Matei &middot; MIT licensed &middot; Independent project, not affiliated with or endorsed by HYROX.
+    </div>
+  
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+    <a href="https://github.com/vmatei2/pyrox-client" target="_blank" rel="noopener" title="pyrox-client on GitHub" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+    <a href="https://pypi.org/project/pyrox-client/" target="_blank" rel="noopener" title="pyrox-client on PyPI" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 444.7a20.4 20.4 0 1 1 0-40.7 20.4 20.4 0 1 1 0 40.7M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.6-183.4a20.4 20.4 0 1 1 0 40.8 20.4 20.4 0 1 1 0-40.8"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.top", "navigation.tracking", "navigation.footer", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.action.edit"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
