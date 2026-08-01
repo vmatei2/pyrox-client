@@ -23,7 +23,7 @@
 - Aim for coverage of public functions in `core.py` and error paths in `errors.py`.
 
 ## Commit & Pull Request Guidelines
-- Commits: concise imperative subject (<=72 chars). Example: "Add client retry and timeouts". Group related changes; keep noise low.
+- Commits: subject line only, imperative, <=72 chars, no body. Example: "Add client retry and timeouts". Group related changes into one commit; keep noise low. Only add a body if explicitly asked for one on that commit.
 - Branches: `feature/<short-desc>`, `fix/<short-desc>`, or `chore/<short-desc>`.
 - PRs: include purpose, approach, and testing notes; link issues; add screenshots or logs for API/CLI runs. Ensure lint passes and tests green.
 
