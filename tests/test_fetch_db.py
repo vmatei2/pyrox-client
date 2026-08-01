@@ -7,7 +7,6 @@ artifact referenced by the pipeline-published latest.json pointer.
 from __future__ import annotations
 
 import hashlib
-import json
 from pathlib import Path
 
 import httpx
@@ -52,6 +51,12 @@ def test_parse_pointer_happy_path():
         schema_version=SUPPORTED_SCHEMA_VERSION,
         built_at="2026-07-09T12:30:00+00:00",
     )
+
+
+def test_parse_pointer_accepts_current_schema_v2():
+    pointer = parse_pointer(_pointer_payload(schema_version=2))
+
+    assert pointer.schema_version == 2
 
 
 @pytest.mark.parametrize("missing", ["key", "sha256", "size_bytes", "schema_version"])

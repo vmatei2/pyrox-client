@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 # Highest artifact schema this service understands; the pipeline bumps the
 # pointer's schema_version on breaking changes and we refuse to serve those.
-SUPPORTED_SCHEMA_VERSION = 1
+SUPPORTED_SCHEMA_VERSION = 2
 
 DEFAULT_POINTER_URL = "https://d2wl4b7sx66tfb.cloudfront.net/db/latest.json"
 POINTER_URL_ENV = "PYROX_DB_POINTER_URL"
