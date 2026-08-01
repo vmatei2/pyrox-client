@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://vmatei2.github.io/pyrox-client/dataset/">
       
       
-        <link rel="prev" href="../reproducible-research/">
+        <link rel="prev" href="../notebooks/impact_of_race_locations/">
       
       
         <link rel="next" href="../api/">
@@ -766,9 +766,25 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../reproducible-research/" class="md-nav__link">
+    
+    
+    
+    
+      
+      
         
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_6" id="__nav_3_6_label" tabindex="0">
+            
   
   
   <span class="md-ellipsis">
@@ -782,7 +798,79 @@
   
   
 
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reproducible research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reproducible-research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../notebooks/impact_of_race_locations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Notebook
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1015,10 +1103,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-it-is-built-and-how-often-it-updates" class="md-nav__link">
+  <a href="#how-often-it-updates" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How it is built and how often it updates
+        How often it updates
       
     </span>
   </a>
@@ -1357,10 +1445,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-it-is-built-and-how-often-it-updates" class="md-nav__link">
+  <a href="#how-often-it-updates" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How it is built and how often it updates
+        How often it updates
       
     </span>
   </a>
@@ -1694,19 +1782,16 @@ that event ran, so check with <code>list_filters</code> or by inspecting
 <p>Pyrox doesn't pool divisions by default: an open athlete and a pro athlete
 aren't doing the same work, so a combined average benchmarks nothing and a
 combined percentile misleads.</p>
-<h2 id="how-it-is-built-and-how-often-it-updates">How it is built and how often it updates<a class="headerlink" href="#how-it-is-built-and-how-often-it-updates" title="Permanent link">&para;</a></h2>
-<p>An upstream pipeline scrapes and compiles the race results, then publishes
-immutable Parquet files and a DuckDB artifact to a CDN on a <strong>weekly cadence</strong>
-(the scraper starts Tuesdays at 12:00 UTC; the artifact is typically live by
-around 18:30 UTC). The hosted service picks up the new artifact on its next
-boot, and a scheduled job at 20:00 UTC on Tuesdays restarts warm machines so
-they refresh promptly.</p>
-<p>Nothing gets installed unverified: the service checks the schema version and a
-SHA-256 checksum, and refuses any artifact whose schema version is newer than
-the one it supports. A bad or unexpected upstream publish therefore can't
-silently change the answers you get.</p>
-<p>The Python client caches whatever it downloads locally, so a notebook you ran
-last month gives the same answer today unless you clear the cache.</p>
+<h2 id="how-often-it-updates">How often it updates<a class="headerlink" href="#how-often-it-updates" title="Permanent link">&para;</a></h2>
+<p>New results land on a <strong>weekly cadence</strong>, published each Tuesday.</p>
+<p>That's the server side. The Python client also caches locally, on top of
+that: races and the manifest for 2 hours, a full season for 1 hour. If you're
+after this week's publish and it isn't showing up yet, don't wait out the TTL
+— clear the cache:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">client</span><span class="o">.</span><span class="n">clear_cache</span><span class="p">()</span>
+</span></code></pre></div>
+<p>See <a href="../caching/">Caching</a> for the full set of defaults and how to opt out
+per call.</p>
 <h2 id="three-ways-to-query-it">Three ways to query it<a class="headerlink" href="#three-ways-to-query-it" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1748,8 +1833,8 @@ and is not affiliated with or endorsed by HYROX. A link back to this project is
 appreciated if you publish analysis built on the dataset, though not required;
 what you may do with the underlying race data is yours to check independently.</p>
 <p>Pyrox is built on public source data and may inherit issues present in it.
-Where a cohort is small, the reporting surfaces say so rather than quietly
-reporting a percentile from a handful of finishers.</p>
+Where a cohort is small, the reporting surfaces say so rather than reporting a
+percentile from a handful of finishers as if it meant something.</p>
 
 
 
@@ -1788,7 +1873,7 @@ reporting a percentile from a handful of finishers.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../reproducible-research/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Reproducible research">
+          <a href="../notebooks/impact_of_race_locations/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Notebook">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1798,7 +1883,7 @@ reporting a percentile from a handful of finishers.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                Reproducible research
+                Notebook
               </div>
             </div>
           </a>

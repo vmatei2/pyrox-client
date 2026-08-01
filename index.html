@@ -154,6 +154,14 @@
                   "@type": "Answer",
                   "text": "The pyrox-client code is MIT licensed, so you can use, modify and redistribute it freely, including commercially. The underlying race results are public HYROX data; Pyrox claims no ownership of it, and what you may do with that data is yours to check independently."
                 }
+              },
+              {
+                "@type": "Question",
+                "name": "What if I spot a data issue?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Open an issue on the pyrox-client GitHub repo. We read every one and try to fix real problems quickly."
+                }
               }
             ]
           }
@@ -486,10 +494,11 @@
         </div>
         <div class="pyrox-chat__body">
           <p class="pyrox-msg pyrox-msg--user">
-            Where would a 62-minute open time rank in season 8?
+            Where would a 62-minute open time rank overall in season 8?
           </p>
           <p class="pyrox-msg pyrox-msg--tool">
-            → get_rankings(season=8, division="open", target_time=62)
+            → get_rankings(season=8, division="open", gender="male",
+            target_time_min=62)
           </p>
           <p class="pyrox-msg pyrox-msg--reply">
             <strong>Placement, percentile and the leaderboard around that
@@ -646,10 +655,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#questions-pyrox-is-built-to-answer" class="md-nav__link">
+  <a href="#three-questions-it-answers" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Questions Pyrox is built to answer
+        Three questions it answers
       
     </span>
   </a>
@@ -1076,9 +1085,25 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="reproducible-research/" class="md-nav__link">
+    
+    
+    
+    
+      
+      
         
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_6" id="__nav_3_6_label" tabindex="0">
+            
   
   
   <span class="md-ellipsis">
@@ -1092,7 +1117,79 @@
   
   
 
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reproducible research
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reproducible-research/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="notebooks/impact_of_race_locations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Notebook
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1431,10 +1528,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#questions-pyrox-is-built-to-answer" class="md-nav__link">
+  <a href="#three-questions-it-answers" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Questions Pyrox is built to answer
+        Three questions it answers
       
     </span>
   </a>
@@ -1643,23 +1740,48 @@ your local cache.</p>
 <p><a href="quickstart/">Read the quickstart →</a></p>
 </div>
 </div>
-<h2 id="questions-pyrox-is-built-to-answer">Questions Pyrox is built to answer<a class="headerlink" href="#questions-pyrox-is-built-to-answer" title="Permanent link">&para;</a></h2>
-<p>Every one of these is painful to answer by clicking through a results portal,
-and straightforward once the results are a dataset.</p>
-<ul class="pyrox-asks">
-<li>Where would a 62-minute open time rank in season 8?</li>
-<li>How does my sled push compare with everyone who finished within a minute of me?</li>
-<li>Is my roxzone time costing me more than my running?</li>
-<li>Which station separates the top 10% from the middle of the field?</li>
-<li>How have finish-time distributions moved between seasons?</li>
-<li>What split profile does a sub-60 open athlete actually run?</li>
-</ul>
+<h2 id="three-questions-it-answers">Three questions it answers<a class="headerlink" href="#three-questions-it-answers" title="Permanent link">&para;</a></h2>
+<p>Click one to see the actual call behind it.</p>
+<div class="pyrox-queries">
+<details class="pyrox-query">
+<summary>Where would a 62-minute open time rank overall in season 8?</summary>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># MCP tool call — this is what an AI assistant runs on your behalf</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">get_rankings</span><span class="p">(</span><span class="n">season</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">division</span><span class="o">=</span><span class="s2">&quot;open&quot;</span><span class="p">,</span> <span class="n">gender</span><span class="o">=</span><span class="s2">&quot;male&quot;</span><span class="p">,</span> <span class="n">target_time_min</span><span class="o">=</span><span class="mi">62</span><span class="p">)</span>
+</span></code></pre></div>
+</details>
+<details class="pyrox-query">
+<summary>How does my sled push compare with everyone who finished within a minute of me?</summary>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyrox</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">client</span> <span class="o">=</span> <span class="n">pyrox</span><span class="o">.</span><span class="n">PyroxClient</span><span class="p">()</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">race</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_race</span><span class="p">(</span><span class="n">season</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="s2">&quot;london&quot;</span><span class="p">,</span> <span class="n">gender</span><span class="o">=</span><span class="s2">&quot;male&quot;</span><span class="p">,</span> <span class="n">division</span><span class="o">=</span><span class="s2">&quot;open&quot;</span><span class="p">)</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">me</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_athlete_in_race</span><span class="p">(</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">season</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="s2">&quot;london&quot;</span><span class="p">,</span> <span class="n">athlete_name</span><span class="o">=</span><span class="s2">&quot;surname, name&quot;</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="p">)</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="n">nearby</span> <span class="o">=</span> <span class="n">race</span><span class="p">[(</span><span class="n">race</span><span class="p">[</span><span class="s2">&quot;total_time&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">me</span><span class="p">[</span><span class="s2">&quot;total_time&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">]</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="n">nearby</span><span class="p">[</span><span class="s2">&quot;sledPush_time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span>
+</span></code></pre></div>
+</details>
+<details class="pyrox-query">
+<summary>What's the time distribution of burpee broad jumps for women pro athletes, with optional time-filtering?</summary>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyrox</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">client</span> <span class="o">=</span> <span class="n">pyrox</span><span class="o">.</span><span class="n">PyroxClient</span><span class="p">()</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">season8</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_season</span><span class="p">(</span><span class="n">season</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">gender</span><span class="o">=</span><span class="s2">&quot;female&quot;</span><span class="p">,</span> <span class="n">division</span><span class="o">=</span><span class="s2">&quot;pro&quot;</span><span class="p">)</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">season8</span><span class="p">[</span><span class="s2">&quot;burpeeBroadJump_time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="c1"># optional: only sub-70-minute finishers</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="n">season8</span><span class="p">[</span><span class="n">season8</span><span class="p">[</span><span class="s2">&quot;total_time&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">70</span><span class="p">][</span><span class="s2">&quot;burpeeBroadJump_time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span>
+</span></code></pre></div>
+</details>
+</div>
 <h2 id="what-you-get-back">What you get back<a class="headerlink" href="#what-you-get-back" title="Permanent link">&para;</a></h2>
 <div class="pyrox-cards">
 <div class="pyrox-card">
 <h3 id="every-segment-not-just-the-finish">Every segment, not just the finish<a class="headerlink" href="#every-segment-not-just-the-finish" title="Permanent link">&para;</a></h3>
 <p>Each run and station comes back as its own column, along with roxzone
-transition time, where plenty of races are quietly lost.</p>
+transition time, where plenty of races are actually lost.</p>
 </div>
 <div class="pyrox-card">
 <h3 id="already-in-minutes">Already in minutes<a class="headerlink" href="#already-in-minutes" title="Permanent link">&para;</a></h3>
@@ -1673,8 +1795,9 @@ default, because pooling them produces meaningless averages.</p>
 </div>
 <div class="pyrox-card">
 <h3 id="cohorts-stated-honestly">Cohorts, stated honestly<a class="headerlink" href="#cohorts-stated-honestly" title="Permanent link">&para;</a></h3>
-<p>Rankings and distributions name the cohort they used and flag thin samples
-instead of quietly reporting a percentile from a handful of finishers.</p>
+<p>Rankings and distributions name the cohort they used and flag thin samples,
+rather than reporting a percentile from a handful of finishers as if it meant
+something.</p>
 </div>
 <div class="pyrox-card">
 <h3 id="cached-and-reproducible">Cached and reproducible<a class="headerlink" href="#cached-and-reproducible" title="Permanent link">&para;</a></h3>
@@ -1744,12 +1867,14 @@ can go from a vague question to a defensible answer without inventing the maths.
 arbitrary SQL or bulk row exports.</p>
 <p><a href="mcp/">See every tool, with example prompts →</a></p>
 <h2 id="dont-write-another-hyrox-scraper">Don't write another HYROX scraper<a class="headerlink" href="#dont-write-another-hyrox-scraper" title="Permanent link">&para;</a></h2>
-<p>Scraping a results portal is a weekend of work and a permanent maintenance bill:
-pagination, rate limits, <code>HH:MM:SS</code> parsing, inconsistent division labels, and a
-markup change that silently breaks your notebook mid-analysis.</p>
-<p>Pyrox is the maintained version of that job: races ship as Parquet on a CDN, the
-client caches them locally, normalisation happens once, and when the upstream
-shape changes the fix lands in a release instead of in your scraper.</p>
+<p>The idea behind Pyrox is simple: getting at HYROX results shouldn't be the hard
+part of your analysis. If you're trying to run numbers on the data, you
+shouldn't have to build and maintain a scraper to get there first.</p>
+<p>Scraping a results portal yourself means pagination, rate limits, <code>HH:MM:SS</code>
+parsing, inconsistent division labels, and a markup change that breaks your
+notebook without warning. None of that is the interesting part of the work.
+Pyrox handles it once, centrally, so you don't have to: races ship as Parquet
+on a CDN, and the client caches them locally.</p>
 <h2 id="pair-it-with-your-training-data">Pair it with your training data<a class="headerlink" href="#pair-it-with-your-training-data" title="Permanent link">&para;</a></h2>
 <p>Connect a Strava MCP alongside Pyrox and one assistant can see both your race
 splits and the training that led into them, so your own numbers get read against
@@ -1792,6 +1917,11 @@ Code, Claude web and Desktop, Codex, and others) can connect to
 redistribute it freely, including commercially. The underlying race
 results are public HYROX data; Pyrox claims no ownership of it, and what
 you may do with that data is yours to check independently.</p>
+</details>
+<details class="question">
+<summary>What if I spot a data issue?</summary>
+<p>Open an issue on the <a href="https://github.com/vmatei2/pyrox-client/issues">pyrox-client GitHub repo</a>.
+We read every one and try to fix real problems quickly.</p>
 </details>
 <div class="pyrox-note">
 <p><strong>Independent project.</strong> Pyrox is not affiliated with or endorsed by HYROX. It's
