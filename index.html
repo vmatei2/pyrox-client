@@ -1867,14 +1867,9 @@ can go from a vague question to a defensible answer without inventing the maths.
 arbitrary SQL or bulk row exports.</p>
 <p><a href="mcp/">See every tool, with example prompts →</a></p>
 <h2 id="dont-write-another-hyrox-scraper">Don't write another HYROX scraper<a class="headerlink" href="#dont-write-another-hyrox-scraper" title="Permanent link">&para;</a></h2>
-<p>The idea behind Pyrox is simple: getting at HYROX results shouldn't be the hard
-part of your analysis. If you're trying to run numbers on the data, you
-shouldn't have to build and maintain a scraper to get there first.</p>
-<p>Scraping a results portal yourself means pagination, rate limits, <code>HH:MM:SS</code>
-parsing, inconsistent division labels, and a markup change that breaks your
-notebook without warning. None of that is the interesting part of the work.
-Pyrox handles it once, centrally, so you don't have to: races ship as Parquet
-on a CDN, and the client caches them locally.</p>
+<p>The idea behind Pyrox is simple: make HYROX results easy to get at, so you can
+go straight to running the numbers. Pyrox handles the scraping and delivery —
+races land as Parquet on a CDN, cached locally when you pull them.</p>
 <h2 id="pair-it-with-your-training-data">Pair it with your training data<a class="headerlink" href="#pair-it-with-your-training-data" title="Permanent link">&para;</a></h2>
 <p>Connect a Strava MCP alongside Pyrox and one assistant can see both your race
 splits and the training that led into them, so your own numbers get read against
