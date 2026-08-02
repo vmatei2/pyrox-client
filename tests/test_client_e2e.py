@@ -18,7 +18,14 @@ def test_get_season_somke():
     assert isinstance(df, pd.DataFrame)
     assert not df.empty
 
-    assert (set(df['division'])) == set(['doubles', 'open', 'pro', 'pro_doubles'])
+    assert set(df["division"]) == {
+        "adaptive",
+        "doubles",
+        "open",
+        "pro",
+        "pro_doubles",
+        "relay",
+    }
     assert (set(df['gender'])) == set(['male', 'mixed', 'female'])
     assert len(df) > 1000
 
