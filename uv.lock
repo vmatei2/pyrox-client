@@ -886,6 +886,11 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/2f/e0/014d5d9d7a4564cf1c40b5039bc882db69fd881111e03ab3657ac0b218e2/fsspec-2025.7.0-py3-none-any.whl", hash = "sha256:8b012e39f63c7d5f10474de957f3ab793b47b45ae7d39f2fb735f8bbe25c0e21", size = 199597, upload-time = "2025-07-15T16:05:19.529Z" },
 ]
 
+[package.optional-dependencies]
+http = [
+    { name = "aiohttp" },
+]
+
 [[package]]
 name = "ghp-import"
 version = "2.1.0"
@@ -2422,7 +2427,7 @@ wheels = [
 name = "pyrox-client"
 source = { editable = "." }
 dependencies = [
-    { name = "fsspec" },
+    { name = "fsspec", extra = ["http"] },
     { name = "httpx" },
     { name = "pandas" },
     { name = "pyarrow" },
@@ -2472,7 +2477,7 @@ requires-dist = [
     { name = "duckdb", marker = "extra == 'api'", specifier = ">=1.4.3" },
     { name = "duckdb", marker = "extra == 'reporting'", specifier = ">=1.4.3" },
     { name = "fastapi", marker = "extra == 'api'", specifier = ">=0.115.0" },
-    { name = "fsspec", specifier = ">=2024.2.0" },
+    { name = "fsspec", extras = ["http"], specifier = ">=2024.2.0" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "limits", marker = "extra == 'api'", specifier = ">=3.0" },
     { name = "mcp", marker = "extra == 'api'", specifier = ">=1.2.0,<2" },

@@ -17,6 +17,8 @@ Behavior:
 from __future__ import annotations
 
 import argparse
+from email.parser import BytesParser
+from email.policy import default
 import sys
 import tarfile
 import zipfile
@@ -36,6 +38,10 @@ FORBIDDEN_PATH_PREFIXES = (
 )
 
 ALLOWED_MODULES = REQUIRED_MODULES
+
+REQUIRED_RUNTIME_REQUIREMENTS = {
+    "fsspec[http]",
+}
 
 FORBIDDEN_SDIST_PARTS = {
     ".venv",
@@ -75,6 +81,15 @@ def _pyrox_python_modules(archive_names: set[str]) -> set[str]:
 def verify_wheel(path: Path, strict: bool = True) -> int:
     with zipfile.ZipFile(path) as wheel:
         names = set(wheel.namelist())
+        metadata_path = next(
+            (name for name in names if name.endswith(".dist-info/METADATA")),
+            None,
+        )
+        metadata = (
+            BytesParser(policy=default).parsebytes(wheel.read(metadata_path))
+            if metadata_path
+            else None
+        )
 
     pyrox_modules = _pyrox_python_modules(names)
     missing_required = sorted(REQUIRED_MODULES - pyrox_modules)
@@ -84,6 +99,17 @@ def verify_wheel(path: Path, strict: bool = True) -> int:
         if any(name.startswith(prefix) for prefix in FORBIDDEN_PATH_PREFIXES)
     )
     unexpected_modules = sorted(pyrox_modules - ALLOWED_MODULES) if strict else []
+    requirements = metadata.get_all("Requires-Dist", []) if metadata else []
+    normalized_requirements = {
+        requirement.split(";", 1)[0].strip().casefold() for requirement in requirements
+    }
+    missing_runtime_requirements = sorted(
+        required
+        for required in REQUIRED_RUNTIME_REQUIREMENTS
+        if not any(
+            requirement.startswith(required) for requirement in normalized_requirements
+        )
+    )
 
     errors: list[str] = []
     if missing_required:
@@ -98,6 +124,13 @@ def verify_wheel(path: Path, strict: bool = True) -> int:
         errors.append(
             "Unexpected pyrox modules in strict mode:\n  - "
             + "\n  - ".join(unexpected_modules)
+        )
+    if metadata is None:
+        errors.append("Wheel metadata file is missing")
+    elif missing_runtime_requirements:
+        errors.append(
+            "Missing required runtime dependencies:\n  - "
+            + "\n  - ".join(missing_runtime_requirements)
         )
 
     print(f"Inspecting wheel: {path}")
