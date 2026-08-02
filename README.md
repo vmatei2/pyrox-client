@@ -50,7 +50,7 @@ your splits against the effort your Strava data actually shows.
 ## Use it in Python
 
 ```bash
-pip install pyrox-client
+pip install --upgrade "pyrox-client>=0.2.7"
 ```
 
 ```python
@@ -58,13 +58,39 @@ import pyrox
 
 client = pyrox.PyroxClient()
 
-london = client.get_race(season=7, location="london", gender="male")
-print(london["total_time"].describe())
+paris_2025 = client.get_race(
+    season=7,
+    location="paris",
+    year=2025,
+    gender="female",
+)
+print(paris_2025["total_time"].describe())
 
 # Find what's available first
 client.list_seasons()
 client.list_locations(season=8)
 ```
+
+### One city, two calendar years
+
+A HYROX season can span two calendar years, and the same city can host an
+edition in each. Pyrox identifies an edition by `season`, `location`, and
+`year`:
+
+```python
+paris_editions = client.list_races(season=7).query("location == 'paris'")
+# season  location  year
+# 7       paris     2024
+# 7       paris     2025
+
+paris_2024 = client.get_race(season=7, location="paris", year=2024)
+paris_2025 = client.get_race(season=7, location="paris", year=2025)
+```
+
+Pass `year` when you want one specific edition. If you omit it, `get_race()`
+combines every matching calendar-year edition for that city and season.
+`get_season()` likewise includes every available edition. This behavior is
+available in `pyrox-client>=0.2.7`.
 
 Station and run columns come back with readable names, already in minutes, so you
 can drop them straight into a stats workflow. See [docs/api.md](docs/api.md) for

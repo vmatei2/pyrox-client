@@ -11,7 +11,13 @@ client = PyroxClient()
 
 ### `list_races(season: int | None = None, force_refresh: bool = False)`
 
-Return a DataFrame of available races. Filter by season when provided.
+Return a DataFrame of available race editions. Each edition is identified by
+the `season`, `location`, and `year` columns, so a city that appears in two
+calendar years within one season is returned twice.
+
+```python
+client.list_races(season=7).query("location == 'paris'")
+```
 
 ### `list_seasons(force_refresh: bool = False)`
 
@@ -54,6 +60,15 @@ Key behaviors:
 - Applies server-side gender and division filters when available.
 - Converts time columns into minutes.
 - Supports strict time windows using `total_time`.
+- With `year`, returns that specific calendar-year edition.
+- Without `year`, combines every matching edition for the location and season.
+
+!!! note "Race editions from 0.2.7"
+
+    A HYROX season can span two calendar years. Use
+    `get_race(season=7, location="paris", year=2025)` when you need one
+    edition. Omitting `year` intentionally returns both Paris 2024 and Paris
+    2025 in one DataFrame.
 
 The supported division vocabulary is `open`, `pro`, `doubles`, `pro_doubles`,
 `relay` and `adaptive`. Which of them show up depends on what the race actually
@@ -100,7 +115,9 @@ get_season(
 ) -> pd.DataFrame
 ```
 
-Parallelized race fetching with a configurable worker pool.
+Parallelized race fetching with a configurable worker pool. Every available
+`(location, year)` edition is fetched once, including locations that occur in
+both calendar years of the season.
 
 ### `clear_cache(pattern: str = "*")`
 
