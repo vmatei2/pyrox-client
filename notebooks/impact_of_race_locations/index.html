@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="HYROX race results as data. A Python client, a REST API, and a public MCP server so you can analyse HYROX splits, rankings and distributions in pandas or just ask an AI assistant.">
+        <meta name="description" content="HYROX race results for Python and MCP. Load Parquet files into pandas or query the public reporting server without an account or API key.">
       
       
         <meta name="author" content="Vlad Matei">
@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/pyrox-mark.svg">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
@@ -77,11 +77,11 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Pyrox">
   <meta property="og:title" content="Notebook - Pyrox">
-  <meta property="og:description" content="HYROX race results as data. A Python client, a REST API, and a public MCP server so you can analyse HYROX splits, rankings and distributions in pandas or just ask an AI assistant.">
+  <meta property="og:description" content="HYROX race results for Python and MCP. Load Parquet files into pandas or query the public reporting server without an account or API key.">
   <meta property="og:url" content="https://vmatei2.github.io/pyrox-client/notebooks/impact_of_race_locations/">
-  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Notebook - Pyrox">
-  <meta name="twitter:description" content="HYROX race results as data. A Python client, a REST API, and a public MCP server so you can analyse HYROX splits, rankings and distributions in pandas or just ask an AI assistant.">
+  <meta name="twitter:description" content="HYROX race results for Python and MCP. Load Parquet files into pandas or query the public reporting server without an account or API key.">
 
   </head>
   
@@ -118,8 +118,7 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Pyrox" class="md-header__button md-logo" aria-label="Pyrox" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="../../assets/pyrox-mark.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -272,18 +271,17 @@
   
   
   
-    
-    
-      <li class="md-tabs__item">
-        <a href="../../mcp/" class="md-tabs__link">
-          
+    <li class="md-tabs__item">
+      <a href="../../mcp/" class="md-tabs__link">
+        
   
   
-  Ask an AI
+    
+  
+  MCP server
 
-        </a>
-      </li>
-    
+      </a>
+    </li>
   
 
       
@@ -373,8 +371,7 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Pyrox" class="md-nav__button md-logo" aria-label="Pyrox" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="../../assets/pyrox-mark.svg" alt="logo">
 
     </a>
     Pyrox
@@ -427,58 +424,6 @@
   
   
   
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
-        
-          
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Ask an AI
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Ask an AI
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
     <li class="md-nav__item">
       <a href="../../mcp/" class="md-nav__link">
         
@@ -496,14 +441,6 @@
   
 
       </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
     </li>
   
 
@@ -1034,34 +971,6 @@
     
   
     Errors
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../faq/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    FAQ
   
 
     

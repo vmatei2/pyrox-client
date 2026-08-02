@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Connect the free, read-only Pyrox MCP server and ask Claude, Codex or any MCP client about HYROX splits, rankings and distributions. No API key needed.">
+        <meta name="description" content="Connect the free, read-only Pyrox MCP server and ask an MCP client about HYROX splits, rankings and distributions. No API key needed.">
       
       
         <meta name="author" content="Vlad Matei">
@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../assets/pyrox-mark.svg">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
@@ -79,11 +79,11 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Pyrox">
   <meta property="og:title" content="HYROX MCP server: query race results with Claude or Codex - Pyrox">
-  <meta property="og:description" content="Connect the free, read-only Pyrox MCP server and ask Claude, Codex or any MCP client about HYROX splits, rankings and distributions. No API key needed.">
+  <meta property="og:description" content="Connect the free, read-only Pyrox MCP server and ask an MCP client about HYROX splits, rankings and distributions. No API key needed.">
   <meta property="og:url" content="https://vmatei2.github.io/pyrox-client/mcp/">
-  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="HYROX MCP server: query race results with Claude or Codex - Pyrox">
-  <meta name="twitter:description" content="Connect the free, read-only Pyrox MCP server and ask Claude, Codex or any MCP client about HYROX splits, rankings and distributions. No API key needed.">
+  <meta name="twitter:description" content="Connect the free, read-only Pyrox MCP server and ask an MCP client about HYROX splits, rankings and distributions. No API key needed.">
 
   </head>
   
@@ -104,7 +104,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#try-pyrox-mcp" class="md-skip">
+        <a href="#connect-the-pyrox-mcp-server" class="md-skip">
           Skip to content
         </a>
       
@@ -120,8 +120,7 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href=".." title="Pyrox" class="md-header__button md-logo" aria-label="Pyrox" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="../assets/pyrox-mark.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -276,18 +275,17 @@
     
   
   
-    
-    
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
-          
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
   
   
-  Ask an AI
+    
+  
+  MCP server
 
-        </a>
-      </li>
-    
+      </a>
+    </li>
   
 
       
@@ -375,8 +373,7 @@
   <label class="md-nav__title" for="__drawer">
     <a href=".." title="Pyrox" class="md-nav__button md-logo" aria-label="Pyrox" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="../assets/pyrox-mark.svg" alt="logo">
 
     </a>
     Pyrox
@@ -425,63 +422,6 @@
     
       
       
-  
-  
-    
-  
-  
-  
-    
-    
-    
-    
-      
-        
-        
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
-        
-          
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Ask an AI
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_2">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Ask an AI
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
   
   
     
@@ -549,10 +489,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#add-it-to-claude-code" class="md-nav__link">
+  <a href="#claude-code" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Add It To Claude Code
+        Claude Code
       
     </span>
   </a>
@@ -560,10 +500,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#add-it-to-claude-claudeai-and-desktop" class="md-nav__link">
+  <a href="#claude-web-and-desktop" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Add It To Claude (claude.ai and Desktop)
+        Claude web and Desktop
       
     </span>
   </a>
@@ -571,10 +511,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#add-it-to-codex" class="md-nav__link">
+  <a href="#codex" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Add It To Codex
+        Codex
       
     </span>
   </a>
@@ -582,10 +522,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-it-can-answer" class="md-nav__link">
+  <a href="#mcp-tools" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What It Can Answer
+        MCP tools
       
     </span>
   </a>
@@ -593,10 +533,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#example-prompts" class="md-nav__link">
+  <a href="#questions-to-try" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Example Prompts
+        Questions to try
       
     </span>
   </a>
@@ -604,10 +544,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-to-read-the-answers" class="md-nav__link">
+  <a href="#result-ids-and-ambiguous-names" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How To Read The Answers
+        Result IDs and ambiguous names
       
     </span>
   </a>
@@ -615,10 +555,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#caveats" class="md-nav__link">
+  <a href="#service-limits" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Caveats
+        Service limits
       
     </span>
   </a>
@@ -628,14 +568,6 @@
     </ul>
   
 </nav>
-      
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
       
     </li>
   
@@ -1092,34 +1024,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../faq/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    FAQ
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1243,10 +1147,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#add-it-to-claude-code" class="md-nav__link">
+  <a href="#claude-code" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Add It To Claude Code
+        Claude Code
       
     </span>
   </a>
@@ -1254,10 +1158,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#add-it-to-claude-claudeai-and-desktop" class="md-nav__link">
+  <a href="#claude-web-and-desktop" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Add It To Claude (claude.ai and Desktop)
+        Claude web and Desktop
       
     </span>
   </a>
@@ -1265,10 +1169,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#add-it-to-codex" class="md-nav__link">
+  <a href="#codex" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Add It To Codex
+        Codex
       
     </span>
   </a>
@@ -1276,10 +1180,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#what-it-can-answer" class="md-nav__link">
+  <a href="#mcp-tools" class="md-nav__link">
     <span class="md-ellipsis">
       
-        What It Can Answer
+        MCP tools
       
     </span>
   </a>
@@ -1287,10 +1191,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#example-prompts" class="md-nav__link">
+  <a href="#questions-to-try" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Example Prompts
+        Questions to try
       
     </span>
   </a>
@@ -1298,10 +1202,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-to-read-the-answers" class="md-nav__link">
+  <a href="#result-ids-and-ambiguous-names" class="md-nav__link">
     <span class="md-ellipsis">
       
-        How To Read The Answers
+        Result IDs and ambiguous names
       
     </span>
   </a>
@@ -1309,10 +1213,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#caveats" class="md-nav__link">
+  <a href="#service-limits" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Caveats
+        Service limits
       
     </span>
   </a>
@@ -1344,157 +1248,129 @@
   
 
 
-<h1 id="try-pyrox-mcp">Try Pyrox MCP<a class="headerlink" href="#try-pyrox-mcp" title="Permanent link">&para;</a></h1>
-<p>Pyrox exposes a public, read-only MCP server at:</p>
+<h1 id="connect-the-pyrox-mcp-server">Connect the Pyrox MCP server<a class="headerlink" href="#connect-the-pyrox-mcp-server" title="Permanent link">&para;</a></h1>
+<p>The public endpoint is:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>https://pyrox-api.fly.dev/mcp/
 </span></code></pre></div>
-<p>Use it when you want Claude, Codex, or another MCP client to answer
-natural-language questions about HYROX Race Results without downloading the
-DuckDB artifact or writing Python. The connector computes analytics server-side;
-it does not expose raw SQL, arbitrary row exports, or write operations.</p>
-<h2 id="add-it-to-claude-code">Add It To Claude Code<a class="headerlink" href="#add-it-to-claude-code" title="Permanent link">&para;</a></h2>
-<p>Register the connector:</p>
+<p>It runs typed reporting tools over the HYROX dataset. Clients can't send raw
+SQL, export arbitrary rows or write data. The service does the calculation and
+returns structured fields for the assistant to explain or chart.</p>
+<h2 id="claude-code">Claude Code<a class="headerlink" href="#claude-code" title="Permanent link">&para;</a></h2>
+<p>Add Pyrox to the current project:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>claude<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>--transport<span class="w"> </span>http<span class="w"> </span>pyrox<span class="w"> </span>https://pyrox-api.fly.dev/mcp/
 </span></code></pre></div>
-<p>Verify it is available:</p>
+<p>Check the connection:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>claude<span class="w"> </span>mcp<span class="w"> </span>list
 </span></code></pre></div>
-<p>By default this registers the connector for the current project. To make it
-available across your Claude Code projects:</p>
+<p>Use <code>--scope user</code> if you want the connection in every Claude Code project:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>claude<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>--transport<span class="w"> </span>http<span class="w"> </span>--scope<span class="w"> </span>user<span class="w"> </span>pyrox<span class="w"> </span>https://pyrox-api.fly.dev/mcp/
 </span></code></pre></div>
-<p>Remove it later with:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>claude<span class="w"> </span>mcp<span class="w"> </span>remove<span class="w"> </span>pyrox
-</span></code></pre></div>
-<h2 id="add-it-to-claude-claudeai-and-desktop">Add It To Claude (claude.ai and Desktop)<a class="headerlink" href="#add-it-to-claude-claudeai-and-desktop" title="Permanent link">&para;</a></h2>
-<p>You can also use Pyrox as a custom connector in the Claude web app and Claude
-Desktop, not just the CLI.</p>
-<blockquote>
-<p>Custom connectors require a paid Claude plan (Pro, Max, Team, or Enterprise).
-On Team/Enterprise an admin may need to enable custom connectors first.</p>
-</blockquote>
+<p>Remove it with <code>claude mcp remove pyrox</code>.</p>
+<h2 id="claude-web-and-desktop">Claude web and Desktop<a class="headerlink" href="#claude-web-and-desktop" title="Permanent link">&para;</a></h2>
+<p>Custom connectors require a paid Claude plan. A Team or Enterprise admin may
+need to allow them first.</p>
 <ol>
-<li>Sign in at <a href="https://claude.ai">claude.ai</a> (or open Claude Desktop).</li>
-<li>Go to <strong>Settings</strong> -&gt; <strong>Connectors</strong>.</li>
-<li>Scroll down and click <strong>Add custom connector</strong>.</li>
-<li>Set:</li>
-<li><strong>Name:</strong> <code>Pyrox</code></li>
-<li><strong>URL:</strong> <code>https://pyrox-api.fly.dev/mcp/</code> (keep the trailing slash)</li>
-<li>Click <strong>Add</strong>. The server is open and read-only, so there is no sign-in or
-   OAuth step — it connects straight away and discovers the Pyrox tools.</li>
-<li>In a chat, enable <strong>Pyrox</strong> from the tools menu in the composer, then prompt it
-   by name, e.g. <em>"Using Pyrox, what seasons and divisions are available?"</em>. The
-   first tool call asks you to approve it.</li>
+<li>Open <strong>Settings</strong>, then <strong>Connectors</strong>.</li>
+<li>Select <strong>Add custom connector</strong>.</li>
+<li>Enter <code>Pyrox</code> as the name.</li>
+<li>Paste <code>https://pyrox-api.fly.dev/mcp/</code>, including the trailing slash.</li>
+<li>Add the connector. Pyrox doesn't use OAuth or ask for an API key.</li>
+<li>Enable Pyrox from the chat composer before sending a question. Claude asks
+   you to approve the first tool call.</li>
 </ol>
-<h2 id="add-it-to-codex">Add It To Codex<a class="headerlink" href="#add-it-to-codex" title="Permanent link">&para;</a></h2>
-<p>Codex can use the same streamable-HTTP MCP endpoint. Register the connector:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>codex<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>pyrox<span class="w"> </span>--url<span class="w"> </span>https://pyrox-api.fly.dev/mcp/
+<h2 id="codex">Codex<a class="headerlink" href="#codex" title="Permanent link">&para;</a></h2>
+<p>Register the same HTTP endpoint:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>codex<span class="w"> </span>mcp<span class="w"> </span>add<span class="w"> </span>pyrox<span class="w"> </span>--url<span class="w"> </span>https://pyrox-api.fly.dev/mcp/
 </span></code></pre></div>
-<p>In the Codex TUI, use <code>/mcp</code> to check that the server is available.</p>
-<p>You can also configure it directly in <code>~/.codex/config.toml</code>:</p>
-<div class="language-toml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">[mcp_servers.pyrox]</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://pyrox-api.fly.dev/mcp/&quot;</span>
+<p>Run <code>/mcp</code> in the Codex TUI to inspect the connection. You can also add it to
+<code>~/.codex/config.toml</code> yourself:</p>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">[mcp_servers.pyrox]</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;https://pyrox-api.fly.dev/mcp/&quot;</span>
 </span></code></pre></div>
-<p>Codex shares MCP configuration between the CLI and IDE extension, so the same
-setup works across both.</p>
-<h2 id="what-it-can-answer">What It Can Answer<a class="headerlink" href="#what-it-can-answer" title="Permanent link">&para;</a></h2>
-<p>The MCP server exposes ten tools:</p>
+<p>The CLI and IDE extension read the same Codex configuration.</p>
+<h2 id="mcp-tools">MCP tools<a class="headerlink" href="#mcp-tools" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
 <tr>
 <th>Tool</th>
-<th>Use it for</th>
+<th>Returns</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>list_filters</code></td>
-<td>Discover available seasons, divisions, genders, locations, and age groups.</td>
+<td>Available seasons, divisions, genders, locations and age groups.</td>
 </tr>
 <tr>
 <td><code>list_races</code></td>
-<td>Find valid season and location pairs before asking for race-level stats.</td>
+<td>Valid season and location pairs.</td>
 </tr>
 <tr>
 <td><code>find_athlete</code></td>
-<td>Resolve an athlete name to candidate Results with <code>result_id</code> values.</td>
+<td>Candidate results for an athlete name, including <code>result_id</code>.</td>
 </tr>
 <tr>
 <td><code>get_race_report</code></td>
-<td>Inspect one Result's full Race report and Segment breakdown.</td>
+<td>One result with every available run and station split.</td>
 </tr>
 <tr>
 <td><code>get_athlete_profile</code></td>
-<td>Summarize an athlete's historical Results and personal bests.</td>
+<td>Historical results and personal-best fields.</td>
 </tr>
 <tr>
 <td><code>get_distribution</code></td>
-<td>Get a Cohort Distribution as histogram bins and summary stats.</td>
+<td>Histogram bins and summary statistics for a cohort.</td>
 </tr>
 <tr>
 <td><code>get_race_summary</code></td>
-<td>Get timing stats for all Segments in one Race.</td>
+<td>Segment timing statistics for one race.</td>
 </tr>
 <tr>
 <td><code>get_cohort_segment_averages</code></td>
-<td>Compare Run and Station averages for all, top-N, or bottom-N athletes in one Race.</td>
+<td>Run and station averages for a selected group of finishers.</td>
 </tr>
 <tr>
 <td><code>get_rankings</code></td>
-<td>Query leaderboard rows and hypothetical target-time placement.</td>
+<td>Leaderboard rows or the placement of a hypothetical finish time.</td>
 </tr>
 <tr>
 <td><code>get_deepdive</code></td>
-<td>Compare one Result against cross-location Cohorts for a metric.</td>
+<td>One result compared with cross-location cohorts for a chosen metric.</td>
 </tr>
 </tbody>
 </table>
-<h2 id="example-prompts">Example Prompts<a class="headerlink" href="#example-prompts" title="Permanent link">&para;</a></h2>
-<p>Start by discovering the available filters:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>Using Pyrox, what seasons, divisions, genders, and locations are available?
+<h2 id="questions-to-try">Questions to try<a class="headerlink" href="#questions-to-try" title="Permanent link">&para;</a></h2>
+<p>Start with the available data when you don't know the exact filters:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Using Pyrox, which season 8 locations have male open results?
 </span></code></pre></div>
-<p>Find an athlete and inspect one Result:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>Using Pyrox, find results for Vlad Matei. Pick the most recent open Result and
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>summarize the Race report, including strongest and weakest Segments.
+<p>Find an athlete before asking for a race report:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>Using Pyrox, find results for Vlad Matei. Use the most recent open result and
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>report the two station splits furthest from his cohort median.
 </span></code></pre></div>
-<p>Compare a target finish time:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>Using Pyrox, where would a 62-minute male open time rank in season 8?
+<p>A target time doesn't need an athlete record:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>Using Pyrox, where would a 62-minute male open time rank in season 8? State the
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>cohort size and filters with the answer.
 </span></code></pre></div>
-<p>Ask for a Cohort Distribution:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>Using Pyrox, show the Distribution of female open finish times in season 8.
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>State the Cohort, sample size, and whether the sample is thin.
+<p>For a distribution, name the metric and cohort:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>Using Pyrox, return the distribution of female open finish times in season 8.
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>Include the sample size and histogram bins.
 </span></code></pre></div>
-<p>Build a profile:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>Using Pyrox, create an athlete profile for Your Name and explain how his
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>Segment strengths compare with his historical Results.
-</span></code></pre></div>
-<h2 id="how-to-read-the-answers">How To Read The Answers<a class="headerlink" href="#how-to-read-the-answers" title="Permanent link">&para;</a></h2>
-<p>Pyrox uses these terms consistently:</p>
+<h2 id="result-ids-and-ambiguous-names">Result IDs and ambiguous names<a class="headerlink" href="#result-ids-and-ambiguous-names" title="Permanent link">&para;</a></h2>
+<p>A <code>result_id</code> identifies one performance in one race. You don't need to know it
+beforehand: <code>find_athlete</code> returns candidate records, and the assistant can pick
+one or ask you to narrow the name, season or location.</p>
+<p>Names come from registration data, including misspellings. Search results may
+therefore contain several spellings for the same person; check the race history
+before treating them as one athlete.</p>
+<h2 id="service-limits">Service limits<a class="headerlink" href="#service-limits" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Race</strong>: one HYROX event instance, identified by season, location, and year.</li>
-<li><strong>Result</strong>: one athlete's performance in one Race.</li>
-<li><strong>Segment</strong>: one timed Run or Station.</li>
-<li><strong>Roxzone</strong>: transition time between Segments.</li>
-<li><strong>Cohort</strong>: the reference population used for rankings, Distributions, and Percentiles.</li>
-<li><strong>Distribution</strong>: histogram bins plus summary stats for a metric across a Cohort.</li>
-</ul>
-<p>The <code>result_id</code> is an internal identifier. Users do not need to know it in advance.
-For common or ambiguous names, <code>find_athlete</code> returns candidate races so Claude
-can choose the right Result or ask for a narrower filter.
-i.e <code>Vlad Matei</code> and <code>Vlad Mateei</code> (typo when registering)</p>
-<h2 id="caveats">Caveats<a class="headerlink" href="#caveats" title="Permanent link">&para;</a></h2>
-<ul>
-<li>Pyrox is based on public HYROX source data and may inherit source-data issues.</li>
-<li>Thin Cohorts are flagged with sample-size information and should be interpreted
-  cautiously.</li>
-<li>Divisions are not pooled by default because open, pro, doubles, relay, and adaptive
-  Results are not directly comparable.</li>
-<li>Distributions default to the latest season and the <code>open</code> division when those
-  filters are omitted.</li>
-<li>Claude renders any charts from returned structured data; the server does not
-  return image files.</li>
-<li>The public MCP endpoint is open and read-only. It is rate-limited to protect
-  availability.</li>
+<li>The source data may contain wrong names, divisions or split times.</li>
+<li>Small cohorts carry sample-size warnings and need cautious interpretation.</li>
+<li>Omitted distribution filters default to the latest season and <code>open</code> division.</li>
+<li>The endpoint allows 60 requests per minute per IP and may need a few minutes
+  to start after sitting idle.</li>
+<li>Chart images come from the MCP client. Pyrox returns structured data rather
+  than image files.</li>
 </ul>
 
 

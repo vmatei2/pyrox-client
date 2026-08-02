@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="HYROX race results as data. A Python client, a REST API, and a public MCP server so you can analyse HYROX splits, rankings and distributions in pandas or just ask an AI assistant.">
+        <meta name="description" content="HYROX race results for Python and MCP. Load Parquet files into pandas or query the public reporting server without an account or API key.">
       
       
         <meta name="author" content="Vlad Matei">
@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../assets/pyrox-mark.svg">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
@@ -77,11 +77,11 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Pyrox">
   <meta property="og:title" content="Analytics - Pyrox">
-  <meta property="og:description" content="HYROX race results as data. A Python client, a REST API, and a public MCP server so you can analyse HYROX splits, rankings and distributions in pandas or just ask an AI assistant.">
+  <meta property="og:description" content="HYROX race results for Python and MCP. Load Parquet files into pandas or query the public reporting server without an account or API key.">
   <meta property="og:url" content="https://vmatei2.github.io/pyrox-client/analytics/">
-  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Analytics - Pyrox">
-  <meta name="twitter:description" content="HYROX race results as data. A Python client, a REST API, and a public MCP server so you can analyse HYROX splits, rankings and distributions in pandas or just ask an AI assistant.">
+  <meta name="twitter:description" content="HYROX race results for Python and MCP. Load Parquet files into pandas or query the public reporting server without an account or API key.">
 
   </head>
   
@@ -102,7 +102,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#analytics" class="md-skip">
+        <a href="#analytics-recipes" class="md-skip">
           Skip to content
         </a>
       
@@ -118,8 +118,7 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href=".." title="Pyrox" class="md-header__button md-logo" aria-label="Pyrox" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="../assets/pyrox-mark.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -272,18 +271,17 @@
   
   
   
-    
-    
-      <li class="md-tabs__item">
-        <a href="../mcp/" class="md-tabs__link">
-          
+    <li class="md-tabs__item">
+      <a href="../mcp/" class="md-tabs__link">
+        
   
   
-  Ask an AI
+    
+  
+  MCP server
 
-        </a>
-      </li>
-    
+      </a>
+    </li>
   
 
       
@@ -373,8 +371,7 @@
   <label class="md-nav__title" for="__drawer">
     <a href=".." title="Pyrox" class="md-nav__button md-logo" aria-label="Pyrox" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="../assets/pyrox-mark.svg" alt="logo">
 
     </a>
     Pyrox
@@ -427,58 +424,6 @@
   
   
   
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
-        
-          
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Ask an AI
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Ask an AI
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
     <li class="md-nav__item">
       <a href="../mcp/" class="md-nav__link">
         
@@ -496,14 +441,6 @@
   
 
       </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
     </li>
   
 
@@ -746,10 +683,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-segment-z-scores" class="md-nav__link">
+  <a href="#compare-station-splits-with-z-scores" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Segment z-scores
+        Compare station splits with z-scores
       
     </span>
   </a>
@@ -757,10 +694,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-rank-percentiles-by-total-time" class="md-nav__link">
+  <a href="#express-finish-rank-as-a-percentile" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Rank percentiles by total time
+        Express finish rank as a percentile
       
     </span>
   </a>
@@ -768,10 +705,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-create-pace-buckets" class="md-nav__link">
+  <a href="#group-finish-times-into-bands" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Create pace buckets
+        Group finish times into bands
       
     </span>
   </a>
@@ -779,10 +716,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-build-a-station-share-profile" class="md-nav__link">
+  <a href="#find-an-athletes-largest-station-shares" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Build a station share profile
+        Find an athlete's largest station shares
       
     </span>
   </a>
@@ -1060,34 +997,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../faq/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    FAQ
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1211,10 +1120,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-segment-z-scores" class="md-nav__link">
+  <a href="#compare-station-splits-with-z-scores" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Segment z-scores
+        Compare station splits with z-scores
       
     </span>
   </a>
@@ -1222,10 +1131,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-rank-percentiles-by-total-time" class="md-nav__link">
+  <a href="#express-finish-rank-as-a-percentile" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Rank percentiles by total time
+        Express finish rank as a percentile
       
     </span>
   </a>
@@ -1233,10 +1142,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#3-create-pace-buckets" class="md-nav__link">
+  <a href="#group-finish-times-into-bands" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Create pace buckets
+        Group finish times into bands
       
     </span>
   </a>
@@ -1244,10 +1153,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#4-build-a-station-share-profile" class="md-nav__link">
+  <a href="#find-an-athletes-largest-station-shares" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Build a station share profile
+        Find an athlete's largest station shares
       
     </span>
   </a>
@@ -1279,70 +1188,92 @@
   
 
 
-<h1 id="analytics">Analytics<a class="headerlink" href="#analytics" title="Permanent link">&para;</a></h1>
-<p>A focused set of workflows to extract signal from race data.</p>
-<h2 id="1-segment-z-scores">1. Segment z-scores<a class="headerlink" href="#1-segment-z-scores" title="Permanent link">&para;</a></h2>
-<p>Normalize each station split relative to the field to see strengths and weaknesses.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>import numpy as np
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>import pandas as pd
+<h1 id="analytics-recipes">Analytics recipes<a class="headerlink" href="#analytics-recipes" title="Permanent link">&para;</a></h1>
+<p>These examples start with a filtered <code>pandas.DataFrame</code> returned by
+<code>PyroxClient</code>. Keep gender and division filters explicit; a pooled comparison
+can put athletes doing different work into the same benchmark.</p>
+<h2 id="compare-station-splits-with-z-scores">Compare station splits with z-scores<a class="headerlink" href="#compare-station-splits-with-z-scores" title="Permanent link">&para;</a></h2>
+<p>This calculation measures each station against the mean and standard deviation
+for one race cohort:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>race = client.get_race(season=7, location=&quot;london&quot;, gender=&quot;male&quot;)
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>split_cols = [
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    &quot;skiErg_time&quot;,
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    &quot;sledPush_time&quot;,
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    &quot;sledPull_time&quot;,
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    &quot;burpeeBroadJump_time&quot;,
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    &quot;rowErg_time&quot;,
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    &quot;farmersCarry_time&quot;,
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    &quot;sandbagLunges_time&quot;,
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    &quot;wallBalls_time&quot;,
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>]
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>field = race[split_cols].astype(float)
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>means = field.mean()
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>stds = field.std(ddof=0).replace(0, np.nan)
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">race</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_race</span><span class="p">(</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">season</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">location</span><span class="o">=</span><span class="s2">&quot;london&quot;</span><span class="p">,</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">gender</span><span class="o">=</span><span class="s2">&quot;male&quot;</span><span class="p">,</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">division</span><span class="o">=</span><span class="s2">&quot;open&quot;</span><span class="p">,</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">)</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">station_cols</span> <span class="o">=</span> <span class="p">[</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="s2">&quot;skiErg_time&quot;</span><span class="p">,</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="s2">&quot;sledPush_time&quot;</span><span class="p">,</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="s2">&quot;sledPull_time&quot;</span><span class="p">,</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="s2">&quot;burpeeBroadJump_time&quot;</span><span class="p">,</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="s2">&quot;rowErg_time&quot;</span><span class="p">,</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="s2">&quot;farmersCarry_time&quot;</span><span class="p">,</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="s2">&quot;sandbagLunges_time&quot;</span><span class="p">,</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>    <span class="s2">&quot;wallBalls_time&quot;</span><span class="p">,</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="p">]</span>
 </span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>z = (field - means) / stds
-</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>race_z = pd.concat([race[[&quot;name&quot;]], z], axis=1)
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="n">field</span> <span class="o">=</span> <span class="n">race</span><span class="p">[</span><span class="n">station_cols</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="n">means</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="n">stds</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">ddof</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a><span class="n">z_scores</span> <span class="o">=</span> <span class="p">(</span><span class="n">field</span> <span class="o">-</span> <span class="n">means</span><span class="p">)</span> <span class="o">/</span> <span class="n">stds</span>
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a><span class="n">race_z</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">race</span><span class="p">[[</span><span class="s2">&quot;name&quot;</span><span class="p">]],</span> <span class="n">z_scores</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 </span></code></pre></div>
-<h2 id="2-rank-percentiles-by-total-time">2. Rank percentiles by total time<a class="headerlink" href="#2-rank-percentiles-by-total-time" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>race = client.get_race(season=7, location=&quot;london&quot;)
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>race = race.sort_values(&quot;total_time&quot;)
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>race[&quot;percentile&quot;] = race[&quot;total_time&quot;].rank(pct=True)
+<p>For split times, a negative z-score means faster than the cohort mean. Missing
+splits remain <code>NaN</code>; a station with no variation also produces <code>NaN</code> because a
+z-score would have no useful denominator.</p>
+<h2 id="express-finish-rank-as-a-percentile">Express finish rank as a percentile<a class="headerlink" href="#express-finish-rank-as-a-percentile" title="Permanent link">&para;</a></h2>
+<p>Lower finish times are better, so rank in descending order when <code>1.0</code> should
+mean faster than the whole cohort:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">race</span> <span class="o">=</span> <span class="n">race</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s2">&quot;total_time&quot;</span><span class="p">)</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">race</span><span class="p">[</span><span class="s2">&quot;finish_percentile&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">race</span><span class="p">[</span><span class="s2">&quot;total_time&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">rank</span><span class="p">(</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;average&quot;</span><span class="p">,</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">pct</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="p">)</span>
 </span></code></pre></div>
-<h2 id="3-create-pace-buckets">3. Create pace buckets<a class="headerlink" href="#3-create-pace-buckets" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>bins = [0, 55, 60, 65, 70, 999]
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>labels = [&quot;&lt;55&quot;, &quot;55-60&quot;, &quot;60-65&quot;, &quot;65-70&quot;, &quot;70+&quot;]
+<p>Tied times receive the average rank. Drop missing <code>total_time</code> values before
+comparing counts if incomplete results are present.</p>
+<h2 id="group-finish-times-into-bands">Group finish times into bands<a class="headerlink" href="#group-finish-times-into-bands" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">bins</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">55</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">65</span><span class="p">,</span> <span class="mi">70</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">)]</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;under 55&quot;</span><span class="p">,</span> <span class="s2">&quot;55–60&quot;</span><span class="p">,</span> <span class="s2">&quot;60–65&quot;</span><span class="p">,</span> <span class="s2">&quot;65–70&quot;</span><span class="p">,</span> <span class="s2">&quot;70+&quot;</span><span class="p">]</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>race[&quot;pace_bucket&quot;] = pd.cut(race[&quot;total_time&quot;], bins=bins, labels=labels)
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>summary = race.groupby(&quot;pace_bucket&quot;)[&quot;total_time&quot;].agg([&quot;count&quot;, &quot;mean&quot;])
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">race</span><span class="p">[</span><span class="s2">&quot;finish_band&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">race</span><span class="p">[</span><span class="s2">&quot;total_time&quot;</span><span class="p">],</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">bins</span><span class="o">=</span><span class="n">bins</span><span class="p">,</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">right</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="p">)</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">summary</span> <span class="o">=</span> <span class="p">(</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">race</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;finish_band&quot;</span><span class="p">,</span> <span class="n">observed</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="s2">&quot;total_time&quot;</span><span class="p">]</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="o">.</span><span class="n">agg</span><span class="p">([</span><span class="s2">&quot;count&quot;</span><span class="p">,</span> <span class="s2">&quot;median&quot;</span><span class="p">])</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="p">)</span>
 </span></code></pre></div>
-<h2 id="4-build-a-station-share-profile">4. Build a station share profile<a class="headerlink" href="#4-build-a-station-share-profile" title="Permanent link">&para;</a></h2>
-<p>Identify which stations dominate a given athlete's time.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>athlete = client.get_athlete_in_race(
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    season=7,
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    location=&quot;london&quot;,
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    athlete_name=&quot;surname, name&quot;,
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>)
+<p><code>right=False</code> puts an exact 60-minute result in the <code>60–65</code> band. Change the
+edge rule if your published analysis uses a different convention, and write
+that convention beside the chart.</p>
+<h2 id="find-an-athletes-largest-station-shares">Find an athlete's largest station shares<a class="headerlink" href="#find-an-athletes-largest-station-shares" title="Permanent link">&para;</a></h2>
+<p>This reports how much of an athlete's station time each workout consumed. It
+doesn't include running or roxzone time.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">athlete</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_athlete_in_race</span><span class="p">(</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">season</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">location</span><span class="o">=</span><span class="s2">&quot;london&quot;</span><span class="p">,</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">athlete_name</span><span class="o">=</span><span class="s2">&quot;surname, name&quot;</span><span class="p">,</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="p">)</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 </span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>split_cols = [
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    &quot;skiErg_time&quot;,
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    &quot;sledPush_time&quot;,
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    &quot;sledPull_time&quot;,
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>    &quot;burpeeBroadJump_time&quot;,
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>    &quot;rowErg_time&quot;,
-</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>    &quot;farmersCarry_time&quot;,
-</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    &quot;sandbagLunges_time&quot;,
-</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>    &quot;wallBalls_time&quot;,
-</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>]
-</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>
-</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>row = athlete.iloc[0]
-</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>share = row[split_cols] / row[split_cols].sum()
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">station_times</span> <span class="o">=</span> <span class="n">athlete</span><span class="p">[</span><span class="n">station_cols</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">station_share</span> <span class="o">=</span> <span class="p">(</span><span class="n">station_times</span> <span class="o">/</span> <span class="n">station_times</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">ascending</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="nb">print</span><span class="p">(</span><span class="n">station_share</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
 </span></code></pre></div>
+<p>A large share can mean a slow station, but it can also reflect the normal cost
+of that workout. Compare the shares with the race cohort before calling one a
+personal weakness.</p>
 
 
 

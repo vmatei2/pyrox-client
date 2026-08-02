@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="HYROX race results as data. A Python client, a REST API, and a public MCP server so you can analyse HYROX splits, rankings and distributions in pandas or just ask an AI assistant.">
+        <meta name="description" content="HYROX race results for Python and MCP. Load Parquet files into pandas or query the public reporting server without an account or API key.">
       
       
         <meta name="author" content="Vlad Matei">
@@ -24,7 +24,7 @@
         
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../assets/pyrox-mark.svg">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
@@ -77,11 +77,11 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Pyrox">
   <meta property="og:title" content="Getting started - Pyrox">
-  <meta property="og:description" content="HYROX race results as data. A Python client, a REST API, and a public MCP server so you can analyse HYROX splits, rankings and distributions in pandas or just ask an AI assistant.">
+  <meta property="og:description" content="HYROX race results for Python and MCP. Load Parquet files into pandas or query the public reporting server without an account or API key.">
   <meta property="og:url" content="https://vmatei2.github.io/pyrox-client/quickstart/">
-  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Getting started - Pyrox">
-  <meta name="twitter:description" content="HYROX race results as data. A Python client, a REST API, and a public MCP server so you can analyse HYROX splits, rankings and distributions in pandas or just ask an AI assistant.">
+  <meta name="twitter:description" content="HYROX race results for Python and MCP. Load Parquet files into pandas or query the public reporting server without an account or API key.">
 
   </head>
   
@@ -118,8 +118,7 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href=".." title="Pyrox" class="md-header__button md-logo" aria-label="Pyrox" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="../assets/pyrox-mark.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -272,18 +271,17 @@
   
   
   
-    
-    
-      <li class="md-tabs__item">
-        <a href="../mcp/" class="md-tabs__link">
-          
+    <li class="md-tabs__item">
+      <a href="../mcp/" class="md-tabs__link">
+        
   
   
-  Ask an AI
+    
+  
+  MCP server
 
-        </a>
-      </li>
-    
+      </a>
+    </li>
   
 
       
@@ -373,8 +371,7 @@
   <label class="md-nav__title" for="__drawer">
     <a href=".." title="Pyrox" class="md-nav__button md-logo" aria-label="Pyrox" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="../assets/pyrox-mark.svg" alt="logo">
 
     </a>
     Pyrox
@@ -427,58 +424,6 @@
   
   
   
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
-        
-          
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Ask an AI
-  
-
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2">
-            <span class="md-nav__icon md-icon"></span>
-            
-  
-    Ask an AI
-  
-
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
     <li class="md-nav__item">
       <a href="../mcp/" class="md-nav__link">
         
@@ -496,14 +441,6 @@
   
 
       </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
     </li>
   
 
@@ -634,10 +571,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#install" class="md-nav__link">
+  <a href="#install-from-pypi" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Install
+        Install from PyPI
       
     </span>
   </a>
@@ -645,10 +582,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#create-a-client" class="md-nav__link">
+  <a href="#find-an-available-race" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Create a client
+        Find an available race
       
     </span>
   </a>
@@ -656,10 +593,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#discover-races" class="md-nav__link">
+  <a href="#load-a-race" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Discover races
+        Load a race
       
     </span>
   </a>
@@ -667,10 +604,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#load-a-single-race" class="md-nav__link">
+  <a href="#load-several-races" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Load a single race
+        Load several races
       
     </span>
   </a>
@@ -678,10 +615,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#load-a-season-parallelized" class="md-nav__link">
+  <a href="#find-one-athlete" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Load a season (parallelized)
+        Find one athlete
       
     </span>
   </a>
@@ -689,21 +626,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pull-a-specific-athlete" class="md-nav__link">
+  <a href="#where-to-go-next" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pull a specific athlete
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#next" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Next
+        Where to go next
       
     </span>
   </a>
@@ -1093,34 +1019,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../faq/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    FAQ
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1244,10 +1142,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#install" class="md-nav__link">
+  <a href="#install-from-pypi" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Install
+        Install from PyPI
       
     </span>
   </a>
@@ -1255,10 +1153,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#create-a-client" class="md-nav__link">
+  <a href="#find-an-available-race" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Create a client
+        Find an available race
       
     </span>
   </a>
@@ -1266,10 +1164,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#discover-races" class="md-nav__link">
+  <a href="#load-a-race" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Discover races
+        Load a race
       
     </span>
   </a>
@@ -1277,10 +1175,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#load-a-single-race" class="md-nav__link">
+  <a href="#load-several-races" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Load a single race
+        Load several races
       
     </span>
   </a>
@@ -1288,10 +1186,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#load-a-season-parallelized" class="md-nav__link">
+  <a href="#find-one-athlete" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Load a season (parallelized)
+        Find one athlete
       
     </span>
   </a>
@@ -1299,21 +1197,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#pull-a-specific-athlete" class="md-nav__link">
+  <a href="#where-to-go-next" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pull a specific athlete
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#next" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Next
+        Where to go next
       
     </span>
   </a>
@@ -1346,51 +1233,65 @@
 
 
 <h1 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h1>
-<h2 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h2>
-<p>Using uv:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv pip install -e .
+<h2 id="install-from-pypi">Install from PyPI<a class="headerlink" href="#install-from-pypi" title="Permanent link">&para;</a></h2>
+<p>With uv:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>pyrox-client
 </span></code></pre></div>
-<p>Or from PyPI:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv pip install pyrox-client
+<p>Plain pip works too:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>pyrox-client
 </span></code></pre></div>
-<h2 id="create-a-client">Create a client<a class="headerlink" href="#create-a-client" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>import pyrox
+<p>To edit the client itself, clone the repository and run <code>uv pip install -e .</code>
+inside its virtual environment.</p>
+<h2 id="find-an-available-race">Find an available race<a class="headerlink" href="#find-an-available-race" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyrox</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>client = pyrox.PyroxClient()
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">client</span> <span class="o">=</span> <span class="n">pyrox</span><span class="o">.</span><span class="n">PyroxClient</span><span class="p">()</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">races</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">list_races</span><span class="p">(</span><span class="n">season</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nb">print</span><span class="p">(</span><span class="n">races</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
 </span></code></pre></div>
-<h2 id="discover-races">Discover races<a class="headerlink" href="#discover-races" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>races = client.list_races(season=7)
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>print(races.head())
+<p><code>list_races()</code> reads the published manifest, so use it rather than guessing a
+location slug or year. Smaller helpers return plain Python lists:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">seasons</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">list_seasons</span><span class="p">()</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">locations</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">list_locations</span><span class="p">(</span><span class="n">season</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">years</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">list_years</span><span class="p">(</span><span class="n">season</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="s2">&quot;london&quot;</span><span class="p">)</span>
 </span></code></pre></div>
-<p>For lightweight notebook discovery, use the manifest-backed helpers:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>seasons = client.list_seasons()
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>locations = client.list_locations(season=8)
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>years = client.list_years(season=8, location=&quot;london&quot;)
+<h2 id="load-a-race">Load a race<a class="headerlink" href="#load-a-race" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">london</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_race</span><span class="p">(</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">season</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">location</span><span class="o">=</span><span class="s2">&quot;london&quot;</span><span class="p">,</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">gender</span><span class="o">=</span><span class="s2">&quot;male&quot;</span><span class="p">,</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">division</span><span class="o">=</span><span class="s2">&quot;open&quot;</span><span class="p">,</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="p">)</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">london</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="nb">print</span><span class="p">(</span><span class="n">london</span><span class="p">[[</span><span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;division&quot;</span><span class="p">,</span> <span class="s2">&quot;total_time&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
 </span></code></pre></div>
-<h2 id="load-a-single-race">Load a single race<a class="headerlink" href="#load-a-single-race" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>london = client.get_race(
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    season=7,
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    location=&quot;london&quot;,
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    gender=&quot;male&quot;,
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    division=&quot;open&quot;,
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>)
+<p>The return value is a <code>pandas.DataFrame</code>. Time columns use numeric minutes, and
+station names appear as columns such as <code>sledPush_time</code> and <code>wallBalls_time</code>.
+The first call downloads the race file; later calls can reuse the local cache.</p>
+<h2 id="load-several-races">Load several races<a class="headerlink" href="#load-several-races" title="Permanent link">&para;</a></h2>
+<p><code>get_season()</code> downloads races concurrently. Pass <code>locations</code> when you only
+need a subset:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">season7</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_season</span><span class="p">(</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">season</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">locations</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;london&quot;</span><span class="p">,</span> <span class="s2">&quot;barcelona&quot;</span><span class="p">],</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">division</span><span class="o">=</span><span class="s2">&quot;open&quot;</span><span class="p">,</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="p">)</span>
 </span></code></pre></div>
-<h2 id="load-a-season-parallelized">Load a season (parallelized)<a class="headerlink" href="#load-a-season-parallelized" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>season7 = client.get_season(season=7, locations=[&quot;london&quot;, &quot;barcelona&quot;])
+<h2 id="find-one-athlete">Find one athlete<a class="headerlink" href="#find-one-athlete" title="Permanent link">&para;</a></h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">athlete</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_athlete_in_race</span><span class="p">(</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">season</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">location</span><span class="o">=</span><span class="s2">&quot;london&quot;</span><span class="p">,</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">athlete_name</span><span class="o">=</span><span class="s2">&quot;surname, name&quot;</span><span class="p">,</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="p">)</span>
 </span></code></pre></div>
-<h2 id="pull-a-specific-athlete">Pull a specific athlete<a class="headerlink" href="#pull-a-specific-athlete" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>athlete = client.get_athlete_in_race(
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    season=7,
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    location=&quot;london&quot;,
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    athlete_name=&quot;surname, name&quot;,
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>)
-</span></code></pre></div>
-<h2 id="next">Next<a class="headerlink" href="#next" title="Permanent link">&para;</a></h2>
-<ul>
-<li>See Filtering for precise time-window queries.</li>
-<li>See Data Model to understand columns and types.</li>
-<li>See Analytics and Reproducible Research for notes of race-analysis workflows.</li>
-</ul>
+<p>The name match ignores case. It can still return several rows, so inspect the
+result before selecting one.</p>
+<h2 id="where-to-go-next">Where to go next<a class="headerlink" href="#where-to-go-next" title="Permanent link">&para;</a></h2>
+<p><a href="../filters/">Filtering</a> explains strict time windows and division filters.
+<a href="../data-model/">Data model</a> lists the common columns, while <a href="../analytics/">Analytics</a>
+contains notebook-sized calculations. For cache expiry and refresh controls,
+read <a href="../caching/">Caching</a>.</p>
 
 
 
