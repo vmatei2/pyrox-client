@@ -1,33 +1,24 @@
-/* Pyrox docs theme.
-   Palette follows the PYROX wordmark: deep navy canvas, electric blue accent.
-   Material drives light/dark via [data-md-color-scheme]; every token below is
-   defined for both so the landing page reads well either way. */
+/* Pyrox documentation theme. */
 
 :root {
-  --pyrox-blue: #0a6dd8;
-  --pyrox-blue-bright: #3b9dff;
-  --pyrox-cyan: #22b8cf;
-
-  --pyrox-hero-ink: #f2f6ff;
-  --pyrox-hero-muted: #a8bbd8;
-  --pyrox-hero-line: rgba(156, 177, 214, 0.22);
+  --pyrox-blue: #1677d2;
+  --pyrox-blue-light: #63b3ff;
+  --pyrox-navy: #091525;
+  --pyrox-hero-ink: #f4f7fb;
+  --pyrox-hero-muted: #bcc9da;
 }
-
-/* ---------- Material colour bindings ---------- */
 
 [data-md-color-scheme="default"] {
   --md-primary-fg-color: #0a2540;
   --md-primary-fg-color--light: #123a5e;
   --md-primary-fg-color--dark: #061a2c;
-  --md-accent-fg-color: var(--pyrox-blue);
-  --md-typeset-a-color: var(--pyrox-blue);
-
+  --md-accent-fg-color: #086ac4;
+  --md-typeset-a-color: #086ac4;
   --pyrox-surface: #ffffff;
-  --pyrox-surface-soft: #f4f7fb;
-  --pyrox-border: rgba(10, 37, 64, 0.12);
-  --pyrox-ink: #0a2540;
-  --pyrox-muted: #4a5b70;
-  --pyrox-shadow: 0 18px 40px rgba(10, 37, 64, 0.1);
+  --pyrox-surface-soft: #f5f7fa;
+  --pyrox-border: #d8e0e8;
+  --pyrox-ink: #102a43;
+  --pyrox-muted: #526579;
 }
 
 [data-md-color-scheme="slate"] {
@@ -35,195 +26,133 @@
   --md-primary-fg-color: #0a0f1a;
   --md-primary-fg-color--light: #16223a;
   --md-primary-fg-color--dark: #05090f;
-  --md-accent-fg-color: var(--pyrox-blue-bright);
-  --md-typeset-a-color: var(--pyrox-blue-bright);
+  --md-accent-fg-color: #63b3ff;
+  --md-typeset-a-color: #63b3ff;
   --md-default-bg-color: #0a0f1a;
-
   --pyrox-surface: #111a2b;
-  --pyrox-surface-soft: #0e1524;
-  --pyrox-border: rgba(156, 177, 214, 0.18);
+  --pyrox-surface-soft: #0e1726;
+  --pyrox-border: #2b3a50;
   --pyrox-ink: #f2f6ff;
-  --pyrox-muted: #9eb0cc;
-  --pyrox-shadow: 0 24px 60px rgba(1, 5, 14, 0.5);
+  --pyrox-muted: #aebdd0;
 }
 
-/* ---------- Hero ---------- */
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  width: 1.7rem;
+  height: 1.7rem;
+}
+
+/* Home hero */
 
 .pyrox-hero {
-  position: relative;
-  overflow: hidden;
-  background:
-    radial-gradient(
-      circle at 12% -10%,
-      rgba(59, 157, 255, 0.28),
-      transparent 55%
-    ),
-    radial-gradient(circle at 88% 0%, rgba(34, 184, 207, 0.18), transparent 50%),
-    linear-gradient(165deg, #0d1626 0%, #0a0f1a 60%, #070b13 100%);
+  background: var(--pyrox-navy);
+  border-bottom: 1px solid #22334a;
   color: var(--pyrox-hero-ink);
-  padding: 4.5rem 0 4rem;
-}
-
-/* Faint grid, evokes a split/pace chart without needing an image. */
-.pyrox-hero::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(var(--pyrox-hero-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--pyrox-hero-line) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: radial-gradient(circle at 50% 0%, #000 0%, transparent 72%);
-  -webkit-mask-image: radial-gradient(circle at 50% 0%, #000 0%, transparent 72%);
-  opacity: 0.5;
-  pointer-events: none;
+  padding: 3.8rem 0 3.2rem;
 }
 
 .pyrox-hero__inner {
-  position: relative;
-  z-index: 1;
-  max-width: 61rem;
+  max-width: 56rem;
   margin: 0 auto;
   padding: 0 1.2rem;
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  gap: 3rem;
-  align-items: center;
-}
-
-/* Grid children must be allowed to shrink below their content width, or the
-   monospace tool-call string pushes the whole page into horizontal scroll. */
-.pyrox-hero__inner > * {
-  min-width: 0;
 }
 
 .pyrox-hero__eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.18em;
+  margin: 0 0 1rem;
+  color: var(--pyrox-blue-light);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--pyrox-hero-muted);
-  border: 1px solid var(--pyrox-hero-line);
-  border-radius: 999px;
-  padding: 0.32rem 0.8rem;
-  margin-bottom: 1.2rem;
-}
-
-/* Decorative bullet. Deliberately not a green "status: up" light — the page
-   makes no uptime claim it cannot back. */
-.pyrox-hero__eyebrow::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--pyrox-blue-bright);
-  box-shadow: 0 0 0 3px rgba(59, 157, 255, 0.2);
 }
 
 .pyrox-hero h1 {
-  font-size: 2.75rem;
-  line-height: 1.1;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--pyrox-hero-ink);
+  max-width: 19ch;
   margin: 0 0 1rem;
-  max-width: 15ch;
+  color: var(--pyrox-hero-ink);
+  font-size: clamp(2.15rem, 5vw, 3.15rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
   text-wrap: balance;
 }
 
-.pyrox-hero h1 em {
-  font-style: normal;
-  background: linear-gradient(
-    100deg,
-    var(--pyrox-blue-bright),
-    var(--pyrox-cyan)
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
 .pyrox-hero__lede {
-  font-size: 1.06rem;
-  line-height: 1.65;
+  max-width: 45rem;
+  margin: 0 0 1.6rem;
   color: var(--pyrox-hero-muted);
-  margin: 0 0 1.8rem;
-  max-width: 34rem;
+  font-size: 1.08rem;
+  line-height: 1.65;
 }
 
 .pyrox-hero__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.7rem;
-  margin-bottom: 1.4rem;
+  gap: 0.75rem;
+  margin-bottom: 1.15rem;
 }
 
 .pyrox-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.72rem 1.35rem;
-  border-radius: 999px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  min-height: 2.7rem;
+  padding: 0.65rem 1.15rem;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  font-size: 0.9rem;
+  font-weight: 700;
   text-decoration: none !important;
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease,
-    background 0.18s ease;
 }
 
 .pyrox-btn--primary {
-  background: linear-gradient(
-    100deg,
-    var(--pyrox-blue-bright),
-    var(--pyrox-blue)
-  );
+  background: var(--pyrox-blue);
   color: #ffffff !important;
-  box-shadow: 0 12px 28px rgba(10, 109, 216, 0.35);
+}
+
+.pyrox-btn--primary:hover {
+  background: #0e69bd;
 }
 
 .pyrox-btn--ghost {
-  background: rgba(255, 255, 255, 0.06);
+  border-color: #50647e;
+  background: transparent;
   color: var(--pyrox-hero-ink) !important;
-  border: 1px solid var(--pyrox-hero-line);
-}
-
-.pyrox-btn:hover {
-  transform: translateY(-2px);
 }
 
 .pyrox-btn--ghost:hover {
-  background: rgba(255, 255, 255, 0.12);
+  border-color: #8295ad;
+  background: #132238;
+}
+
+.pyrox-btn:focus-visible,
+.md-typeset details.question > summary:focus-visible {
+  outline: 3px solid #9ad1ff;
+  outline-offset: 3px;
 }
 
 .pyrox-hero__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.2rem;
-  font-size: 0.76rem;
+  gap: 0.7rem 1.2rem;
   color: var(--pyrox-hero-muted);
+  font-size: 0.875rem;
 }
 
 .pyrox-hero__meta code {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
-  padding: 0.15rem 0.45rem;
+  border: 1px solid #344861;
+  border-radius: 4px;
+  background: #111f32;
   color: var(--pyrox-hero-ink);
-  font-size: 0.95em;
+  padding: 0.15rem 0.4rem;
 }
 
 .pyrox-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.8rem;
-  margin: 1.8rem 0 0;
-  padding-top: 1.4rem;
-  border-top: 1px solid var(--pyrox-hero-line);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 2rem 0 0;
+  padding-top: 1.35rem;
+  border-top: 1px solid #344861;
 }
 
 .pyrox-stats div {
@@ -231,252 +160,62 @@
 }
 
 .pyrox-stats dt {
-  font-size: 1.45rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
   color: var(--pyrox-hero-ink);
-  line-height: 1.1;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
 }
 
 .pyrox-stats dd {
-  margin: 0.15rem 0 0;
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  margin: 0.2rem 0 0;
   color: var(--pyrox-hero-muted);
+  font-size: 0.875rem;
+  line-height: 1.35;
 }
 
-/* ---------- Hero chat mock ---------- */
+/* Home content */
 
-.pyrox-chat {
-  background: rgba(12, 20, 35, 0.82);
-  border: 1px solid var(--pyrox-hero-line);
-  border-radius: 16px;
-  box-shadow: 0 30px 70px rgba(1, 5, 14, 0.6);
-  overflow: hidden;
-}
-
-.pyrox-chat__bar {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.7rem 0.95rem;
-  border-bottom: 1px solid var(--pyrox-hero-line);
-  font-size: 0.7rem;
-  color: var(--pyrox-hero-muted);
-}
-
-.pyrox-chat__dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: rgba(156, 177, 214, 0.35);
-}
-
-.pyrox-chat__label {
-  margin-left: auto;
-  letter-spacing: 0.06em;
-}
-
-.pyrox-chat__body {
-  padding: 1.1rem;
+.md-typeset .pyrox-split {
   display: grid;
-  gap: 0.85rem;
-}
-
-.pyrox-msg {
-  font-size: 0.83rem;
-  line-height: 1.55;
-  border-radius: 12px;
-  padding: 0.7rem 0.9rem;
-  margin: 0;
-  overflow-wrap: anywhere;
-}
-
-.pyrox-msg--user {
-  background: rgba(59, 157, 255, 0.16);
-  border: 1px solid rgba(59, 157, 255, 0.3);
-  color: var(--pyrox-hero-ink);
-}
-
-.pyrox-msg--tool {
-  font-family: var(--md-code-font-family, monospace);
-  font-size: 0.72rem;
-  color: #7dd3fc;
-  background: rgba(125, 211, 252, 0.08);
-  border: 1px dashed rgba(125, 211, 252, 0.28);
-  padding: 0.45rem 0.7rem;
-}
-
-.pyrox-msg--reply {
-  background: rgba(255, 255, 255, 0.045);
-  border: 1px solid var(--pyrox-hero-line);
-  color: var(--pyrox-hero-muted);
-}
-
-.pyrox-msg--reply strong {
-  color: var(--pyrox-hero-ink);
-}
-
-/* ---------- Sections on the landing page ---------- */
-
-.md-typeset .pyrox-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
   margin: 1.4rem 0 2rem;
 }
 
-.md-typeset .pyrox-card {
-  background: var(--pyrox-surface);
-  border: 1px solid var(--pyrox-border);
-  border-radius: 14px;
-  padding: 1.2rem;
-  box-shadow: var(--pyrox-shadow);
-  transition:
-    transform 0.18s ease,
-    border-color 0.18s ease;
-}
-
-.md-typeset .pyrox-card:hover {
-  transform: translateY(-3px);
-  border-color: var(--md-accent-fg-color);
-}
-
-.md-typeset .pyrox-card h3 {
-  margin: 0 0 0.4rem;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--pyrox-ink);
-}
-
-.md-typeset .pyrox-card p {
-  margin: 0;
-  font-size: 0.8rem;
-  line-height: 1.6;
-  color: var(--pyrox-muted);
-}
-
-.md-typeset .pyrox-card code {
-  font-size: 0.85em;
-}
-
-/* Three questions, expandable to the code that answers them.
-   Material treats every bare <details> as an admonition by default: a blue
-   accent, an absolutely-positioned icon reserving left padding, and its own
-   chevron icon. All of that has to be explicitly cancelled, not just
-   overridden by higher specificity, because the icons are separate pseudo-
-   elements layered independently of the text padding. */
-.md-typeset .pyrox-queries {
-  display: grid;
-  gap: 0.6rem;
-  margin: 1.2rem 0 2rem;
-}
-
-.md-typeset details.pyrox-query {
-  background-color: var(--pyrox-surface-soft);
-  border: 1px solid var(--pyrox-border);
-  border-left: 3px solid var(--md-accent-fg-color);
-  border-radius: 10px;
-  box-shadow: none;
-  padding: 0;
-  overflow: hidden;
-}
-
-.md-typeset details.pyrox-query > summary {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  background-color: transparent;
-  border: none;
-  border-radius: 0;
-  margin: 0;
-  padding: 0.75rem 1rem;
-  min-height: 0;
-  font-size: 0.85rem;
-  font-weight: 500;
-  line-height: 1.5;
-  color: var(--pyrox-ink);
-}
-
-.md-typeset details.pyrox-query > summary:hover {
-  color: var(--md-accent-fg-color);
-}
-
-.md-typeset details.pyrox-query > summary::marker,
-.md-typeset details.pyrox-query > summary::-webkit-details-marker {
-  display: none;
-}
-
-/* Cancel Material's absolutely-positioned admonition icon. */
-.md-typeset details.pyrox-query > summary::before {
-  content: none;
-}
-
-/* Replace Material's mask-image chevron with a plain border triangle, laid
-   out as a flex item (not absolutely positioned) so `margin-left: auto`
-   pins it to the right edge regardless of question length. */
-.md-typeset details.pyrox-query > summary::after {
-  content: "";
-  position: static;
-  background: none;
-  mask-image: none;
-  -webkit-mask-image: none;
-  flex-shrink: 0;
-  margin-left: auto;
-  width: 7px;
-  height: 7px;
-  border-right: 2px solid var(--pyrox-muted);
-  border-bottom: 2px solid var(--pyrox-muted);
-  transform: rotate(-45deg);
-  transition: transform 0.15s ease;
-}
-
-.md-typeset details.pyrox-query[open] > summary::after {
-  transform: rotate(45deg);
-}
-
-.md-typeset details.pyrox-query > .highlight {
-  margin: 0;
-  border-top: 1px solid var(--pyrox-border);
-}
-
-.md-typeset details.pyrox-query > .highlight pre {
-  margin: 0;
-  border-radius: 0;
-}
-
-.md-typeset details.pyrox-query > :last-child {
-  margin-bottom: 0;
-}
-
-/* Split panel: two routes in, side by side. */
-.md-typeset .pyrox-split {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
-  gap: 1.2rem;
-  margin: 1.4rem 0 2rem;
-}
-
 .md-typeset .pyrox-split > div {
-  background: var(--pyrox-surface);
   border: 1px solid var(--pyrox-border);
-  border-radius: 14px;
-  padding: 1.3rem;
-  box-shadow: var(--pyrox-shadow);
+  border-radius: 8px;
+  background: var(--pyrox-surface);
+  padding: 1.25rem;
 }
 
 .md-typeset .pyrox-split h3 {
   margin-top: 0;
 }
 
-.md-typeset .pyrox-split pre {
+.md-typeset .pyrox-split pre,
+.md-typeset .pyrox-split p:last-child {
   margin-bottom: 0;
 }
 
-/* Material renders `question` admonitions in green; bring the FAQ into the
-   brand palette so the landing page reads as one piece. */
+.md-typeset .pyrox-facts {
+  margin: 1rem 0 1.5rem;
+}
+
+.md-typeset .pyrox-facts > ul {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 2rem;
+  padding-left: 1.2rem;
+}
+
+.md-typeset .pyrox-facts li {
+  margin: 0;
+  padding: 0.9rem 0;
+  border-top: 1px solid var(--pyrox-border);
+}
+
 .md-typeset .admonition.question,
 .md-typeset details.question {
   border-color: var(--pyrox-border);
@@ -485,8 +224,8 @@
 
 .md-typeset .question > .admonition-title,
 .md-typeset .question > summary {
-  background-color: var(--pyrox-surface-soft);
-  font-weight: 600;
+  background: var(--pyrox-surface-soft);
+  font-weight: 700;
 }
 
 .md-typeset .question > .admonition-title::before,
@@ -494,26 +233,8 @@
   background-color: var(--md-accent-fg-color);
 }
 
-.md-typeset .question > .admonition-title::after,
-.md-typeset .question > summary::after {
-  color: var(--md-accent-fg-color);
-}
+/* The home template supplies its h1 and doesn't use side navigation. */
 
-/* Disclaimer strip. */
-.md-typeset .pyrox-note {
-  border: 1px solid var(--pyrox-border);
-  border-radius: 12px;
-  background: var(--pyrox-surface-soft);
-  padding: 0.9rem 1.1rem;
-  font-size: 0.78rem;
-  line-height: 1.6;
-  color: var(--pyrox-muted);
-}
-
-/* ---------- Landing page layout tweaks ---------- */
-
-/* The homepage hides nav and TOC; give the content room to breathe.
-   Keyed off the hero, which only ever renders on the landing page. */
 body:has(.pyrox-hero) .md-main__inner {
   margin-top: 0;
 }
@@ -524,8 +245,8 @@ body:has(.pyrox-hero) .md-content__inner {
   padding-top: 2.2rem;
 }
 
-/* The hero already carries the page's only h1; drop the generated one. */
-body:has(.pyrox-hero) .md-content__inner > h1 {
+body:has(.pyrox-hero) .md-content__inner > h1,
+body:has(.pyrox-hero) .md-content__button {
   display: none;
 }
 
@@ -533,58 +254,28 @@ body:has(.pyrox-hero) .md-content__inner > h2:first-of-type {
   margin-top: 0;
 }
 
-body:has(.pyrox-hero) .md-content__button {
-  display: none;
-}
-
-/* ---------- Responsive ---------- */
-
-@media screen and (max-width: 76.1875em) {
-  .pyrox-hero__inner {
-    grid-template-columns: 1fr;
-    gap: 2.2rem;
-  }
-
-  .pyrox-hero h1 {
-    font-size: 2.3rem;
-  }
-}
-
 @media screen and (max-width: 44.9375em) {
   .pyrox-hero {
-    padding: 3rem 0 2.6rem;
-  }
-
-  .pyrox-hero h1 {
-    font-size: 1.95rem;
-    max-width: none;
+    padding: 2.8rem 0 2.4rem;
   }
 
   .pyrox-hero__lede {
-    font-size: 0.98rem;
+    font-size: 1rem;
   }
 
-  .pyrox-hero__eyebrow {
-    letter-spacing: 0.12em;
+  .pyrox-stats,
+  .md-typeset .pyrox-split,
+  .md-typeset .pyrox-facts > ul {
+    grid-template-columns: 1fr;
   }
 
   .pyrox-stats {
-    gap: 1.1rem 1.6rem;
-  }
-
-  .pyrox-stats dt {
-    font-size: 1.25rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .pyrox-btn,
-  .md-typeset .pyrox-card {
-    transition: none;
-  }
-
-  .pyrox-btn:hover,
-  .md-typeset .pyrox-card:hover {
-    transform: none;
+@media (forced-colors: active) {
+  .pyrox-btn {
+    border-color: ButtonText;
   }
 }

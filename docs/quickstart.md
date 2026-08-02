@@ -1,62 +1,75 @@
 # Quickstart
 
-## Install
+## Install from PyPI
 
-Using uv:
+With uv:
 
-```commandline
-uv pip install -e .
-```
-
-Or from PyPI:
-
-```commandline
+```bash
 uv pip install pyrox-client
 ```
 
-## Create a client
+Plain pip works too:
 
-```commandline
+```bash
+pip install pyrox-client
+```
+
+To edit the client itself, clone the repository and run `uv pip install -e .`
+inside its virtual environment.
+
+## Find an available race
+
+```python
 import pyrox
 
 client = pyrox.PyroxClient()
-```
-
-## Discover races
-
-```commandline
 races = client.list_races(season=7)
 print(races.head())
 ```
 
-For lightweight notebook discovery, use the manifest-backed helpers:
+`list_races()` reads the published manifest, so use it rather than guessing a
+location slug or year. Smaller helpers return plain Python lists:
 
-```commandline
+```python
 seasons = client.list_seasons()
 locations = client.list_locations(season=8)
 years = client.list_years(season=8, location="london")
 ```
 
-## Load a single race
+## Load a race
 
-```commandline
+```python
 london = client.get_race(
     season=7,
     location="london",
     gender="male",
     division="open",
 )
+
+print(london.shape)
+print(london[["name", "division", "total_time"]].head())
 ```
 
-## Load a season (parallelized)
+The return value is a `pandas.DataFrame`. Time columns use numeric minutes, and
+station names appear as columns such as `sledPush_time` and `wallBalls_time`.
+The first call downloads the race file; later calls can reuse the local cache.
 
-```commandline
-season7 = client.get_season(season=7, locations=["london", "barcelona"])
+## Load several races
+
+`get_season()` downloads races concurrently. Pass `locations` when you only
+need a subset:
+
+```python
+season7 = client.get_season(
+    season=7,
+    locations=["london", "barcelona"],
+    division="open",
+)
 ```
 
-## Pull a specific athlete
+## Find one athlete
 
-```commandline
+```python
 athlete = client.get_athlete_in_race(
     season=7,
     location="london",
@@ -64,8 +77,12 @@ athlete = client.get_athlete_in_race(
 )
 ```
 
-## Next
+The name match ignores case. It can still return several rows, so inspect the
+result before selecting one.
 
-- See Filtering for precise time-window queries.
-- See Data Model to understand columns and types.
-- See Analytics and Reproducible Research for notes of race-analysis workflows.
+## Where to go next
+
+[Filtering](filters.md) explains strict time windows and division filters.
+[Data model](data-model.md) lists the common columns, while [Analytics](analytics.md)
+contains notebook-sized calculations. For cache expiry and refresh controls,
+read [Caching](caching.md).

@@ -1,8 +1,7 @@
 site_name: Pyrox
 site_description: >-
-  HYROX race results as data. A Python client, a REST API, and a public MCP
-  server so you can analyse HYROX splits, rankings and distributions in pandas
-  or just ask an AI assistant.
+  HYROX race results for Python and MCP. Load Parquet files into pandas or
+  query the public reporting server without an account or API key.
 site_url: https://vmatei2.github.io/pyrox-client/
 site_author: Vlad Matei
 repo_url: https://github.com/vmatei2/pyrox-client
@@ -16,6 +15,8 @@ theme:
   name: material
   custom_dir: overrides
   language: en
+  logo: assets/pyrox-mark.svg
+  favicon: assets/pyrox-mark.svg
   font:
     text: Inter
     code: JetBrains Mono
@@ -52,8 +53,7 @@ theme:
 
 nav:
   - Home: index.md
-  - Ask an AI:
-      - MCP server: mcp.md
+  - MCP server: mcp.md
   - Python client:
       - Getting started: quickstart.md
       - Filtering: filters.md
@@ -67,7 +67,6 @@ nav:
       - The dataset: dataset.md
       - Client API: api.md
       - Errors: errors.md
-      - FAQ: faq.md
   - About:
       - Privacy policy: privacy.md
 
@@ -122,6 +121,7 @@ extra:
   generator: false
 
 not_in_nav: |
+  faq.md
   duckdb-stabilization.md
   adr/
   maintainers/

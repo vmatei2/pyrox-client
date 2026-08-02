@@ -7,72 +7,45 @@
   {{ super() }}
   <section class="pyrox-hero">
     <div class="pyrox-hero__inner">
-      <div>
-        <p class="pyrox-hero__eyebrow">Public MCP server &middot; read-only &middot; open source</p>
-        <h1>HYROX race results data, <em>free and query-ready</em></h1>
-        <p class="pyrox-hero__lede">
-          Pull any HYROX race into a pandas DataFrame, or just ask your AI
-          assistant. Every season and division, down to each station split,
-          already parsed into minutes; no API key, MIT licensed.
-        </p>
-        <div class="pyrox-hero__actions">
-          <a class="pyrox-btn pyrox-btn--primary" href="{{ 'mcp/' | url }}">
-            Connect the MCP server
-          </a>
-          <a class="pyrox-btn pyrox-btn--ghost" href="{{ 'quickstart/' | url }}">
-            Start with Python
-          </a>
-        </div>
-        <div class="pyrox-hero__meta">
-          <span><code>pip install pyrox-client</code></span>
-          <span>MIT licensed</span>
-          <span>Read-only &middot; no API key</span>
-        </div>
-
-        {#- Measured from the published manifest, 2026-07-30. Floor values:
-            they only grow, so "1.2M+" stays true between refreshes. -#}
-        <dl class="pyrox-stats">
-          <div>
-            <dt>1.2M+</dt>
-            <dd>race results</dd>
-          </div>
-          <div>
-            <dt>316</dt>
-            <dd>races</dd>
-          </div>
-          <div>
-            <dt>134</dt>
-            <dd>locations</dd>
-          </div>
-          <div>
-            <dt>2018&ndash;2026</dt>
-            <dd>seasons 1&ndash;9</dd>
-          </div>
-        </dl>
+      <p class="pyrox-hero__eyebrow">Python client &middot; public MCP server</p>
+      <h1>HYROX results data for Python and MCP</h1>
+      <p class="pyrox-hero__lede">
+        Pyrox exposes more than 1.2 million published result rows. Load race
+        files into pandas, or ask for rankings and race reports through the
+        public, read-only MCP server. No account or API key.
+      </p>
+      <div class="pyrox-hero__actions">
+        <a class="pyrox-btn pyrox-btn--primary" href="{{ 'mcp/' | url }}">
+          Connect MCP
+        </a>
+        <a class="pyrox-btn pyrox-btn--ghost" href="{{ 'quickstart/' | url }}">
+          Install the Python client
+        </a>
+      </div>
+      <div class="pyrox-hero__meta">
+        <code>pip install pyrox-client</code>
+        <span>MIT licensed</span>
       </div>
 
-      <div class="pyrox-chat" aria-hidden="true">
-        <div class="pyrox-chat__bar">
-          <span class="pyrox-chat__dot"></span>
-          <span class="pyrox-chat__dot"></span>
-          <span class="pyrox-chat__dot"></span>
-          <span class="pyrox-chat__label">pyrox &middot; connected</span>
+      {#- Measured from the published manifest, 2026-07-30. -#}
+      <dl class="pyrox-stats">
+        <div>
+          <dt>1.2M+</dt>
+          <dd>result rows</dd>
         </div>
-        <div class="pyrox-chat__body">
-          <p class="pyrox-msg pyrox-msg--user">
-            Where would a 62-minute open time rank overall in season 8?
-          </p>
-          <p class="pyrox-msg pyrox-msg--tool">
-            → get_rankings(season=8, division="open", gender="male",
-            target_time_min=62)
-          </p>
-          <p class="pyrox-msg pyrox-msg--reply">
-            <strong>Placement, percentile and the leaderboard around that
-            time</strong>, computed server-side across the season 8 cohort,
-            with the sample size stated so you know how much to trust it.
-          </p>
+        <div>
+          <dt>316</dt>
+          <dd>races</dd>
         </div>
-      </div>
+        <div>
+          <dt>134</dt>
+          <dd>locations</dd>
+        </div>
+        <div>
+          <dt>2018&ndash;2026</dt>
+          <dd>published seasons</dd>
+        </div>
+      </dl>
     </div>
   </section>
 {% endblock %}

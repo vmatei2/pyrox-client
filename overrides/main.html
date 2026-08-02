@@ -43,7 +43,7 @@
   <meta property="og:title" content="{{ title }}">
   <meta property="og:description" content="{{ description }}">
   <meta property="og:url" content="{{ page.canonical_url }}">
-  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="{{ title }}">
   <meta name="twitter:description" content="{{ description }}">
 
@@ -75,67 +75,6 @@
             "alternateName": "pyrox-client",
             "url": "{{ config.site_url }}",
             "description": {{ config.site_description | tojson }}
-          },
-          {
-            "@type": "FAQPage",
-            "mainEntity": [
-              {
-                "@type": "Question",
-                "name": "Is there an official HYROX API?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Not a public, documented one. HYROX publishes results through a timing portal built for looking up one athlete at a time, with no bulk export and no developer API, which is why Pyrox exists."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Do I need an API key to use Pyrox?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "No. Both the MCP server and the REST API are open and read-only. They're rate-limited to keep the load sane, but nothing asks you to sign up, paste a key or go through OAuth."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Is Pyrox affiliated with HYROX?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "No. It's an independent open-source project built on publicly available results, and it is not affiliated with or endorsed by HYROX."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Which seasons, divisions and locations does the HYROX dataset cover?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Coverage tracks the upstream dataset and grows over time, so the question is best put to the data itself: call list_filters from an AI assistant, or client.list_seasons() and client.list_locations() in Python. Divisions are open, pro, doubles, pro_doubles, relay and adaptive."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Can Claude or ChatGPT query HYROX results?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Yes; that's what the MCP server is for. Any MCP-capable client (Claude Code, Claude web and Desktop, Codex, and others) can connect to https://pyrox-api.fly.dev/mcp/ and query the dataset in plain English."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "Can I use Pyrox commercially?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "The pyrox-client code is MIT licensed, so you can use, modify and redistribute it freely, including commercially. The underlying race results are public HYROX data; Pyrox claims no ownership of it, and what you may do with that data is yours to check independently."
-                }
-              },
-              {
-                "@type": "Question",
-                "name": "What if I spot a data issue?",
-                "acceptedAnswer": {
-                  "@type": "Answer",
-                  "text": "Open an issue on the pyrox-client GitHub repo. We read every one and try to fix real problems quickly."
-                }
-              }
-            ]
           }
         ]
       }

@@ -1,60 +1,38 @@
-# Privacy Policy
+# Privacy policy
 
-Effective date: February 11, 2026
+Effective date: 1 August 2026
 
-This Privacy Policy explains how Pyrox handles information when you use the Pyrox iOS app, web UI, and related API.
+Pyrox works without user accounts. This policy covers the documentation site,
+web and iOS clients, REST API, and public MCP endpoint.
 
-## Who operates Pyrox
 
-Pyrox is an independent project. The app and API are currently served from:
+## What the Pyrox API records
 
-- App/web client: Pyrox UI
-- API endpoint: `https://pyrox-api.fly.dev`
-- Project repository: `https://github.com/vmatei2/pyrox-client`
+The API accepts athlete names, race filters and report parameters. Application
+logs record the HTTP method, route path, response status and elapsed time. They
+don't record query strings, so an athlete name sent as a query parameter isn't
+written by the Pyrox request logger.
 
-## Information we process
+The rate limiter reads the client IP supplied by Fly.io and keeps its counters
+in process memory. Pyrox doesn't write those counters to its DuckDB database or
+to a separate user database.
 
-Pyrox is designed to work without account creation.
+Fly.io may retain platform and proxy logs outside the application process. This
+repository doesn't set or control that provider retention period.
 
-We may process:
+## How request data is used
 
-- Query inputs you provide in the app (for example athlete name searches, race filters, and report parameters).
-- Technical request data needed to operate the service (for example IP address, user agent, request timestamps, and error logs).
+Pyrox uses request data to return race reports, enforce the public rate limit,
+diagnose failures and investigate abuse. It doesn't sell personal data or use
+requests for advertising profiles.
 
-We do not intentionally collect sensitive personal data, payment details, or precise location data.
-
-## How we use information
-
-We use information to:
-
-- Return requested analytics and reports.
-- Maintain service reliability, security, and performance.
-- Investigate and fix bugs or abuse.
-
-## Sharing
-
-We do not sell personal data.
-
-Data may be processed by infrastructure providers that host or operate the service (for example cloud hosting and networking providers) strictly to run Pyrox.
-
-## Data retention
-
-Operational logs and request metadata are retained only as long as reasonably needed for reliability, security, and troubleshooting, then deleted or rotated.
+The underlying race results contain public registration and timing data. Pyrox
+doesn't claim ownership of those records.
 
 ## Your choices
 
-You can stop using the app at any time. If you have a privacy request, contact us using the project support channel below.
-
-## Children's privacy
-
-Pyrox is not directed to children under 13, and we do not knowingly collect personal information from children under 13.
-
-## Changes to this policy
-
-We may update this policy from time to time. Material updates will be posted on this page with a new effective date.
-
-## Contact
-
-For privacy or support requests, use:
-
-- `https://github.com/vmatei2/pyrox-client/issues`
+You can use the Python client to read public Parquet files without sending
+queries to the hosted API. To report a privacy problem or request a correction,
+open a [GitHub issue](https://github.com/vmatei2/pyrox-client/issues). Don't put
+private information in a public issue; ask the maintainer for a private contact
+route first.

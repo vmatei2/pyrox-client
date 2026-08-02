@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-labelledby="title">
+  <title id="title">Pyrox</title>
+  <rect width="48" height="48" rx="10" fill="#091525"/>
+  <path d="M14 37V11h11.5C32.4 11 36 14.5 36 20s-3.6 9-10.5 9H20v8h-6Zm6-14h5.2c3.1 0 4.8-1 4.8-3s-1.7-3-4.8-3H20v6Z" fill="#f4f7fb"/>
+  <path d="M20 33h13" stroke="#63b3ff" stroke-width="3" stroke-linecap="round"/>
+</svg>
