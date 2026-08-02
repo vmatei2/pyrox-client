@@ -83,6 +83,12 @@ serverless access path. [`ReportingClient`](../src/pyrox/reporting.py) is an
 optional DuckDB-backed helper and supplies the connection seam reused by the
 hosted reporting service.
 
+For manifest-backed client queries, a race edition is identified by
+`(season, location, year)`. `list_races()` preserves that grain so repeated
+locations in one season remain discoverable. A year-specific `get_race()`
+returns one edition; omitting `year` intentionally concatenates every matching
+edition for that season and location.
+
 These paths have related but different schemas. Do not assume a column name
 from CDN Parquet is identical to the reporting database's canonical
 `*_time_min` columns.
@@ -134,6 +140,9 @@ business-logic implementation.
 
 - `result_id` is the stable hand-off from athlete search to race report and
   deep-dive requests. Preserve it across REST, MCP, and UI changes.
+- Python-client race discovery preserves the `(season, location, year)` grain.
+  Do not collapse repeated location names across years; callers may select one
+  edition with `year` or combine all matching editions by omitting it.
 - Reporting time values use canonical `*_time_min` columns. Friendly metric
   aliases are resolved at the reporting boundary rather than interpolated
   into SQL.

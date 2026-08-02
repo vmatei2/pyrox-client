@@ -190,22 +190,26 @@ class PyroxClient:
     def list_races(
         self, season: Optional[int] = None, force_refresh: bool = False
     ) -> pd.DataFrame:
-        """List available races"""
+        """List available race editions, preserving calendar year."""
         df = self._get_manifest(force_refresh=force_refresh)
 
         if season is not None:
             df = df[df["season"] == int(season)]
 
+        identity_columns = ["season", "location"]
+        if "year" in df.columns:
+            identity_columns.append("year")
+
         if "file_last_modified" in df.columns:
             races = (
-                df[["season", "location", "file_last_modified"]]
-                .groupby(["season", "location"], as_index=False)["file_last_modified"]
+                df[[*identity_columns, "file_last_modified"]]
+                .groupby(identity_columns, as_index=False, dropna=False)["file_last_modified"]
                 .max()
             )
         else:
-            races = df[["season", "location"]].drop_duplicates()
+            races = df[identity_columns].drop_duplicates()
 
-        return races.sort_values(["season", "location"]).reset_index(drop=True)
+        return races.sort_values(identity_columns).reset_index(drop=True)
 
     def list_seasons(self, force_refresh: bool = False) -> list[int]:
         """Return sorted season values available in the manifest."""
@@ -255,9 +259,9 @@ class PyroxClient:
                 values_by_key.setdefault(text.casefold(), text)
         return sorted(values_by_key.values(), key=str.casefold)
 
-    def _manifest_row(
+    def _manifest_rows(
         self, season: int, location: str, year: Optional[int] = None
-    ) -> pd.Series:
+    ) -> pd.DataFrame:
         df = self._get_manifest()
 
         season_mask = df["season"].eq(int(season))
@@ -267,7 +271,12 @@ class PyroxClient:
             mask &= df["year"].eq(int(year))
         if not mask.any():
             raise self._build_manifest_not_found_error(df, season, location, year)
-        return df.loc[mask].iloc[0]
+        return df.loc[mask]
+
+    def _manifest_row(
+        self, season: int, location: str, year: Optional[int] = None
+    ) -> pd.Series:
+        return self._manifest_rows(season, location, year).iloc[0]
 
     def _build_manifest_not_found_error(
         self,
@@ -373,8 +382,13 @@ class PyroxClient:
         gender: Optional[str] = None,
         division: Optional[str] = None,
     ) -> pd.DataFrame:
-        url = self._cdn_url_from_manifest(season, location, year)
-        return self._get_race_from_url(url, gender, division)
+        rows = self._manifest_rows(season, location, year)
+        frames = []
+        for _, row in rows.iterrows():
+            key = self._s3_key_from_uri(str(row["path"]))
+            url = self._join_cdn(key)
+            frames.append(self._get_race_from_url(url, gender, division))
+        return pd.concat(frames, ignore_index=True, sort=False)
 
         
     def _get_race_from_url(
@@ -585,19 +599,27 @@ class PyroxClient:
         if manifest.empty:
             raise RaceNotFound(f"No races found for season={season}")
 
-        def fetch_one(location: str) -> pd.DataFrame:
+        def fetch_one(location: str, year: Optional[int]) -> pd.DataFrame:
             return self.get_race(
                 season=season,
                 location=location,
+                year=year,
                 gender=gender,
                 division=division,
                 use_cache=use_cache,
             )
 
         frames: List[pd.DataFrame] = []
+        editions = manifest[["location"]].copy()
+        editions["year"] = manifest["year"] if "year" in manifest.columns else None
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = [
-                executor.submit(fetch_one, loc) for loc in manifest["location"].tolist()
+                executor.submit(
+                    fetch_one,
+                    location,
+                    None if pd.isna(year) else int(year),
+                )
+                for location, year in editions.itertuples(index=False, name=None)
             ]
 
             for future in as_completed(futures):

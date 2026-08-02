@@ -72,6 +72,38 @@ def test_get_race_from_s3_when_not_cache(client, sample_race_data):
     assert_frame_equal(result, expected)
 
 
+def test_get_race_without_year_combines_all_location_editions(client):
+    manifest_rows = [
+        {
+            "season": 7,
+            "location": "Paris",
+            "year": 2024,
+            "path": "s3://hyrox-results/processed/paris-2024.parquet",
+        },
+        {
+            "season": 7,
+            "location": "Paris",
+            "year": 2025,
+            "path": "s3://hyrox-results/processed/paris-2025.parquet",
+        },
+    ]
+
+    def race_for_url(url, _gender, _division):
+        year = 2024 if "2024" in url else 2025
+        return pd.DataFrame(
+            [{"name": f"Paris {year}", "total_time": "01:00:00", "year": year}]
+        )
+
+    with (
+        patch.object(client.cache, "is_fresh", return_value=False),
+        patch.object(client, "_get_manifest", return_value=pd.DataFrame(manifest_rows)),
+        patch.object(client, "_get_race_from_url", side_effect=race_for_url),
+    ):
+        result = client.get_race(season=7, location="Paris", use_cache=False)
+
+    assert result["year"].tolist() == [2024, 2025]
+
+
 def test_get_athlete_in_race(client, sample_race_data):
     """Test that athlete specific searching works as expected"""
     with patch.object(client, "get_race", return_value=sample_race_data):
@@ -162,10 +194,65 @@ def test_list_races(client):
     with patch.object(client, "_get_manifest", return_value=pd.DataFrame(manifest_rows)):
         df = client.list_races(season=6)
         expected = pd.DataFrame(
-            {"season": [6], "location": ["Cardiff"], "file_last_modified": ["2024-08-20"]}
+            {
+                "season": [6],
+                "location": ["Cardiff"],
+                "year": [float("nan")],
+                "file_last_modified": ["2024-08-20"],
+            }
         )
         #  assert the manifest has been filtered to only return the specified season
         assert_frame_equal(df, expected)
+
+
+def test_list_races_preserves_multiple_years_for_one_location(client):
+    manifest_rows = [
+        {
+            "season": 7,
+            "location": "Paris",
+            "year": 2024,
+            "path": "paris-2024",
+            "file_last_modified": "2024-11-09",
+        },
+        {
+            "season": 7,
+            "location": "Paris",
+            "year": 2025,
+            "path": "paris-2025",
+            "file_last_modified": "2025-04-18",
+        },
+    ]
+    with patch.object(client, "_get_manifest", return_value=pd.DataFrame(manifest_rows)):
+        races = client.list_races(season=7)
+
+    assert races[["location", "year"]].to_dict("records") == [
+        {"location": "Paris", "year": 2024},
+        {"location": "Paris", "year": 2025},
+    ]
+
+
+def test_get_season_fetches_each_location_year_once(client):
+    races = pd.DataFrame(
+        [
+            {"season": 7, "location": "Paris", "year": 2024},
+            {"season": 7, "location": "Paris", "year": 2025},
+        ]
+    )
+    calls = []
+
+    def get_race(*, season, location, year=None, **_kwargs):
+        calls.append((season, location, year))
+        return pd.DataFrame([{"location": location, "year": year}])
+
+    with (
+        patch.object(client.cache, "is_fresh", return_value=False),
+        patch.object(client, "list_races", return_value=races),
+        patch.object(client, "get_race", side_effect=get_race),
+    ):
+        result = client.get_season(season=7, use_cache=False)
+
+    assert set(calls) == {(7, "Paris", 2024), (7, "Paris", 2025)}
+    assert sorted(result["year"].tolist()) == [2024, 2025]
 
 
 def test_manifest_discovery_helpers_return_sorted_values(client):
