@@ -1449,7 +1449,11 @@
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>client = PyroxClient()
 </span></code></pre></div>
 <h3 id="list_racesseason-int-none-none-force_refresh-bool-false"><code>list_races(season: int | None = None, force_refresh: bool = False)</code><a class="headerlink" href="#list_racesseason-int-none-none-force_refresh-bool-false" title="Permanent link">&para;</a></h3>
-<p>Return a DataFrame of available races. Filter by season when provided.</p>
+<p>Return a DataFrame of available race editions. Each edition is identified by
+the <code>season</code>, <code>location</code>, and <code>year</code> columns, so a city that appears in two
+calendar years within one season is returned twice.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">client</span><span class="o">.</span><span class="n">list_races</span><span class="p">(</span><span class="n">season</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">&quot;location == &#39;paris&#39;&quot;</span><span class="p">)</span>
+</span></code></pre></div>
 <h3 id="list_seasonsforce_refresh-bool-false"><code>list_seasons(force_refresh: bool = False)</code><a class="headerlink" href="#list_seasonsforce_refresh-bool-false" title="Permanent link">&para;</a></h3>
 <p>Return sorted season values available in the manifest.</p>
 <h3 id="list_locationsseason-int-none-none-force_refresh-bool-false"><code>list_locations(season: int | None = None, force_refresh: bool = False)</code><a class="headerlink" href="#list_locationsseason-int-none-none-force_refresh-bool-false" title="Permanent link">&para;</a></h3>
@@ -1457,64 +1461,75 @@
 provided, results are limited to that season. Returns an empty list if no
 locations match.</p>
 <h3 id="list_years"><code>list_years(...)</code><a class="headerlink" href="#list_years" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>list_years(
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    season: int | None = None,
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    location: str | None = None,
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    force_refresh: bool = False,
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>) -&gt; list[int]
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>list_years(
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    season: int | None = None,
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    location: str | None = None,
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    force_refresh: bool = False,
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>) -&gt; list[int]
 </span></code></pre></div>
 <p>Return sorted calendar years available in the manifest. Location matching is
 case-insensitive. Returns an empty list if no years match.</p>
 <h3 id="get_race"><code>get_race(...)</code><a class="headerlink" href="#get_race" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>get_race(
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    season: int,
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    location: str,
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    year: int | None = None,
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    gender: str | None = None,
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    division: str | None = None,
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    total_time: float | tuple[float | None, float | None] | None = None,
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    use_cache: bool = True,
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>) -&gt; pd.DataFrame
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>get_race(
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    season: int,
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    location: str,
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    year: int | None = None,
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    gender: str | None = None,
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    division: str | None = None,
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    total_time: float | tuple[float | None, float | None] | None = None,
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    use_cache: bool = True,
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>) -&gt; pd.DataFrame
 </span></code></pre></div>
 <p>Key behaviors:
 - Applies server-side gender and division filters when available.
 - Converts time columns into minutes.
-- Supports strict time windows using <code>total_time</code>.</p>
+- Supports strict time windows using <code>total_time</code>.
+- With <code>year</code>, returns that specific calendar-year edition.
+- Without <code>year</code>, combines every matching edition for the location and season.</p>
+<div class="admonition note">
+<p class="admonition-title">Race editions from 0.2.7</p>
+<p>A HYROX season can span two calendar years. Use
+<code>get_race(season=7, location="paris", year=2025)</code> when you need one
+edition. Omitting <code>year</code> intentionally returns both Paris 2024 and Paris
+2025 in one DataFrame.</p>
+</div>
 <p>The supported division vocabulary is <code>open</code>, <code>pro</code>, <code>doubles</code>, <code>pro_doubles</code>,
 <code>relay</code> and <code>adaptive</code>. Which of them show up depends on what the race actually
 ran, so check <code>df["division"].unique()</code> rather than assuming.</p>
 <p>If the manifest lookup fails, <code>RaceNotFound</code> includes discovery context such as
 available seasons, available years, and close location suggestions:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>from pyrox.errors import RaceNotFound
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>try:
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    client.get_race(season=8, location=&quot;londn&quot;)
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>except RaceNotFound as exc:
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    print(exc.suggestions)
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>from pyrox.errors import RaceNotFound
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>try:
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    client.get_race(season=8, location=&quot;londn&quot;)
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>except RaceNotFound as exc:
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    print(exc.suggestions)
 </span></code></pre></div>
 <h3 id="get_athlete_in_race"><code>get_athlete_in_race(...)</code><a class="headerlink" href="#get_athlete_in_race" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>get_athlete_in_race(
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    season: int,
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    location: str,
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    athlete_name: str,
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    year: int | None = None,
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    gender: str | None = None,
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    division: str | None = None,
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    use_cache: bool = True,
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>) -&gt; pd.DataFrame
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>get_athlete_in_race(
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    season: int,
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    location: str,
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    athlete_name: str,
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    year: int | None = None,
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    gender: str | None = None,
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    division: str | None = None,
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    use_cache: bool = True,
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>) -&gt; pd.DataFrame
 </span></code></pre></div>
 <p>Case-insensitive search on the <code>name</code> column. Raises <code>AthleteNotFound</code> if no match.</p>
 <h3 id="get_season"><code>get_season(...)</code><a class="headerlink" href="#get_season" title="Permanent link">&para;</a></h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>get_season(
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    season: int,
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    locations: Iterable[str] | None = None,
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    gender: str | None = None,
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    division: str | None = None,
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    max_workers: int = 8,
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    use_cache: bool = True,
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>) -&gt; pd.DataFrame
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>get_season(
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    season: int,
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    locations: Iterable[str] | None = None,
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    gender: str | None = None,
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    division: str | None = None,
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    max_workers: int = 8,
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    use_cache: bool = True,
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>) -&gt; pd.DataFrame
 </span></code></pre></div>
-<p>Parallelized race fetching with a configurable worker pool.</p>
+<p>Parallelized race fetching with a configurable worker pool. Every available
+<code>(location, year)</code> edition is fetched once, including locations that occur in
+both calendar years of the season.</p>
 <h3 id="clear_cachepattern-str"><code>clear_cache(pattern: str = "*")</code><a class="headerlink" href="#clear_cachepattern-str" title="Permanent link">&para;</a></h3>
 <p>Clear cached items matching a glob pattern.</p>
 <h3 id="cache_info-dict"><code>cache_info() -&gt; dict</code><a class="headerlink" href="#cache_info-dict" title="Permanent link">&para;</a></h3>
