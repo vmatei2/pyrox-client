@@ -72,6 +72,44 @@ def test_get_race_from_s3_when_not_cache(client, sample_race_data):
     assert_frame_equal(result, expected)
 
 
+def test_get_race_maps_workout_summary_places_beside_their_times(client):
+    raw = pd.DataFrame(
+        [
+            {
+                "name": "Alex Athlete",
+                "work_1": "04:00",
+                "work_1_place": 1,
+                "run_1": "04:30",
+                "run_1_place": None,
+                "roxzone_time_place": 8,
+                "run_time_place": 12,
+                "best_run_lap": "03:45",
+                "best_run_lap_place": 26,
+            }
+        ]
+    )
+
+    with (
+        patch.object(client.cache, "is_fresh", return_value=False),
+        patch.object(client, "_get_race_from_cdn", return_value=raw),
+    ):
+        result = client.get_race(
+            season=9,
+            location="Bangkok",
+            use_cache=False,
+        )
+
+    row = result.iloc[0]
+    assert row["skiErg_time"] == 4.0
+    assert row["skiErg_place"] == 1
+    assert row["run1_time"] == 4.5
+    assert pd.isna(row["run1_place"])
+    assert row["roxzone_place"] == 8
+    assert row["run_place"] == 12
+    assert row["bestRunLap_time"] == 3.75
+    assert row["bestRunLap_place"] == 26
+
+
 def test_get_race_without_year_combines_all_location_editions(client):
     manifest_rows = [
         {

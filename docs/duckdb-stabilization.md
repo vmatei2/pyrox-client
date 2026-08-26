@@ -7,7 +7,7 @@ artifact on boot via `pyrox_api_service/fetch_db.py`, and refuses pointers
 whose `schema_version` is newer than `fetch_db.SUPPORTED_SCHEMA_VERSION`. The
 artifact stamps a `build_info` table (schema_version, built_at, source S3 URI).
 
-## Schema Contracts (v1)
+## Schema Contracts (v3)
 Source of truth: `scraping_code/db_build/sql_queries.py` and
 `scraping_code/db_build/ingest.py` in the `hyrox_analysis` repository.
 
@@ -29,6 +29,7 @@ stable keys and search; other fields may be NULL depending on source data.
   - `gender` VARCHAR
   - `name_raw` VARCHAR
   - `nationality` VARCHAR
+  - `source_result_id` VARCHAR
 - Time string columns (VARCHAR, nullable):
   - `roxzone_time`
   - `run1_time`, `run2_time`, `run3_time`, `run4_time`,
@@ -37,6 +38,7 @@ stable keys and search; other fields may be NULL depending on source data.
   - `skiErg_time`, `sledPush_time`, `sledPull_time`, `burpeeBroadJump_time`,
     `rowErg_time`, `farmersCarry_time`, `sandbagLunges_time`, `wallBalls_time`
   - `work_time`
+  - `bestRunLap_time`
 - Time numeric columns (DOUBLE, nullable; minutes):
   - `roxzone_time_min`
   - `run1_time_min`, `run2_time_min`, `run3_time_min`, `run4_time_min`,
@@ -46,6 +48,14 @@ stable keys and search; other fields may be NULL depending on source data.
     `burpeeBroadJump_time_min`, `rowErg_time_min`, `farmersCarry_time_min`,
     `sandbagLunges_time_min`, `wallBalls_time_min`
   - `work_time_min`
+  - `bestRunLap_time_min`
+- Workout Summary place columns (BIGINT, nullable):
+  - `roxzone_place`, `run_place`, `bestRunLap_place`
+  - `run1_place`, `run2_place`, `run3_place`, `run4_place`,
+    `run5_place`, `run6_place`, `run7_place`, `run8_place`
+  - `skiErg_place`, `sledPush_place`, `sledPull_place`,
+    `burpeeBroadJump_place`, `rowErg_place`, `farmersCarry_place`,
+    `sandbagLunges_place`, `wallBalls_place`
 
 ### athletes
 Derived from `race_results` (canonical identity).

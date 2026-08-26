@@ -91,7 +91,9 @@ edition for that season and location.
 
 These paths have related but different schemas. Do not assume a column name
 from CDN Parquet is identical to the reporting database's canonical
-`*_time_min` columns.
+`*_time_min` columns. `PyroxClient.get_race()` maps raw Workout Summary times
+and places onto paired public names such as `skiErg_time` / `skiErg_place` and
+`run1_time` / `run1_place`.
 
 ### REST reporting
 
@@ -159,7 +161,9 @@ business-logic implementation.
   connectors send Origin headers and the service is already public,
   read-only, and behind Fly HTTPS.
 - The service refuses a data artifact whose schema version is newer than
-  [`SUPPORTED_SCHEMA_VERSION`](../pyrox_api_service/fetch_db.py).
+  [`SUPPORTED_SCHEMA_VERSION`](../pyrox_api_service/fetch_db.py). It currently
+  accepts schema version 3, which adds Workout Summary place fields and Best
+  Run Lap without changing `result_id` or existing reporting columns.
 
 ## Change this here
 
