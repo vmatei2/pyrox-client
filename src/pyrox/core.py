@@ -486,13 +486,14 @@ class PyroxClient:
             ) from e
 
         # Before returning, convert station columns to their exercise names
-        df = df.rename(columns=_ct.WORK_STATION_RENAMES)
+        df = df.rename(columns=_ct.WORKOUT_SUMMARY_RENAMES)
 
         time_cols = list(_ct.WORK_STATION_RENAMES.values()) + [
             "total_time",
             "work_time",
             "roxzone_time",
             "run_time",
+            "bestRunLap_time",
         ]
 
         for col in time_cols:

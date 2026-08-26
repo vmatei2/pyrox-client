@@ -53,10 +53,11 @@ def test_parse_pointer_happy_path():
     )
 
 
-def test_parse_pointer_accepts_current_schema_v2():
-    pointer = parse_pointer(_pointer_payload(schema_version=2))
+def test_parse_pointer_accepts_current_schema_v3():
+    pointer = parse_pointer(_pointer_payload(schema_version=3))
 
-    assert pointer.schema_version == 2
+    assert SUPPORTED_SCHEMA_VERSION == 3
+    assert pointer.schema_version == 3
 
 
 @pytest.mark.parametrize("missing", ["key", "sha256", "size_bytes", "schema_version"])

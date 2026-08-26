@@ -23,3 +23,15 @@ WORK_STATION_RENAMES = {
     "run_7": "run7_time",
     "run_8": "run8_time",
 }
+
+WORKOUT_SUMMARY_RENAMES = {
+    **WORK_STATION_RENAMES,
+    **{
+        f"{source}_place": f"{target.removesuffix('_time')}_place"
+        for source, target in WORK_STATION_RENAMES.items()
+    },
+    "roxzone_time_place": "roxzone_place",
+    "run_time_place": "run_place",
+    "best_run_lap": "bestRunLap_time",
+    "best_run_lap_place": "bestRunLap_place",
+}
