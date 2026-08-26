@@ -1015,15 +1015,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#schema-contracts-v1" class="md-nav__link">
+  <a href="#schema-contracts-v3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Schema Contracts (v1)
+        Schema Contracts (v3)
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Schema Contracts (v1)">
+    <nav class="md-nav" aria-label="Schema Contracts (v3)">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1129,7 +1129,7 @@
 artifact on boot via <code>pyrox_api_service/fetch_db.py</code>, and refuses pointers
 whose <code>schema_version</code> is newer than <code>fetch_db.SUPPORTED_SCHEMA_VERSION</code>. The
 artifact stamps a <code>build_info</code> table (schema_version, built_at, source S3 URI).</p>
-<h2 id="schema-contracts-v1">Schema Contracts (v1)<a class="headerlink" href="#schema-contracts-v1" title="Permanent link">&para;</a></h2>
+<h2 id="schema-contracts-v3">Schema Contracts (v3)<a class="headerlink" href="#schema-contracts-v3" title="Permanent link">&para;</a></h2>
 <p>Source of truth: <code>scraping_code/db_build/sql_queries.py</code> and
 <code>scraping_code/db_build/ingest.py</code> in the <code>hyrox_analysis</code> repository.</p>
 <h3 id="race_results">race_results<a class="headerlink" href="#race_results" title="Permanent link">&para;</a></h3>
@@ -1150,6 +1150,7 @@ stable keys and search; other fields may be NULL depending on source data.</p>
 <li><code>gender</code> VARCHAR</li>
 <li><code>name_raw</code> VARCHAR</li>
 <li><code>nationality</code> VARCHAR</li>
+<li><code>source_result_id</code> VARCHAR</li>
 <li>Time string columns (VARCHAR, nullable):</li>
 <li><code>roxzone_time</code></li>
 <li><code>run1_time</code>, <code>run2_time</code>, <code>run3_time</code>, <code>run4_time</code>,
@@ -1158,6 +1159,7 @@ stable keys and search; other fields may be NULL depending on source data.</p>
 <li><code>skiErg_time</code>, <code>sledPush_time</code>, <code>sledPull_time</code>, <code>burpeeBroadJump_time</code>,
     <code>rowErg_time</code>, <code>farmersCarry_time</code>, <code>sandbagLunges_time</code>, <code>wallBalls_time</code></li>
 <li><code>work_time</code></li>
+<li><code>bestRunLap_time</code></li>
 <li>Time numeric columns (DOUBLE, nullable; minutes):</li>
 <li><code>roxzone_time_min</code></li>
 <li><code>run1_time_min</code>, <code>run2_time_min</code>, <code>run3_time_min</code>, <code>run4_time_min</code>,
@@ -1167,6 +1169,14 @@ stable keys and search; other fields may be NULL depending on source data.</p>
     <code>burpeeBroadJump_time_min</code>, <code>rowErg_time_min</code>, <code>farmersCarry_time_min</code>,
     <code>sandbagLunges_time_min</code>, <code>wallBalls_time_min</code></li>
 <li><code>work_time_min</code></li>
+<li><code>bestRunLap_time_min</code></li>
+<li>Workout Summary place columns (BIGINT, nullable):</li>
+<li><code>roxzone_place</code>, <code>run_place</code>, <code>bestRunLap_place</code></li>
+<li><code>run1_place</code>, <code>run2_place</code>, <code>run3_place</code>, <code>run4_place</code>,
+    <code>run5_place</code>, <code>run6_place</code>, <code>run7_place</code>, <code>run8_place</code></li>
+<li><code>skiErg_place</code>, <code>sledPush_place</code>, <code>sledPull_place</code>,
+    <code>burpeeBroadJump_place</code>, <code>rowErg_place</code>, <code>farmersCarry_place</code>,
+    <code>sandbagLunges_place</code>, <code>wallBalls_place</code></li>
 </ul>
 <h3 id="athletes">athletes<a class="headerlink" href="#athletes" title="Permanent link">&para;</a></h3>
 <p>Derived from <code>race_results</code> (canonical identity).</p>
