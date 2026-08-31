@@ -1125,10 +1125,12 @@
 <h1 id="duckdb-schema-contracts">DuckDB Schema Contracts<a class="headerlink" href="#duckdb-schema-contracts" title="Permanent link">&para;</a></h1>
 <p>The database build lives in the upstream <code>hyrox_analysis</code> repository
 (<code>scraping_code/db_build/</code>), which publishes an immutable artifact plus a
-<code>latest.json</code> pointer to S3. This service downloads and checksum-verifies the
-artifact on boot via <code>pyrox_api_service/fetch_db.py</code>, and refuses pointers
-whose <code>schema_version</code> is newer than <code>fetch_db.SUPPORTED_SCHEMA_VERSION</code>. The
-artifact stamps a <code>build_info</code> table (schema_version, built_at, source S3 URI).</p>
+candidate <code>latest.json</code> pointer to S3. The weekly consumer workflow promotes a
+supported candidate to <code>deploy-current.json</code>; this service downloads and
+checksum-verifies that production artifact on boot via
+<code>pyrox_api_service/fetch_db.py</code>, and refuses pointers whose <code>schema_version</code> is
+newer than <code>fetch_db.SUPPORTED_SCHEMA_VERSION</code>. The artifact stamps a
+<code>build_info</code> table (schema_version, built_at, source S3 URI).</p>
 <h2 id="schema-contracts-v3">Schema Contracts (v3)<a class="headerlink" href="#schema-contracts-v3" title="Permanent link">&para;</a></h2>
 <p>Source of truth: <code>scraping_code/db_build/sql_queries.py</code> and
 <code>scraping_code/db_build/ingest.py</code> in the <code>hyrox_analysis</code> repository.</p>

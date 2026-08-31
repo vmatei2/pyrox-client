@@ -1210,16 +1210,21 @@ with <code>PYROX_RATE_LIMIT</code> (a
 <a href="https://limits.readthedocs.io"><code>limits</code></a> rate string, e.g. <code>120/minute</code>).</p>
 <h2 id="data-flow">Data Flow<a class="headerlink" href="#data-flow" title="Permanent link">&para;</a></h2>
 <p>The DuckDB artifact is built and published by the <code>hyrox_analysis</code> repository
-(scrape → build → verify → publish to <code>s3://hyrox-results/db/</code> with a
-<code>latest.json</code> pointer). This service is a pure consumer:
-<code>pyrox_api_service/fetch_db.py</code> downloads the pointer, verifies the artifact's
-sha256, and swaps it into place on container boot. Stopped machines therefore
-pick up new data on their next cold start; <code>.github/workflows/refresh-data.yml</code>
-additionally restarts any warm machines on a weekly schedule (after the
-upstream Tuesday publish) — no image rebuild, no cross-repo credentials.
-Code deploys are handled separately by
-<code>.github/workflows/deploy.yml</code>. To roll data back, repoint <code>latest.json</code> at an
-earlier artifact in <code>s3://hyrox-results/db/</code> and restart the machines.</p>
+(scrape → build → verify → publish to <code>s3://hyrox-results/processed/db/</code>). The
+producer owns <code>latest.json</code>, which is a candidate pointer rather than the live
+service contract.</p>
+<p>At 20:00 UTC each Tuesday, <code>.github/workflows/refresh-data.yml</code> reads the
+candidate and <code>deploy-current.json</code> directly from S3. It validates both with
+the consumer's pointer parser and exits without touching Fly when their SHA-256
+values match. For a supported new candidate, it writes the exact validated JSON
+to <code>deploy-current.json</code>, then restarts or wakes the Fly machine and waits up to
+12 minutes for <code>/api/health</code>. The workflow can also be dispatched manually for
+an out-of-cycle backfill.</p>
+<p><code>pyrox_api_service/fetch_db.py</code> reads only the production pointer, verifies the
+artifact's SHA-256, and swaps it into place on container boot. Code deploys are
+handled separately by <code>.github/workflows/deploy.yml</code>. To roll data back,
+repoint <code>deploy-current.json</code> at an earlier immutable artifact and refresh the
+Fly machine; do not change the producer-owned <code>latest.json</code> from this repo.</p>
 <h2 id="backend-local-run">Backend: Local Run<a class="headerlink" href="#backend-local-run" title="Permanent link">&para;</a></h2>
 <p>From repository root:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[api]&quot;</span>
@@ -1249,7 +1254,7 @@ earlier artifact in <code>s3://hyrox-results/db/</code> and restart the machines
 <li>Fly configuration is in <code>fly.toml</code>.</li>
 <li>Environment variables used by the service:</li>
 <li><code>PYROX_DUCKDB_PATH</code></li>
-<li><code>PYROX_DB_POINTER_URL</code> — URL of the pipeline-published <code>latest.json</code>
+<li><code>PYROX_DB_POINTER_URL</code> — URL of the consumer-owned <code>deploy-current.json</code>
     pointer that <code>fetch_db</code> resolves on boot (defaults to the public CDN).</li>
 <li><code>PYROX_API_ALLOW_ORIGINS</code></li>
 <li><code>PYROX_MCP_ALLOWED_HOSTS</code> (optional) — comma-separated Host allow-list. When
