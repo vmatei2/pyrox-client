@@ -85,16 +85,23 @@ with `PYROX_RATE_LIMIT` (a
 ## Data Flow
 
 The DuckDB artifact is built and published by the `hyrox_analysis` repository
-(scrape → build → verify → publish to `s3://hyrox-results/db/` with a
-`latest.json` pointer). This service is a pure consumer:
-`pyrox_api_service/fetch_db.py` downloads the pointer, verifies the artifact's
-sha256, and swaps it into place on container boot. Stopped machines therefore
-pick up new data on their next cold start; `.github/workflows/refresh-data.yml`
-additionally restarts any warm machines on a weekly schedule (after the
-upstream Tuesday publish) — no image rebuild, no cross-repo credentials.
-Code deploys are handled separately by
-`.github/workflows/deploy.yml`. To roll data back, repoint `latest.json` at an
-earlier artifact in `s3://hyrox-results/db/` and restart the machines.
+(scrape → build → verify → publish to `s3://hyrox-results/processed/db/`). The
+producer owns `latest.json`, which is a candidate pointer rather than the live
+service contract.
+
+At 20:00 UTC each Tuesday, `.github/workflows/refresh-data.yml` reads the
+candidate and `deploy-current.json` directly from S3. It validates both with
+the consumer's pointer parser and exits without touching Fly when their SHA-256
+values match. For a supported new candidate, it writes the exact validated JSON
+to `deploy-current.json`, then restarts or wakes the Fly machine and waits up to
+12 minutes for `/api/health`. The workflow can also be dispatched manually for
+an out-of-cycle backfill.
+
+`pyrox_api_service/fetch_db.py` reads only the production pointer, verifies the
+artifact's SHA-256, and swaps it into place on container boot. Code deploys are
+handled separately by `.github/workflows/deploy.yml`. To roll data back,
+repoint `deploy-current.json` at an earlier immutable artifact and refresh the
+Fly machine; do not change the producer-owned `latest.json` from this repo.
 
 ## Backend: Local Run
 
@@ -139,7 +146,7 @@ npx cap open ios
 - Fly configuration is in `fly.toml`.
 - Environment variables used by the service:
   - `PYROX_DUCKDB_PATH`
-  - `PYROX_DB_POINTER_URL` — URL of the pipeline-published `latest.json`
+  - `PYROX_DB_POINTER_URL` — URL of the consumer-owned `deploy-current.json`
     pointer that `fetch_db` resolves on boot (defaults to the public CDN).
   - `PYROX_API_ALLOW_ORIGINS`
   - `PYROX_MCP_ALLOWED_HOSTS` (optional) — comma-separated Host allow-list. When

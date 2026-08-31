@@ -1,17 +1,18 @@
 """Boot-time fetch of the DuckDB artifact published by the scraping pipeline.
 
 The hyrox_analysis repo builds the database and publishes it to S3 as an
-immutable object plus a ``latest.json`` pointer (key, sha256, schema_version,
-provenance). This module downloads the pointer, verifies the artifact
-checksum, and atomically swaps the file into place before the API starts.
-The service itself never builds or ingests data.
+immutable object plus a candidate pointer. The pyrox-client refresh workflow
+promotes supported candidates to ``deploy-current.json``. This module downloads
+that production pointer, verifies the artifact checksum, and atomically swaps
+the file into place before the API starts. The service itself never builds or
+ingests data.
 
 Run as a container entrypoint step:
 
     python -m pyrox_api_service.fetch_db && uvicorn pyrox_api_service.mcp_app:app ...
 
 Environment:
-    PYROX_DB_POINTER_URL  URL of latest.json (default: the public CDN pointer)
+    PYROX_DB_POINTER_URL  URL of deploy-current.json (default: the public CDN pointer)
     PYROX_DUCKDB_PATH     where to place the artifact (default: pyrox_duckdb)
 """
 
@@ -34,7 +35,7 @@ logger = logging.getLogger(__name__)
 # pointer's schema_version on breaking changes and we refuse to serve those.
 SUPPORTED_SCHEMA_VERSION = 3
 
-DEFAULT_POINTER_URL = "https://d2wl4b7sx66tfb.cloudfront.net/db/latest.json"
+DEFAULT_POINTER_URL = "https://d2wl4b7sx66tfb.cloudfront.net/db/deploy-current.json"
 POINTER_URL_ENV = "PYROX_DB_POINTER_URL"
 DUCKDB_PATH_ENV = "PYROX_DUCKDB_PATH"
 
@@ -55,7 +56,7 @@ class ArtifactPointer:
 
 
 def parse_pointer(payload: dict[str, Any]) -> ArtifactPointer:
-    """Validate the latest.json payload and return the pointer contract."""
+    """Validate a pointer payload and return the artifact contract."""
     for field in ("key", "sha256", "size_bytes", "schema_version"):
         if field not in payload:
             raise ArtifactFetchError(f"pointer is missing required field: {field}")

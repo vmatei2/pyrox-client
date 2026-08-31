@@ -13,3 +13,7 @@ force an edit after every code change.
 
 When sources disagree, precedence is: code and tests, user/maintainer `docs/`,
 then `codewiki_docs/overview.md`.
+
+For production data, `hyrox_analysis` owns the candidate `latest.json`; this
+repository promotes it to `deploy-current.json` through the Refresh Data
+workflow. Never point Fly directly at `latest.json`.
