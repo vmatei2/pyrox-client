@@ -1,7 +1,7 @@
 """Tests for the boot-time DuckDB artifact fetch.
 
 The service no longer bakes the database into the image; it downloads the
-artifact referenced by the pipeline-published latest.json pointer.
+artifact referenced by the consumer-owned production pointer.
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ import pytest
 import respx
 
 from pyrox_api_service.fetch_db import (
+    DEFAULT_POINTER_URL,
     SUPPORTED_SCHEMA_VERSION,
     ArtifactFetchError,
     ArtifactPointer,
@@ -22,7 +23,7 @@ from pyrox_api_service.fetch_db import (
     parse_pointer,
 )
 
-POINTER_URL = "https://cdn.example.com/db/latest.json"
+POINTER_URL = "https://cdn.example.com/db/deploy-current.json"
 DB_BYTES = b"duckdb artifact bytes"
 
 
@@ -51,6 +52,10 @@ def test_parse_pointer_happy_path():
         schema_version=SUPPORTED_SCHEMA_VERSION,
         built_at="2026-07-09T12:30:00+00:00",
     )
+
+
+def test_default_pointer_uses_consumer_owned_production_pointer():
+    assert DEFAULT_POINTER_URL.endswith("/db/deploy-current.json")
 
 
 def test_parse_pointer_accepts_current_schema_v3():

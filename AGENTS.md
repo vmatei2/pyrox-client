@@ -31,6 +31,10 @@
 - Service configuration comes from env variables (`PYROX_DUCKDB_PATH` and friends; see `docs/maintainers/reporting-service.md`). Avoid committing secrets; use `.env` locally and CI secrets in pipelines.
 - Network calls use `httpx`; set reasonable timeouts and retries in changes. Keep error surfaces mapped to `errors.py` types.
 
+## Production Data Promotion
+- `hyrox_analysis` owns the candidate pointer at `latest.json`; do not update it from this repository.
+- The live API reads `deploy-current.json`. Promote candidates only through `.github/workflows/refresh-data.yml`; never point Fly directly at `latest.json`.
+
 ## Architecture Map
 
 Read `codewiki_docs/overview.md` before substantial code work.

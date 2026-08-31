@@ -2,10 +2,12 @@
 
 The database build lives in the upstream `hyrox_analysis` repository
 (`scraping_code/db_build/`), which publishes an immutable artifact plus a
-`latest.json` pointer to S3. This service downloads and checksum-verifies the
-artifact on boot via `pyrox_api_service/fetch_db.py`, and refuses pointers
-whose `schema_version` is newer than `fetch_db.SUPPORTED_SCHEMA_VERSION`. The
-artifact stamps a `build_info` table (schema_version, built_at, source S3 URI).
+candidate `latest.json` pointer to S3. The weekly consumer workflow promotes a
+supported candidate to `deploy-current.json`; this service downloads and
+checksum-verifies that production artifact on boot via
+`pyrox_api_service/fetch_db.py`, and refuses pointers whose `schema_version` is
+newer than `fetch_db.SUPPORTED_SCHEMA_VERSION`. The artifact stamps a
+`build_info` table (schema_version, built_at, source S3 URI).
 
 ## Schema Contracts (v3)
 Source of truth: `scraping_code/db_build/sql_queries.py` and

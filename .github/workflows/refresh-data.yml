@@ -1,11 +1,8 @@
 name: Refresh Data
 
-# The hyrox_analysis pipeline publishes a new DuckDB artifact to S3 weekly
-# (scraper starts Tuesday 12:00 UTC; its job is capped at 6h, so the artifact
-# is live by ~18:30 UTC). Restarting the machines afterwards makes them re-run
-# fetch_db on boot and pick up the new artifact; no image rebuild. Machines
-# that were stopped (auto_stop + min_machines_running = 0) fetch it on their
-# next cold start anyway — this schedule only covers machines that stayed warm.
+# hyrox_analysis publishes a validated candidate as latest.json. This weekly
+# consumer job promotes a supported, changed candidate to deploy-current.json,
+# then refreshes Fly. The service never reads latest.json directly.
 
 on:
   schedule:
@@ -16,21 +13,119 @@ concurrency:
   group: refresh-data
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   refresh:
     runs-on: ubuntu-latest
     env:
+      AWS_REGION: ${{ secrets.S3_REGION }}
+      S3_BUCKET: hyrox-results
+      CANDIDATE_POINTER_KEY: processed/db/latest.json
+      PRODUCTION_POINTER_KEY: processed/db/deploy-current.json
+      FLY_APP: pyrox-api
       FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      HEALTH_URL: https://pyrox-api.fly.dev/api/health
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v4
+
+      - name: Install pointer validation dependencies
+        run: uv pip install --system -e .
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Download candidate and production pointers
+        run: |
+          aws s3 cp \
+            "s3://${S3_BUCKET}/${CANDIDATE_POINTER_KEY}" \
+            candidate-pointer.json \
+            --no-progress
+          aws s3 cp \
+            "s3://${S3_BUCKET}/${PRODUCTION_POINTER_KEY}" \
+            production-pointer.json \
+            --no-progress
+
+      - name: Validate candidate and decide whether to promote
+        id: promotion
+        run: |
+          python -m scripts.data_promotion \
+            --candidate candidate-pointer.json \
+            --current production-pointer.json \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: No new artifact to promote
+        if: steps.promotion.outputs.promote != 'true'
+        run: echo "Production already references the candidate SHA; nothing to do."
+
+      # Upload the exact local JSON that was validated above, rather than
+      # copying a potentially newer latest.json after the validation step.
+      - name: Promote candidate pointer
+        if: steps.promotion.outputs.promote == 'true'
+        run: |
+          aws s3api put-object \
+            --bucket "$S3_BUCKET" \
+            --key "$PRODUCTION_POINTER_KEY" \
+            --body candidate-pointer.json \
+            --content-type application/json \
+            --cache-control "no-cache, max-age=0, must-revalidate"
+
       - name: Set up Flyctl
+        if: steps.promotion.outputs.promote == 'true'
         uses: superfly/flyctl-actions/setup-flyctl@master
 
-      # A restart failure on stopped machines is not worth failing the
-      # refresh over; the next cold start fetches the new artifact.
-      - name: Restart machines to pick up new artifact
+      - name: Restart or wake Fly machines
+        if: steps.promotion.outputs.promote == 'true'
         run: |
-          flyctl apps restart pyrox-api \
-            || echo "restart failed (machines may be stopped); next cold start fetches the new artifact"
+          machines="$(flyctl machines list --app "$FLY_APP" --json)"
+          if [ "$(jq 'length' <<< "$machines")" -eq 0 ]; then
+            echo "No Fly machines found for $FLY_APP" >&2
+            exit 1
+          fi
+
+          while IFS=$'\t' read -r machine_id machine_state; do
+            case "$machine_state" in
+              started)
+                flyctl machine restart "$machine_id" --app "$FLY_APP"
+                ;;
+              stopped)
+                flyctl machine start "$machine_id" --app "$FLY_APP"
+                ;;
+              *)
+                echo "Cannot refresh machine $machine_id in state $machine_state" >&2
+                exit 1
+                ;;
+            esac
+          done < <(jq -r '.[] | [.id, .state] | @tsv' <<< "$machines")
+
+      - name: Verify live API health
+        if: steps.promotion.outputs.promote == 'true'
+        run: |
+          deadline=$((SECONDS + 720))
+          until curl \
+            --fail \
+            --silent \
+            --show-error \
+            --max-time 20 \
+            "$HEALTH_URL" \
+            --output health.json \
+            && jq -e '.status == "ok"' health.json; do
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "API did not become healthy within 12 minutes" >&2
+              exit 1
+            fi
+            sleep 10
+          done
+          jq . health.json

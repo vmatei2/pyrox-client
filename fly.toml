@@ -10,9 +10,9 @@ primary_region = "lhr"
   # already matches the pointer's sha256, so only the first cold boot (or a new
   # publish) pays the ~1.16GB download; later cold boots start in seconds.
   PYROX_DUCKDB_PATH = "/data/pyrox_duckdb"
-  # latest.json pointer published by the hyrox_analysis pipeline; fetch_db
-  # downloads and checksum-verifies the referenced artifact on boot.
-  PYROX_DB_POINTER_URL = "https://d2wl4b7sx66tfb.cloudfront.net/db/latest.json"
+  # Consumer-owned production pointer. The weekly refresh workflow promotes
+  # validated candidates from latest.json before machines read them here.
+  PYROX_DB_POINTER_URL = "https://d2wl4b7sx66tfb.cloudfront.net/db/deploy-current.json"
   PYROX_API_ALLOW_ORIGINS = "https://pyrox-analytics.vercel.app,capacitor://localhost,ionic://localhost,http://localhost"
   # MCP DNS-rebinding protection is intentionally left off here. It validates the
   # Host/Origin headers and exists to stop a malicious site pivoting through a

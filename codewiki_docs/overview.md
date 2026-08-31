@@ -16,8 +16,18 @@ disagree, trust code and tests first, then `docs/`, then this overview.
 flowchart LR
     subgraph upstream ["External data pipeline"]
         SCRAPE["hyrox_analysis<br/>scrape and build"]
-        CDN["CloudFront<br/>manifest, Parquet, DuckDB pointer"]
+        CANDIDATE["S3 latest.json<br/>candidate pointer"]
+        CDN["CloudFront<br/>manifest, Parquet, DuckDB"]
+        SCRAPE --> CANDIDATE
         SCRAPE --> CDN
+    end
+
+    subgraph promotion ["Weekly production promotion"]
+        REFRESH["Refresh Data workflow<br/>validate and compare SHA"]
+        PRODUCTION["S3 deploy-current.json<br/>production pointer"]
+        CANDIDATE --> REFRESH
+        REFRESH --> PRODUCTION
+        PRODUCTION --> CDN
     end
 
     subgraph package ["Published Python package"]
@@ -68,10 +78,13 @@ client's Parquet path is independent of the hosted service.
 
 The repository consumes race data but does not scrape or build the production
 DuckDB database. The external `hyrox_analysis` pipeline publishes immutable
-artifacts and a `latest.json` pointer. On service boot,
-[`fetch_db.py`](../pyrox_api_service/fetch_db.py) downloads the referenced
-artifact, checks its schema version and SHA-256, then atomically installs it at
-`PYROX_DUCKDB_PATH`.
+artifacts and the candidate `latest.json` pointer. This repository's weekly
+[`Refresh Data`](../.github/workflows/refresh-data.yml) workflow validates a
+changed candidate and copies that exact JSON to the consumer-owned
+`deploy-current.json` pointer before refreshing Fly. On service boot,
+[`fetch_db.py`](../pyrox_api_service/fetch_db.py) downloads only the production
+pointer's artifact, checks its schema version and SHA-256, then atomically
+installs it at `PYROX_DUCKDB_PATH`.
 
 ## Runtime paths
 
@@ -156,6 +169,10 @@ business-logic implementation.
   are exempt from double charging.
 - The Fly machine may stop when idle. The persistent `/data` volume prevents a
   full DuckDB download on every cold start.
+- `latest.json` is producer-owned candidate state; `deploy-current.json` is the
+  consumer-owned live contract. The Tuesday 20:00 UTC refresh workflow promotes
+  only a changed pointer accepted by this service's schema-version guard, then
+  requires the restarted or awakened API to pass `/api/health`.
 - `PYROX_MCP_ALLOWED_HOSTS` enables MCP Host/Origin validation. It is
   intentionally unset for the public Fly endpoint because browser/Electron
   connectors send Origin headers and the service is already public,
@@ -177,6 +194,7 @@ business-logic implementation.
 | New MCP tool | [maintainer guide](../docs/maintainers/adding-mcp-tools.md) | REST route first, then tool, registration, tests, smoke script |
 | UI mode or chart | [`ui/src/pages/`](../ui/src/pages/) or [`ui/src/charts/`](../ui/src/charts/) | API client and Vitest coverage |
 | Service boot or deployment | [`Dockerfile`](../Dockerfile), [`fly.toml`](../fly.toml) | [reporting runbook](../docs/maintainers/reporting-service.md) |
+| Production data promotion | [`refresh-data.yml`](../.github/workflows/refresh-data.yml) | pointer parser, Fly configuration, and reporting runbook |
 
 ## Build, test, and deploy
 
@@ -201,8 +219,10 @@ Pushes to `main` run Python tests and integration checks. The
 automatically only when backend/package code, `Dockerfile`, `fly.toml`,
 `pyproject.toml`, or that workflow changes. Documentation-only and UI-only
 commits do not trigger the API deploy. Tagged `v*` commits build and publish the
-Python package to PyPI. A weekly workflow restarts Fly machines after the
-upstream data publish so warm machines fetch the new artifact.
+Python package to PyPI. The weekly refresh workflow promotes a supported
+candidate pointer after the upstream data publish, refreshes every Fly machine,
+and waits for the live health check. Its manual trigger handles out-of-cycle
+backfills.
 
 There is no UI deployment workflow in this repository; the Vite and Capacitor
 builds are configured here, while hosting/release automation lives elsewhere.
