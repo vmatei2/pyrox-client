@@ -158,3 +158,11 @@ Percentile direction matches report split percentiles:
 
 Profile percentiles are computed against historical results in the same division
 and gender.
+
+
+### Elite divisions
+
+Elite results use `division="elite"` (singles) and `division="elite_doubles"`
+(pairs). Coverage depends on published events; these divisions are not offered
+at every race. Time values preserve published fractional seconds, including when
+converted to numeric minutes. Missing source splits remain missing.

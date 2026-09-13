@@ -624,7 +624,7 @@ def test_mcp_tool_schemas_include_all_supported_divisions():
     from pyrox_api_service import mcp_app
 
     tools = asyncio.run(mcp_app.mcp_server.list_tools())
-    expected_divisions = {"open", "pro", "doubles", "pro_doubles", "relay", "adaptive"}
+    expected_divisions = {"open", "pro", "doubles", "pro_doubles", "relay", "adaptive", "elite", "elite_doubles"}
 
     for tool in tools:
         division_schema = tool.inputSchema["properties"].get("division")
