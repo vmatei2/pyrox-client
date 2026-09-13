@@ -57,3 +57,36 @@ response for any file-changing task, state one of:
 
 This explicit decision is the enforcement point. The `/codewiki` skill owns
 overview generation and validation.
+
+## Cross-repository work
+
+This project is one half of a shared data product. Locate the sibling checkout
+(`../hyrox_analysis` by default) and read its `AGENTS.md` and
+`codewiki_docs/overview.md` when a task crosses the producer/consumer boundary.
+If the checkout is elsewhere or unavailable, report that rather than assuming
+consumer behavior or claiming end-to-end verification.
+
+- **hyrox_analysis owns:** source discovery and scraping, raw and canonical
+  parquet, the race manifest, DuckDB construction and candidate `latest.json`.
+- **pyrox-client owns:** Python client filtering, caching and public column
+  names; REST/MCP and UI behavior; promotion to `deploy-current.json` and API
+  deployment.
+- **Inspect both repositories for:** divisions, fields, timing precision, race
+  identity, schema compatibility, and publication/promotion changes. Trace the
+  actual contract through both sides before deciding which files need edits.
+- **Delivery paths are independent:** data publication updates manifest/parquet;
+  candidate promotion updates live reporting data; API deployment updates service
+  code; a tagged PyPI release updates the installable Python package. A merge or
+  API deployment does not upgrade installed packages. Do not infer authorization
+  for a package release from a data-backfill request.
+- **Verify the affected paths:** focused producer tests and source samples,
+  public `PyroxClient.get_race()` with a fresh cache, and live reporting after
+  promotion when applicable. Record whether Python checks used the released
+  package or repository source; their behavior can differ.
+- **Keep scope explicit:** maintain separate git changes and checks in each repo,
+  preserve unrelated work, and report commits/PRs, data publication, deployment,
+  and package-release status separately. Do not expand a targeted backfill into
+  unrelated race repairs or change public column names without task authorization.
+
+Use the two architecture maps for detailed flow and deployment instructions;
+keep this section as the entry point rather than duplicating those documents.
