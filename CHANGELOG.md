@@ -9,5 +9,3 @@ Data updates do not require a Python package upgrade unless stated otherwise.
 - Added 461 Season 8 results across eight races in the `elite` and `elite_doubles` divisions: Hamburg, Melbourne, Phoenix, EMEA London Olympia, APAC Championship Brisbane, Warsaw, Stockholm and Washington DC.
 - Preserved published fractional-second times in Elite results.
 - Verified both updates through the public Python client against official results. No package upgrade is required; use `use_cache=False` to bypass previously cached race data.
-
-[Elite publication run](https://github.com/vmatei2/hyrox_analysis/actions/runs/34764051806) · [Yokohama fix](https://github.com/vmatei2/hyrox_analysis/commit/99e50e4)
