@@ -134,7 +134,7 @@ Closed vocabularies must be represented in the type hints because MCP clients
 discover their valid values from the generated JSON schema. The supported
 `Division` values are:
 
-`open`, `pro`, `doubles`, `pro_doubles`, `relay`, `adaptive`
+`open`, `pro`, `doubles`, `pro_doubles`, `relay`, `adaptive`, `elite`, `elite_doubles`
 
 Age groups and locations deliberately remain strings because their valid
 values change with the dataset; agents discover them with `list_filters`.
@@ -158,6 +158,8 @@ business-logic implementation.
 - Python-client race discovery preserves the `(season, location, year)` grain.
   Do not collapse repeated location names across years; callers may select one
   edition with `year` or combine all matching editions by omitting it.
+- Elite singles and Elite doubles are separate cohorts. Published fractional
+  seconds remain available through the Python client and numeric reporting times.
 - Reporting time values use canonical `*_time_min` columns. Friendly metric
   aliases are resolved at the reporting boundary rather than interpolated
   into SQL.
