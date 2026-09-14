@@ -71,8 +71,12 @@ Key behaviors:
     2025 in one DataFrame.
 
 The supported division vocabulary is `open`, `pro`, `doubles`, `pro_doubles`,
-`relay` and `adaptive`. Which of them show up depends on what the race actually
+`relay`, `adaptive`, `elite` and `elite_doubles`. Which of them show up depends on what the race actually
 ran, so check `df["division"].unique()` rather than assuming.
+
+Elite singles and doubles are separate from `pro` and `pro_doubles`. Published
+fractional seconds are preserved in numeric minutes; missing source splits stay
+missing. See [Elite filtering examples and coverage](filters.md#elite-results).
 
 If the manifest lookup fails, `RaceNotFound` includes discovery context such as
 available seasons, available years, and close location suggestions:
@@ -158,11 +162,3 @@ Percentile direction matches report split percentiles:
 
 Profile percentiles are computed against historical results in the same division
 and gender.
-
-
-### Elite divisions
-
-Elite results use `division="elite"` (singles) and `division="elite_doubles"`
-(pairs). Coverage depends on published events; these divisions are not offered
-at every race. Time values preserve published fractional seconds, including when
-converted to numeric minutes. Missing source splits remain missing.
