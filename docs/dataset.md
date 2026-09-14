@@ -131,9 +131,15 @@ assuming a column is always present.
 ## Divisions
 
 The supported division vocabulary is `open`, `pro`, `doubles`, `pro_doubles`,
-`relay` and `adaptive`. Which of them appear in any given race depends on what
+`relay`, `adaptive`, `elite` and `elite_doubles`. Which of them appear in any given race depends on what
 that event ran, so check with `list_filters` or by inspecting
-`df["division"].unique()` rather than assuming all six are present.
+`df["division"].unique()` rather than assuming all eight are present.
+
+Elite singles (`elite`) and Elite doubles (`elite_doubles`) are separate from
+`pro` and `pro_doubles`. They are available only at events that held those
+competitions. Published fractional seconds are preserved in numeric minutes,
+and missing source splits remain missing. See the
+[Elite filtering guide](filters.md#elite-results) for an example and Season 8 coverage.
 
 Pyrox doesn't pool divisions by default: an open athlete and a pro athlete
 aren't doing the same work, so a combined average benchmarks nothing and a

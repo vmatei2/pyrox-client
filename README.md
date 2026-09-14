@@ -96,6 +96,27 @@ Station and run columns come back with readable names, already in minutes, so yo
 can drop them straight into a stats workflow. See [docs/api.md](docs/api.md) for
 the full reference.
 
+### Elite results
+
+Use `division="elite"` for Elite singles or `division="elite_doubles"` for pairs.
+These are separate from `pro` and `pro_doubles` and are available only at events
+that held those competitions.
+
+```python
+elite = client.get_race(
+    season=8,
+    location="hamburg",
+    year=2025,
+    division="elite",  # "elite_doubles" for pairs
+    use_cache=False,
+)
+```
+
+Published fractional seconds are preserved in the numeric minute values.
+This works with `pyrox-client` 0.2.7; no upgrade is needed for the new data.
+Use `use_cache=False` to download fresh results after a data update. See the
+[filtering guide](docs/filters.md#elite-results) for Season 8 coverage.
+
 ## Core API
 
 - `list_races(season=None)`, `list_seasons()`, `list_locations(...)`, `list_years(...)`
