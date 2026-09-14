@@ -90,3 +90,23 @@ consumer behavior or claiming end-to-end verification.
 
 Use the two architecture maps for detailed flow and deployment instructions;
 keep this section as the entry point rather than duplicating those documents.
+
+## Public changelog requirement
+
+- Before completing work that changes user-visible behavior or available data,
+  update `CHANGELOG.md`. This includes race backfills, data
+  corrections, divisions, fields, and Python/API/MCP behavior, even when the
+  implementation lives entirely in the producer repository.
+- Keep entries concise and describe the user impact. Never include private
+  repository names or links, internal storage paths, job IDs, or implementation
+  details that users do not need.
+- Announce data availability only after verifying fresh downloads through the
+  affected user-facing path. Distinguish Python data publication, API promotion
+  and package releases; do not imply one makes the others available.
+- Use a dated data-update entry for published data changes and an `Unreleased`
+  entry for pending software changes. Do not invent a package version or trigger
+  a release just to record a data update. Amend an existing entry where appropriate.
+- Failed/no-op runs and internal-only refactors or agent-instruction changes do
+  not need entries. In the final handoff, link the changelog change or briefly
+  explain why no entry is needed. If the consumer checkout is unavailable, report
+  the outstanding changelog work rather than silently omitting it.
