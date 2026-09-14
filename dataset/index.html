@@ -1685,9 +1685,14 @@ assume a column name from one surface exists on the other; see
 assuming a column is always present.</p>
 <h2 id="divisions">Divisions<a class="headerlink" href="#divisions" title="Permanent link">&para;</a></h2>
 <p>The supported division vocabulary is <code>open</code>, <code>pro</code>, <code>doubles</code>, <code>pro_doubles</code>,
-<code>relay</code> and <code>adaptive</code>. Which of them appear in any given race depends on what
+<code>relay</code>, <code>adaptive</code>, <code>elite</code> and <code>elite_doubles</code>. Which of them appear in any given race depends on what
 that event ran, so check with <code>list_filters</code> or by inspecting
-<code>df["division"].unique()</code> rather than assuming all six are present.</p>
+<code>df["division"].unique()</code> rather than assuming all eight are present.</p>
+<p>Elite singles (<code>elite</code>) and Elite doubles (<code>elite_doubles</code>) are separate from
+<code>pro</code> and <code>pro_doubles</code>. They are available only at events that held those
+competitions. Published fractional seconds are preserved in numeric minutes,
+and missing source splits remain missing. See the
+<a href="../filters/#elite-results">Elite filtering guide</a> for an example and Season 8 coverage.</p>
 <p>Pyrox doesn't pool divisions by default: an open athlete and a pro athlete
 aren't doing the same work, so a combined average benchmarks nothing and a
 combined percentile misleads.</p>

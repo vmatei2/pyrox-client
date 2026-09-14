@@ -610,6 +610,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#elite-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Elite results
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#total-time-windows" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1109,6 +1120,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#elite-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Elite results
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#total-time-windows" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1152,22 +1174,43 @@
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    season=7,
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    location=&quot;london&quot;,
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    gender=&quot;male&quot;,      # &quot;male&quot; | &quot;female&quot; | &quot;mixed&quot;
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    division=&quot;open&quot;,   # &quot;open&quot; | &quot;pro&quot; | &quot;doubles&quot; | &quot;pro_doubles&quot; | &quot;relay&quot; | &quot;adaptive&quot;
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    division=&quot;open&quot;,
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>)
 </span></code></pre></div>
+<p>Supported divisions are <code>open</code>, <code>pro</code>, <code>doubles</code>, <code>pro_doubles</code>, <code>relay</code>,
+<code>adaptive</code>, <code>elite</code> and <code>elite_doubles</code>.</p>
 <p>Notes:
 - Values are case-sensitive in the underlying parquet filter; prefer lowercase.
 - If the filtered dataset has no rows, Pyrox raises <code>RaceNotFound</code>.</p>
+<h2 id="elite-results">Elite results<a class="headerlink" href="#elite-results" title="Permanent link">&para;</a></h2>
+<p>Use <code>division="elite"</code> for Elite singles or <code>division="elite_doubles"</code> for pairs.
+They are separate from <code>pro</code> and <code>pro_doubles</code>; not every race offers them.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">elite</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_race</span><span class="p">(</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">season</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">location</span><span class="o">=</span><span class="s2">&quot;hamburg&quot;</span><span class="p">,</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">year</span><span class="o">=</span><span class="mi">2025</span><span class="p">,</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">division</span><span class="o">=</span><span class="s2">&quot;elite&quot;</span><span class="p">,</span>  <span class="c1"># &quot;elite_doubles&quot; for pairs</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">use_cache</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="p">)</span>
+</span></code></pre></div>
+<p>Season 8 includes 461 Elite singles and doubles results across Hamburg (2025),
+Melbourne (2025), Phoenix (2026), EMEA London Olympia (2026), APAC Championship
+Brisbane (2026), Warsaw (2026), Stockholm (2026) and Washington DC (2026).
+Use <code>client.list_races(season=8)</code> to find the location slugs and years.</p>
+<p>Published fractional seconds are preserved when times are converted to numeric
+minutes. Missing source splits remain missing. These filters work with
+<code>pyrox-client</code> 0.2.7; no package upgrade is needed for the new data.
+<code>use_cache=False</code> downloads fresh results instead of reusing a cached race.</p>
 <h2 id="total-time-windows">Total time windows<a class="headerlink" href="#total-time-windows" title="Permanent link">&para;</a></h2>
 <p><code>total_time</code> is expressed in minutes. You can pass a single value or an open interval.</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a># Under 60 minutes
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>sub_60 = client.get_race(season=7, location=&quot;london&quot;, total_time=60)
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a># Open interval: 50 &lt; total_time &lt; 60
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>mid_pack = client.get_race(season=7, location=&quot;london&quot;, total_time=(50, 60))
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a># Only lower bound
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>slow = client.get_race(season=7, location=&quot;london&quot;, total_time=(70, None))
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a># Under 60 minutes
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>sub_60 = client.get_race(season=7, location=&quot;london&quot;, total_time=60)
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a># Open interval: 50 &lt; total_time &lt; 60
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>mid_pack = client.get_race(season=7, location=&quot;london&quot;, total_time=(50, 60))
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a># Only lower bound
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>slow = client.get_race(season=7, location=&quot;london&quot;, total_time=(70, None))
 </span></code></pre></div>
 <p>Notes:
 - Bounds are strict (<code>&gt;</code> and <code>&lt;</code>), not inclusive.

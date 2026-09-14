@@ -1038,23 +1038,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Reporting Service Note (Repository-Only)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#elite-divisions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Elite divisions
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
     </ul>
@@ -1341,23 +1324,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Reporting Service Note (Repository-Only)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#elite-divisions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Elite divisions
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
     </ul>
@@ -1437,8 +1403,11 @@ edition. Omitting <code>year</code> intentionally returns both Paris 2024 and Pa
 2025 in one DataFrame.</p>
 </div>
 <p>The supported division vocabulary is <code>open</code>, <code>pro</code>, <code>doubles</code>, <code>pro_doubles</code>,
-<code>relay</code> and <code>adaptive</code>. Which of them show up depends on what the race actually
+<code>relay</code>, <code>adaptive</code>, <code>elite</code> and <code>elite_doubles</code>. Which of them show up depends on what the race actually
 ran, so check <code>df["division"].unique()</code> rather than assuming.</p>
+<p>Elite singles and doubles are separate from <code>pro</code> and <code>pro_doubles</code>. Published
+fractional seconds are preserved in numeric minutes; missing source splits stay
+missing. See <a href="../filters/#elite-results">Elite filtering examples and coverage</a>.</p>
 <p>If the manifest lookup fails, <code>RaceNotFound</code> includes discovery context such as
 available seasons, available years, and close location suggestions:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>from pyrox.errors import RaceNotFound
@@ -1502,11 +1471,6 @@ range and segment keys.</p>
   segment without failing the endpoint.</p>
 <p>Profile percentiles are computed against historical results in the same division
 and gender.</p>
-<h3 id="elite-divisions">Elite divisions<a class="headerlink" href="#elite-divisions" title="Permanent link">&para;</a></h3>
-<p>Elite results use <code>division="elite"</code> (singles) and <code>division="elite_doubles"</code>
-(pairs). Coverage depends on published events; these divisions are not offered
-at every race. Time values preserve published fractional seconds, including when
-converted to numeric minutes. Missing source splits remain missing.</p>
 
 
 
