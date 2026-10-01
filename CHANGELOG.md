@@ -3,6 +3,12 @@
 User-visible updates to the Python package, race data and reporting service.
 Data updates do not require a Python package upgrade unless stated otherwise.
 
+## 2026-10-01 — Python client data correction
+
+- Corrected Season 8's 2026 Guadalajara: added the missing open women, men's and women's doubles and team relay results, and removed 1,034 duplicated doubles, pro doubles and pro results. The race now has 4,933 results, matching the official results in every division.
+- Doubles and pro doubles team names in this race now list each member once.
+- Verified fresh downloads with Python client 0.2.7. No upgrade is required; use `use_cache=False` to refresh previously cached race data. The hosted API and MCP server will include the correction after the next reporting-data refresh.
+
 ## 2026-09-26 — Python client data update
 
 - Added 33,214 Season 9 results across six 2026 races: Maastricht, Salt Lake City, Mumbai, Izmir, Rome (Wednesday–Friday) and Oslo (Friday). Rome and Oslo's remaining days will be added once their results are published.
