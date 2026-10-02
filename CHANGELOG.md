@@ -3,9 +3,9 @@
 User-visible updates to the Python package, race data and reporting service.
 Data updates do not require a Python package upgrade unless stated otherwise.
 
-## Unreleased
+## 2026-10-02 — Hosted API update
 
-- The hosted API's race list (`/api/races`) and the MCP `list_races` tool now include each race's `start_date`: the event's first day as `YYYY-MM-DD`, or null when it is not yet known. Multi-day events share one date, so it is not the day a specific athlete raced. The Python client is unchanged.
+- `/api/races` and the MCP `list_races` tool now include `start_date`: the event's first day (`YYYY-MM-DD`), or null if unknown.
 
 ## 2026-10-01 — Python client data correction
 
