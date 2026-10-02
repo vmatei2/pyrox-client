@@ -341,6 +341,33 @@ def test_list_races_returns_distinct_races_with_counts(tmp_path, monkeypatch):
     assert london["participant_count"] == 3
 
 
+def test_list_races_includes_event_start_date(tmp_path, monkeypatch):
+    db_path = tmp_path / "mcp-races-dates.db"
+    con = _create_db(db_path)
+    _seed_races(con)
+    con.execute("ALTER TABLE race_results ADD COLUMN start_date DATE;")
+    con.execute("UPDATE race_results SET start_date = DATE '2024-05-03' WHERE location = 'london';")
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    result = mcp_tools.list_races()
+
+    dates = {r["location"]: r["start_date"] for r in result["races"]}
+    assert dates == {"london": "2024-05-03", "paris": None, "berlin": None}
+
+
+def test_list_races_start_date_is_null_without_column(tmp_path, monkeypatch):
+    db_path = tmp_path / "mcp-races-no-dates.db"
+    con = _create_db(db_path)
+    _seed_races(con)
+    con.close()
+
+    monkeypatch.setenv("PYROX_DUCKDB_PATH", str(db_path))
+    result = mcp_tools.list_races()
+
+    assert all(r["start_date"] is None for r in result["races"])
+
+
 def test_list_races_filters_by_season(tmp_path, monkeypatch):
     db_path = tmp_path / "mcp-races-season.db"
     con = _create_db(db_path)

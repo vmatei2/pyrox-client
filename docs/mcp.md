@@ -75,7 +75,7 @@ The CLI and IDE extension read the same Codex configuration.
 | Tool | Returns |
 | --- | --- |
 | `list_filters` | Available seasons, divisions, genders, locations and age groups. |
-| `list_races` | Valid season and location pairs. |
+| `list_races` | Valid season and location pairs, with each event's start date when known. |
 | `find_athlete` | Candidate results for an athlete name, including `result_id`. |
 | `get_race_report` | One result with every available run and station split. |
 | `get_athlete_profile` | Historical results and personal-best fields. |
