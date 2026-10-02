@@ -255,7 +255,8 @@ def list_races(
 ) -> dict:
     """Available races with participant counts, optionally filtered by season or gender.
 
-    Returns distinct races showing event name, location, season, year, and
+    Returns distinct races showing event name, location, season, year, the
+    event's first day (``start_date``, ``YYYY-MM-DD`` or null when unknown), and
     how many athletes participated. Use this to discover which races exist
     before requesting a race summary.
     """

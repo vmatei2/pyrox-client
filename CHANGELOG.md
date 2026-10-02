@@ -3,6 +3,10 @@
 User-visible updates to the Python package, race data and reporting service.
 Data updates do not require a Python package upgrade unless stated otherwise.
 
+## Unreleased
+
+- The hosted API's race list (`/api/races`) and the MCP `list_races` tool now include each race's `start_date`: the event's first day as `YYYY-MM-DD`, or null when it is not yet known. Multi-day events share one date, so it is not the day a specific athlete raced. The Python client is unchanged.
+
 ## 2026-10-01 — Python client data correction
 
 - Corrected Season 8's 2026 Guadalajara: added the missing open women, men's and women's doubles and team relay results, and removed 1,034 duplicated doubles, pro doubles and pro results. The race now has 4,933 results, matching the official results in every division.

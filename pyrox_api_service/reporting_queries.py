@@ -597,9 +597,15 @@ class ReportingQueries:
 
         Each race is identified by (event_name, event_id, location, season, year).
         Optional *season* and *gender* filters scope the results; when *gender* is
-        used the participant count reflects only matching athletes.
+        used the participant count reflects only matching athletes. ``start_date``
+        is the event's first day as ``YYYY-MM-DD``, or ``None`` when unmapped.
         """
         con = self.connection()
+        start_date_sql = (
+            "strftime(MIN(start_date), '%Y-%m-%d')"
+            if "start_date" in _load_race_results_columns(con)
+            else "CAST(NULL AS VARCHAR)"
+        )
         clauses: list[str] = []
         params: list[object] = []
 
@@ -617,6 +623,7 @@ class ReportingQueries:
         df = con.execute(
             f"""
             SELECT event_name, event_id, location, season, year,
+                   {start_date_sql} AS start_date,
                    COUNT(*) AS participant_count
             FROM race_results
             {where_sql}
