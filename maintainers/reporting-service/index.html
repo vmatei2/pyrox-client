@@ -1213,7 +1213,8 @@ with <code>PYROX_RATE_LIMIT</code> (a
 (scrape → build → verify → publish to <code>s3://hyrox-results/processed/db/</code>). The
 producer owns <code>latest.json</code>, which is a candidate pointer rather than the live
 service contract.</p>
-<p>At 20:00 UTC each Tuesday, <code>.github/workflows/refresh-data.yml</code> reads the
+<p>At 08:00 UTC Friday to Wednesday, the morning after each nightly producer run,
+<code>.github/workflows/refresh-data.yml</code> reads the
 candidate and <code>deploy-current.json</code> directly from S3. It validates both with
 the consumer's pointer parser and exits without touching Fly when their SHA-256
 values match. For a supported new candidate, it writes the exact validated JSON

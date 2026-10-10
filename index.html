@@ -1392,10 +1392,10 @@ two superficially similar questions use different age groups or divisions.</p>
 </ul>
 </div>
 <p>See <a href="dataset/">the dataset</a> for the measured coverage, complete schema and
-weekly publication schedule.</p>
+nightly publication schedule.</p>
 <h2 id="operational-limits">Operational limits<a class="headerlink" href="#operational-limits" title="Permanent link">&para;</a></h2>
 <p>The dataset comes from public HYROX results and can inherit mistakes from the
-source. Coverage changes with each weekly publish, while a local cache only
+source. Coverage changes with each nightly publish, while a local cache only
 avoids repeated downloads; it does not freeze a research snapshot. Export a
 dated Parquet file when an analysis must reproduce the same figures later.</p>
 <p>The hosted REST and MCP service allows 60 requests per minute per IP. It may
@@ -1417,7 +1417,7 @@ account.</p>
 </details>
 <details class="question">
 <summary>Which seasons, divisions and locations are covered?</summary>
-<p>The published manifest changes weekly. Check <a href="dataset/">the dataset</a> for
+<p>The published manifest changes nightly during race weeks. Check <a href="dataset/">the dataset</a> for
 the latest measured totals, call <code>list_filters</code> through MCP, or use
 <code>client.list_seasons()</code> and <code>client.list_locations()</code> in Python.</p>
 </details>

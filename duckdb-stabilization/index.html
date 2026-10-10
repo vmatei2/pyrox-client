@@ -1125,7 +1125,7 @@
 <h1 id="duckdb-schema-contracts">DuckDB Schema Contracts<a class="headerlink" href="#duckdb-schema-contracts" title="Permanent link">&para;</a></h1>
 <p>The database build lives in the upstream <code>hyrox_analysis</code> repository
 (<code>scraping_code/db_build/</code>), which publishes an immutable artifact plus a
-candidate <code>latest.json</code> pointer to S3. The weekly consumer workflow promotes a
+candidate <code>latest.json</code> pointer to S3. The daily consumer workflow promotes a
 supported candidate to <code>deploy-current.json</code>; this service downloads and
 checksum-verifies that production artifact on boot via
 <code>pyrox_api_service/fetch_db.py</code>, and refuses pointers whose <code>schema_version</code> is
