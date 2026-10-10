@@ -22,7 +22,7 @@ flowchart LR
         SCRAPE --> CDN
     end
 
-    subgraph promotion ["Weekly production promotion"]
+    subgraph promotion ["Daily production promotion"]
         REFRESH["Refresh Data workflow<br/>validate and compare SHA"]
         PRODUCTION["S3 deploy-current.json<br/>production pointer"]
         CANDIDATE --> REFRESH
@@ -78,7 +78,7 @@ client's Parquet path is independent of the hosted service.
 
 The repository consumes race data but does not scrape or build the production
 DuckDB database. The external `hyrox_analysis` pipeline publishes immutable
-artifacts and the candidate `latest.json` pointer. This repository's weekly
+artifacts and the candidate `latest.json` pointer. This repository's daily
 [`Refresh Data`](../.github/workflows/refresh-data.yml) workflow validates a
 changed candidate and copies that exact JSON to the consumer-owned
 `deploy-current.json` pointer before refreshing Fly. On service boot,
@@ -172,7 +172,7 @@ business-logic implementation.
 - The Fly machine may stop when idle. The persistent `/data` volume prevents a
   full DuckDB download on every cold start.
 - `latest.json` is producer-owned candidate state; `deploy-current.json` is the
-  consumer-owned live contract. The Tuesday 20:00 UTC refresh workflow promotes
+  consumer-owned live contract. The daily 08:00 UTC refresh workflow promotes
   only a changed pointer accepted by this service's schema-version guard, then
   requires the restarted or awakened API to pass `/api/health`.
 - `PYROX_MCP_ALLOWED_HOSTS` enables MCP Host/Origin validation. It is
@@ -221,7 +221,7 @@ Pushes to `main` run Python tests and integration checks. The
 automatically only when backend/package code, `Dockerfile`, `fly.toml`,
 `pyproject.toml`, or that workflow changes. Documentation-only and UI-only
 commits do not trigger the API deploy. Tagged `v*` commits build and publish the
-Python package to PyPI. The weekly refresh workflow promotes a supported
+Python package to PyPI. The daily refresh workflow promotes a supported
 candidate pointer after the upstream data publish, refreshes every Fly machine,
 and waits for the live health check. Its manual trigger handles out-of-cycle
 backfills.

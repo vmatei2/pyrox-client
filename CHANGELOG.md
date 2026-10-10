@@ -3,6 +3,11 @@
 User-visible updates to the Python package, race data and reporting service.
 Data updates do not require a Python package upgrade unless stated otherwise.
 
+## 2026-10-10 — Data publication schedule
+
+- Race results are now published nightly from Thursday to Tuesday instead of weekly. A race day usually reaches the Python client by the next morning (UK time), with heats posted late filled in a day later.
+- The hosted API and MCP server now refresh their data every morning at 08:00 UTC, Friday to Wednesday, instead of weekly.
+
 ## 2026-10-02 — Hosted API update
 
 - `/api/races` and the MCP `list_races` tool now include `start_date`: the event's first day (`YYYY-MM-DD`), or null if unknown.
