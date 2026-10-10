@@ -2,7 +2,7 @@
 
 The database build lives in the upstream `hyrox_analysis` repository
 (`scraping_code/db_build/`), which publishes an immutable artifact plus a
-candidate `latest.json` pointer to S3. The weekly consumer workflow promotes a
+candidate `latest.json` pointer to S3. The daily consumer workflow promotes a
 supported candidate to `deploy-current.json`; this service downloads and
 checksum-verifies that production artifact on boot via
 `pyrox_api_service/fetch_db.py`, and refuses pointers whose `schema_version` is

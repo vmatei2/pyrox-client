@@ -147,7 +147,10 @@ combined percentile misleads.
 
 ## How often it updates
 
-New results land on a **weekly cadence**, published each Tuesday.
+New results are published **nightly from Thursday to Tuesday**. A race day's
+results usually reach the Python client by the next morning (UK time), and heats
+posted late are filled in a day after that. The hosted REST and MCP service
+updates each morning at 08:00 UTC.
 
 That's the server side. The Python client also caches locally, on top of
 that: races and the manifest for 2 hours, a full season for 1 hour. If you're

@@ -1,12 +1,15 @@
 name: Refresh Data
 
-# hyrox_analysis publishes a validated candidate as latest.json. This weekly
+# hyrox_analysis publishes a validated candidate as latest.json. This daily
 # consumer job promotes a supported, changed candidate to deploy-current.json,
 # then refreshes Fly. The service never reads latest.json directly.
 
 on:
   schedule:
-    - cron: "0 20 * * 2"  # Tuesdays 20:00 UTC, after the upstream publish
+    # 08:00 UTC Friday-Wednesday, the morning after each nightly upstream run
+    # (22:00 UTC Thursday-Tuesday). Linked only by timing: an upstream run that
+    # finishes later is promoted the following morning.
+    - cron: "0 8 * * 5,6,0,1,2,3"
   workflow_dispatch:
 
 concurrency:

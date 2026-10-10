@@ -89,7 +89,8 @@ The DuckDB artifact is built and published by the `hyrox_analysis` repository
 producer owns `latest.json`, which is a candidate pointer rather than the live
 service contract.
 
-At 20:00 UTC each Tuesday, `.github/workflows/refresh-data.yml` reads the
+At 08:00 UTC Friday to Wednesday, the morning after each nightly producer run,
+`.github/workflows/refresh-data.yml` reads the
 candidate and `deploy-current.json` directly from S3. It validates both with
 the consumer's pointer parser and exits without touching Fly when their SHA-256
 values match. For a supported new candidate, it writes the exact validated JSON
