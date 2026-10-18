@@ -6,6 +6,8 @@
 > races as pandas DataFrames, and a public, read-only MCP server that lets AI
 > assistants answer questions about HYROX results directly.
 
+**Status: public data access has been discontinued for now.** The Python client and the MCP server no longer return data.
+
 ## Access points
 
 - MCP endpoint (public, read-only, no authentication, rate-limited):

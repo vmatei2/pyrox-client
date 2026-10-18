@@ -6,6 +6,10 @@ packaged for iOS. This page is the engineering map for humans and agents. It
 describes durable boundaries and operating contracts; the source remains the
 authority.
 
+**Status (2026-10-18):** public data access is discontinued for now. The
+CloudFront distribution is disabled, the Fly API is stopped, and the Deploy API
+and Refresh Data workflows are disabled.
+
 Use [README.md](../README.md) and [docs/](../docs/) for user-facing guides,
 maintenance runbooks, and architecture decisions. When documentation and code
 disagree, trust code and tests first, then `docs/`, then this overview.

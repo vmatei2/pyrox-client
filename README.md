@@ -1,5 +1,7 @@
 # pyrox-client
 
+> **Public data access has been discontinued for now.** The Python client and the hosted API/MCP server no longer return data.
+
 HYROX race results as data. A Python client and a public MCP server for
 analysing them, either in code or by asking an AI assistant.
 

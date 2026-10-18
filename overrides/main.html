@@ -12,6 +12,10 @@
   {% endfor %}
 {% endif %}
 
+{% block announce %}
+  Public data access has been discontinued for now.
+{% endblock %}
+
 {#- Keyword-led title on the homepage; Material's default elsewhere. -#}
 {% block htmltitle %}
   {% if page and page.is_homepage %}
