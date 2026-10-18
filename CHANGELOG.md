@@ -3,6 +3,10 @@
 User-visible updates to the Python package, race data and reporting service.
 Data updates do not require a Python package upgrade unless stated otherwise.
 
+## 2026-10-18 — Public data access discontinued
+
+- Public data access has been discontinued for now. The Python client can no longer download race data, and the hosted API and MCP server are offline.
+
 ## 2026-10-10 — Data publication schedule
 
 - Race results are now published nightly from Thursday to Tuesday instead of weekly. A race day usually reaches the Python client by the next morning (UK time), with heats posted late filled in a day later.
