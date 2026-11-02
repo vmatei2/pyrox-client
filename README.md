@@ -1,7 +1,5 @@
 # pyrox-client
 
-> **Public data access has been discontinued for now.** The Python client and the hosted API/MCP server no longer return data.
-
 HYROX race results as data. A Python client and a public MCP server for
 analysing them, either in code or by asking an AI assistant.
 
@@ -22,7 +20,7 @@ https://github.com/user-attachments/assets/2756c10f-166b-45ba-aa3d-089e1f40fe00
 
 Two ways in:
 
-- **Ask an AI.** Connect the MCP server and query the dataset in plain English,
+- **Ask an AI** (offline for now). Connect the MCP server and query the dataset in plain English,
   e.g. *"where would a 62-minute open time rank in season 8?"*
 - **Write Python.** Pull a full race as a pandas DataFrame with splits already
   converted to minutes, cached on disk so reruns are cheap.
@@ -30,6 +28,8 @@ Two ways in:
 > Independent project, not affiliated with or endorsed by HYROX.
 
 ## Ask an AI (MCP server)
+
+> The hosted MCP server is offline for now. The Python client works as usual.
 
 There's a public, read-only MCP server at `https://pyrox-api.fly.dev/mcp/`. Point
 Claude, Codex, or any MCP client at it and ask about distributions, rankings,

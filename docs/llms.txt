@@ -6,11 +6,11 @@
 > races as pandas DataFrames, and a public, read-only MCP server that lets AI
 > assistants answer questions about HYROX results directly.
 
-**Status: public data access has been discontinued for now.** The Python client and the MCP server no longer return data.
+**Status:** the Python client is available. The hosted MCP server and REST API are offline for now.
 
 ## Access points
 
-- MCP endpoint (public, read-only, no authentication, rate-limited):
+- MCP endpoint (offline for now; public, read-only, no authentication, rate-limited):
   `https://pyrox-api.fly.dev/mcp/`
 - Python package: `pip install pyrox-client`
 - Source: https://github.com/vmatei2/pyrox-client
