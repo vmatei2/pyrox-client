@@ -7,6 +7,9 @@ description: >-
 
 # Connect the Pyrox MCP server
 
+!!! note "Offline for now"
+    The hosted MCP server is offline for now. The Python client works as usual.
+
 The public endpoint is:
 
 ```text

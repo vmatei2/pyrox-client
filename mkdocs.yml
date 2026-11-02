@@ -1,7 +1,7 @@
 site_name: Pyrox
 site_description: >-
-  HYROX race results for Python and MCP. Load Parquet files into pandas or
-  query the public reporting server without an account or API key.
+  HYROX race results for Python. Load Parquet files into pandas without an
+  account or API key.
 site_url: https://vmatei2.github.io/pyrox-client/
 site_author: Vlad Matei
 repo_url: https://github.com/vmatei2/pyrox-client

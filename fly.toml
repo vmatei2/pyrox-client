@@ -26,7 +26,7 @@ primary_region = "lhr"
   internal_port = 8080
   force_https = true
   auto_stop_machines = "stop"
-  auto_start_machines = true
+  auto_start_machines = false
   min_machines_running = 0
 
 # Persist the downloaded DuckDB artifact across machine stops. Without this the

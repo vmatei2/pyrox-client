@@ -19,6 +19,9 @@ pipeline, but they suit different kinds of work.
 
 ### Ask through MCP
 
+!!! note "Offline for now"
+    The hosted MCP server is offline for now. The Python client works as usual.
+
 Connect Claude, Codex or another MCP client to the read-only endpoint. The
 assistant chooses a typed Pyrox tool; the reporting service runs the query.
 

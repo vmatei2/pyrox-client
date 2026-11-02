@@ -6,9 +6,10 @@ packaged for iOS. This page is the engineering map for humans and agents. It
 describes durable boundaries and operating contracts; the source remains the
 authority.
 
-**Status (2026-10-18):** public data access is discontinued for now. The
-CloudFront distribution is disabled, the Fly API is stopped, and the Deploy API
-and Refresh Data workflows are disabled.
+**Status (2026-11-02):** the Python client's CDN path (manifest and Parquet)
+is live. The hosted REST API and MCP server are offline: the Fly app is stopped
+with `auto_start_machines = false`, the Deploy API and Refresh Data workflows are
+disabled, and the producer builds the DuckDB artifact without publishing it.
 
 Use [README.md](../README.md) and [docs/](../docs/) for user-facing guides,
 maintenance runbooks, and architecture decisions. When documentation and code

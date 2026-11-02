@@ -169,8 +169,8 @@ per call.
 | Access path | Best for | Cost |
 | --- | --- | --- |
 | [Python client](quickstart.md) | Notebooks, modelling, bulk analysis | `pip install pyrox-client`, free |
-| [MCP server](mcp.md) | Conversational analysis with Claude, Codex or another MCP client | Public endpoint, no key |
-| REST API | Dashboards and applications | Public endpoint, rate-limited |
+| [MCP server](mcp.md) | Conversational analysis with Claude, Codex or another MCP client | Offline for now |
+| REST API | Dashboards and applications | Offline for now |
 
 The Python client reads Parquet from the CDN directly and has no rate limit,
 which makes it the right choice for bulk work. The hosted service is limited to
