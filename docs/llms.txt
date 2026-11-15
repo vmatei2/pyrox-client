@@ -6,7 +6,7 @@
 > races as pandas DataFrames, and a public, read-only MCP server that lets AI
 > assistants answer questions about HYROX results directly.
 
-**Status:** the Python client is available. The hosted MCP server and REST API are offline for now.
+**Status:** the Python client is available, with races up to 17 October 2026. New races aren't being added for now. The hosted MCP server and REST API are offline.
 
 ## Access points
 
