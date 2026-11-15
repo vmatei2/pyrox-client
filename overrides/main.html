@@ -13,13 +13,14 @@
 {% endif %}
 
 {% block announce %}
-  Public data access has been discontinued for now.
+  Download race results and look up any athlete's splits with the Python client.
+  <a href="{{ 'quickstart/' | url }}">Get started →</a>
 {% endblock %}
 
 {#- Keyword-led title on the homepage; Material's default elsewhere. -#}
 {% block htmltitle %}
   {% if page and page.is_homepage %}
-    <title>Pyrox - HYROX Race Results Data: Python API &amp; MCP Server</title>
+    <title>Pyrox - HYROX Race Results Data for Python</title>
   {% else %}
     {{ super() }}
   {% endif %}
@@ -71,7 +72,7 @@
               "@type": "Person",
               "name": "Vlad Matei"
             },
-            "keywords": "HYROX, HYROX data, HYROX results, HYROX API, HYROX dataset, race analytics, pandas, MCP server"
+            "keywords": "HYROX, HYROX data, HYROX results, HYROX dataset, race analytics, pandas"
           },
           {
             "@type": "WebSite",
@@ -132,12 +133,6 @@
             "encodingFormat": "application/vnd.apache.parquet",
             "contentUrl": "https://pypi.org/project/pyrox-client/",
             "description": "Race-level Parquet files, downloaded and cached by the pyrox-client Python package."
-          },
-          {
-            "@type": "DataDownload",
-            "encodingFormat": "application/json",
-            "contentUrl": "https://pyrox-api.fly.dev/api/filter-options",
-            "description": "Public read-only REST API returning computed reports, distributions and rankings."
           }
         ],
         "measurementTechnique": "Compiled from publicly published HYROX race results",

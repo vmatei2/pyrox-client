@@ -19,6 +19,9 @@ pipeline, but they suit different kinds of work.
 
 ### Ask through MCP
 
+!!! note "Offline for now"
+    The hosted MCP server is offline for now. The Python client works as usual.
+
 Connect Claude, Codex or another MCP client to the read-only endpoint. The
 assistant chooses a typed Pyrox tool; the reporting service runs the query.
 
@@ -89,12 +92,12 @@ two superficially similar questions use different age groups or divisions.
 </div>
 
 See [the dataset](dataset.md) for the measured coverage, complete schema and
-nightly publication schedule.
+update status.
 
 ## Operational limits
 
 The dataset comes from public HYROX results and can inherit mistakes from the
-source. Coverage changes with each nightly publish, while a local cache only
+source. Coverage changes whenever new data is published, while a local cache only
 avoids repeated downloads; it does not freeze a research snapshot. Export a
 dated Parquet file when an analysis must reproduce the same figures later.
 
@@ -113,13 +116,12 @@ rate limit.
 
 ??? question "Do I need an API key?"
 
-    No. The MCP and REST endpoints are public and read-only, and the Python
-    client downloads public race files. None of them asks you to create an
-    account.
+    No. The Python client downloads public race files without an account. The
+    MCP and REST endpoints are offline for now.
 
 ??? question "Which seasons, divisions and locations are covered?"
 
-    The published manifest changes nightly during race weeks. Check [the dataset](dataset.md) for
+    The published manifest lists every available race. Check [the dataset](dataset.md) for
     the latest measured totals, call `list_filters` through MCP, or use
     `client.list_seasons()` and `client.list_locations()` in Python.
 

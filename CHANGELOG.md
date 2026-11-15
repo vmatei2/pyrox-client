@@ -3,6 +3,10 @@
 User-visible updates to the Python package, race data and reporting service.
 Data updates do not require a Python package upgrade unless stated otherwise.
 
+## 2026-11-15 — Python client data available again
+
+- Python client data downloads are available again, covering races up to 17 October 2026. New races aren't being added for now. The hosted API and MCP server remain offline.
+
 ## 2026-10-18 — Public data access discontinued
 
 - Public data access has been discontinued for now. The Python client can no longer download race data, and the hosted API and MCP server are offline.

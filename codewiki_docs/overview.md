@@ -5,9 +5,11 @@ package and a REST/MCP reporting service. This page is the engineering map for h
 describes durable boundaries and operating contracts; the source remains the
 authority.
 
-**Status (2026-10-18):** public data access is discontinued for now. The
-CloudFront distribution is disabled, the Fly API is stopped, and the Deploy API
-and Refresh Data workflows are disabled.
+**Status (2026-11-15):** the Python client's CDN path (manifest and Parquet)
+is live and serves races up to 17 October 2026. The producer's scraper is
+disabled, so no new races are being added. The hosted REST API and MCP server
+are offline: the Fly app is stopped with `auto_start_machines = false`, and the
+Deploy API and Refresh Data workflows are disabled.
 
 Use [README.md](../README.md) and [docs/](../docs/) for user-facing guides,
 maintenance runbooks, and architecture decisions. When documentation and code
