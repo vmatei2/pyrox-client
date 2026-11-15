@@ -16,11 +16,6 @@ dist/
 docs/issues/
 docs/PROJECT_STATE.md
 
-ui/.env.capacitor
-ui/.env
-ui/node_modules/
-ui/ios/DerivedData/
-
 .venv*/
 node_modules/
 pyrox_duckdb

@@ -56,7 +56,6 @@ exclude = [
   "src/pyrox/helpers.py",
   "**/__pycache__/**",
   "*.pyc",
-  "ui/**",
   "pyrox_api_service/**",
   "scripts/**",
   "docs/**",
