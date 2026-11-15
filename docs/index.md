@@ -19,9 +19,6 @@ pipeline, but they suit different kinds of work.
 
 ### Ask through MCP
 
-!!! note "Offline for now"
-    The hosted MCP server is offline for now. The Python client works as usual.
-
 Connect Claude, Codex or another MCP client to the read-only endpoint. The
 assistant chooses a typed Pyrox tool; the reporting service runs the query.
 
@@ -116,8 +113,9 @@ rate limit.
 
 ??? question "Do I need an API key?"
 
-    No. The Python client downloads public race files without an account. The
-    MCP and REST endpoints are offline for now.
+    No. The MCP and REST endpoints are public and read-only, and the Python
+    client downloads public race files. None of them asks you to create an
+    account.
 
 ??? question "Which seasons, divisions and locations are covered?"
 

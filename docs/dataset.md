@@ -148,7 +148,7 @@ combined percentile misleads.
 ## How often it updates
 
 New results aren't being added for now. The published data covers races up to
-17 October 2026. The hosted REST and MCP service is offline.
+17 October 2026. The hosted REST and MCP service serves the same data.
 
 That's the server side. The Python client also caches locally, on top of
 that: races and the manifest for 2 hours, a full season for 1 hour. If you're
@@ -167,8 +167,8 @@ per call.
 | Access path | Best for | Cost |
 | --- | --- | --- |
 | [Python client](quickstart.md) | Notebooks, modelling, bulk analysis | `pip install pyrox-client`, free |
-| [MCP server](mcp.md) | Conversational analysis with Claude, Codex or another MCP client | Offline for now |
-| REST API | Dashboards and applications | Offline for now |
+| [MCP server](mcp.md) | Conversational analysis with Claude, Codex or another MCP client | Public endpoint, no key |
+| REST API | Dashboards and applications | Public endpoint, rate-limited |
 
 The Python client reads Parquet from the CDN directly and has no rate limit,
 which makes it the right choice for bulk work. The hosted service is limited to
