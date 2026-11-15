@@ -8,8 +8,9 @@ authority.
 **Status (2026-11-15):** the Python client's CDN path (manifest and Parquet)
 is live and serves races up to 17 October 2026. The producer's scraper is
 disabled, so no new races are being added. The hosted REST API and MCP server
-are offline: the Fly app is stopped with `auto_start_machines = false`, and the
-Deploy API and Refresh Data workflows are disabled.
+are back on the same frozen data: the Fly app autostarts and sleeps when idle,
+Deploy API is enabled, and Refresh Data stays disabled until the producer
+publishes new DuckDB artifacts again.
 
 Use [README.md](../README.md) and [docs/](../docs/) for user-facing guides,
 maintenance runbooks, and architecture decisions. When documentation and code

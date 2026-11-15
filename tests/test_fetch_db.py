@@ -132,6 +132,45 @@ def test_fetch_artifact_skips_download_when_current(tmp_path: Path):
 
 
 @respx.mock
+def test_fetch_artifact_reuses_verified_stamp_without_rehashing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    target = tmp_path / "pyrox_duckdb"
+    target.write_bytes(DB_BYTES)
+    respx.get(POINTER_URL).respond(200, json=_pointer_payload())
+    artifact_route = respx.get(
+        "https://cdn.example.com/db/pyrox_duckdb_20260709T123000Z.duckdb"
+    ).respond(200, content=DB_BYTES)
+    fetch_artifact(POINTER_URL, target)  # first boot hashes once and stamps
+
+    def _no_hash(path: Path) -> str:
+        raise AssertionError("verified artifact should not be re-hashed")
+
+    monkeypatch.setattr("pyrox_api_service.fetch_db.sha256_file", _no_hash)
+    pointer = fetch_artifact(POINTER_URL, target)
+
+    assert not artifact_route.called
+    assert pointer.key == "db/pyrox_duckdb_20260709T123000Z.duckdb"
+
+
+@respx.mock
+def test_fetch_artifact_ignores_stamp_when_file_changed(tmp_path: Path):
+    target = tmp_path / "pyrox_duckdb"
+    target.write_bytes(DB_BYTES)
+    respx.get(POINTER_URL).respond(200, json=_pointer_payload())
+    artifact_route = respx.get(
+        "https://cdn.example.com/db/pyrox_duckdb_20260709T123000Z.duckdb"
+    ).respond(200, content=DB_BYTES)
+    fetch_artifact(POINTER_URL, target)
+
+    target.write_bytes(b"tampered artifact bytes")  # same stamp, different file
+    fetch_artifact(POINTER_URL, target)
+
+    assert artifact_route.called
+    assert target.read_bytes() == DB_BYTES
+
+
+@respx.mock
 def test_fetch_artifact_surfaces_pointer_http_errors(tmp_path: Path):
     respx.get(POINTER_URL).respond(503)
 

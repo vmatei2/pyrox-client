@@ -34,6 +34,7 @@
 ## Production Data Promotion
 - `hyrox_analysis` owns the candidate pointer at `latest.json`; do not update it from this repository.
 - The live API reads `deploy-current.json`. Promote candidates only through `.github/workflows/refresh-data.yml`; never point Fly directly at `latest.json`.
+- To pause or stop public access (API, MCP or CDN), follow the producer's operating-mode runbook in `../hyrox_analysis/scraping_code/db_build/NEXT_STEPS.md#current-operating-mode`; it includes the Fly steps for this app.
 
 ## Architecture Map
 
