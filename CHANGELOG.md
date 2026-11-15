@@ -6,6 +6,7 @@ Data updates do not require a Python package upgrade unless stated otherwise.
 ## 2026-11-15 — Python client data available again
 
 - Python client data downloads are available again, covering races up to 17 October 2026. New races aren't being added for now. The hosted API and MCP server remain offline.
+- The Pyrox web app has been retired.
 
 ## 2026-10-18 — Public data access discontinued
 
