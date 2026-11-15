@@ -27,7 +27,7 @@
     
     
   
-    <title>Pyrox - HYROX Race Results Data: Python API &amp; MCP Server</title>
+    <title>Pyrox - HYROX Race Results Data for Python</title>
   
 
     
@@ -85,7 +85,7 @@
           {
             "@type": "SoftwareSourceCode",
             "name": "pyrox-client",
-            "description": "HYROX race results for Python and MCP. Load Parquet files into pandas or query the public reporting server without an account or API key.",
+            "description": "HYROX race results for Python. Load Parquet files into pandas without an account or API key.",
             "codeRepository": "https://github.com/vmatei2/pyrox-client",
             "programmingLanguage": "Python",
             "runtimePlatform": "Python 3.12+",
@@ -95,14 +95,14 @@
               "@type": "Person",
               "name": "Vlad Matei"
             },
-            "keywords": "HYROX, HYROX data, HYROX results, HYROX API, HYROX dataset, race analytics, pandas, MCP server"
+            "keywords": "HYROX, HYROX data, HYROX results, HYROX dataset, race analytics, pandas"
           },
           {
             "@type": "WebSite",
             "name": "Pyrox",
             "alternateName": "pyrox-client",
             "url": "https://vmatei2.github.io/pyrox-client/",
-            "description": "HYROX race results for Python and MCP. Load Parquet files into pandas or query the public reporting server without an account or API key."
+            "description": "HYROX race results for Python. Load Parquet files into pandas without an account or API key."
           }
         ]
       }
@@ -139,7 +139,8 @@
           <div class="md-banner__inner md-grid md-typeset">
             
             
-  Public data access has been discontinued for now.
+  Download race results and look up any athlete's splits with the Python client.
+  <a href="quickstart/">Get started →</a>
 
           </div>
           
@@ -1345,6 +1346,10 @@ pipeline, but they suit different kinds of work.</p>
 <div class="pyrox-split">
 <div>
 <h3 id="ask-through-mcp">Ask through MCP<a class="headerlink" href="#ask-through-mcp" title="Permanent link">&para;</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Offline for now</p>
+<p>The hosted MCP server is offline for now. The Python client works as usual.</p>
+</div>
 <p>Connect Claude, Codex or another MCP client to the read-only endpoint. The
 assistant chooses a typed Pyrox tool; the reporting service runs the query.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>https://pyrox-api.fly.dev/mcp/
@@ -1402,10 +1407,10 @@ two superficially similar questions use different age groups or divisions.</p>
 </ul>
 </div>
 <p>See <a href="dataset/">the dataset</a> for the measured coverage, complete schema and
-nightly publication schedule.</p>
+update status.</p>
 <h2 id="operational-limits">Operational limits<a class="headerlink" href="#operational-limits" title="Permanent link">&para;</a></h2>
 <p>The dataset comes from public HYROX results and can inherit mistakes from the
-source. Coverage changes with each nightly publish, while a local cache only
+source. Coverage changes whenever new data is published, while a local cache only
 avoids repeated downloads; it does not freeze a research snapshot. Export a
 dated Parquet file when an analysis must reproduce the same figures later.</p>
 <p>The hosted REST and MCP service allows 60 requests per minute per IP. It may
@@ -1421,13 +1426,12 @@ missing programmatic access.</p>
 </details>
 <details class="question">
 <summary>Do I need an API key?</summary>
-<p>No. The MCP and REST endpoints are public and read-only, and the Python
-client downloads public race files. None of them asks you to create an
-account.</p>
+<p>No. The Python client downloads public race files without an account. The
+MCP and REST endpoints are offline for now.</p>
 </details>
 <details class="question">
 <summary>Which seasons, divisions and locations are covered?</summary>
-<p>The published manifest changes nightly during race weeks. Check <a href="dataset/">the dataset</a> for
+<p>The published manifest lists every available race. Check <a href="dataset/">the dataset</a> for
 the latest measured totals, call <code>list_filters</code> through MCP, or use
 <code>client.list_seasons()</code> and <code>client.list_locations()</code> in Python.</p>
 </details>
