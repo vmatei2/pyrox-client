@@ -1,9 +1,8 @@
-# Reporting Service and UI
+# Reporting Service
 
-This repository includes a FastAPI reporting service and a Vite/React UI for
-project workflows. This stack is separate from the published `pyrox-client`
-package. The PyPI wheel ships only the `pyrox` client library (`src/pyrox`);
-`pyrox_api_service/` and `ui/` are not part of it.
+This repository includes a FastAPI reporting service for project workflows. It
+is separate from the published `pyrox-client` package. The PyPI wheel ships only
+the `pyrox` client library (`src/pyrox`); `pyrox_api_service/` is not part of it.
 
 ## Canonical Backend Module
 
@@ -119,26 +118,6 @@ Health check:
 
 ```bash
 curl http://localhost:8000/api/health
-```
-
-## Frontend: Local Run
-
-```bash
-cd ui
-npm install
-VITE_API_BASE_URL=http://localhost:8000 npm run dev
-```
-
-## iOS (Capacitor)
-
-From `ui/`:
-
-```bash
-npm install
-npm run build
-npx cap add ios    # first time only
-npm run build:cap
-npx cap open ios
 ```
 
 ## Docker and Fly.io Notes

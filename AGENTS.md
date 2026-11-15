@@ -3,7 +3,7 @@
 ## Project Structure & Module Organization
 - Docs: `README.md`, `docs/` (mkdocs user docs + `docs/maintainers/` runbooks), and `codewiki_docs/overview.md` (the engineering architecture map).
 - Build config: `pyproject.toml` (Hatch build, dependencies, metadata).
-- Main client code: `src/pyrox/core.py`; reporting service: `pyrox_api_service/`; frontend: `ui/`
+- Main client code: `src/pyrox/core.py`; reporting service: `pyrox_api_service/`
 
 ## Build, Test, and Development Commands
 - Install (editable): `uv pip install -e .` or `pip install -e .`
@@ -69,7 +69,7 @@ consumer behavior or claiming end-to-end verification.
 - **hyrox_analysis owns:** source discovery and scraping, raw and canonical
   parquet, the race manifest, DuckDB construction and candidate `latest.json`.
 - **pyrox-client owns:** Python client filtering, caching and public column
-  names; REST/MCP and UI behavior; promotion to `deploy-current.json` and API
+  names; REST/MCP behavior; promotion to `deploy-current.json` and API
   deployment.
 - **Inspect both repositories for:** divisions, fields, timing precision, race
   identity, schema compatibility, and publication/promotion changes. Trace the
