@@ -95,6 +95,32 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _stamp_path(target: Path) -> Path:
+    return target.with_name(target.name + ".verified")
+
+
+def _file_identity(target: Path) -> str:
+    stat = target.stat()
+    return f"{stat.st_size}:{stat.st_mtime_ns}"
+
+
+def _write_stamp(target: Path, pointer: ArtifactPointer) -> None:
+    """Record that ``target`` was verified against ``pointer.sha256``.
+
+    Hashing the ~1.5GB artifact takes over a minute on a Fly machine, longer
+    than the proxy waits on a cold boot. The stamp ties the verified sha256 to
+    the file's size and mtime so later boots can skip the re-hash.
+    """
+    _stamp_path(target).write_text(f"{pointer.sha256} {_file_identity(target)}\n")
+
+
+def _stamp_matches(target: Path, pointer: ArtifactPointer) -> bool:
+    stamp = _stamp_path(target)
+    if not (target.exists() and stamp.exists()):
+        return False
+    return stamp.read_text().strip() == f"{pointer.sha256} {_file_identity(target)}"
+
+
 def fetch_artifact(
     pointer_url: str,
     target_path: Path,
@@ -111,7 +137,11 @@ def fetch_artifact(
         pointer = parse_pointer(response.json())
 
         target = Path(target_path)
+        if _stamp_matches(target, pointer):
+            logger.info("Local artifact stamp matches %s; skipping download", pointer.key)
+            return pointer
         if target.exists() and sha256_file(target) == pointer.sha256:
+            _write_stamp(target, pointer)
             logger.info("Local artifact already matches %s; skipping download", pointer.key)
             return pointer
 
@@ -134,6 +164,7 @@ def fetch_artifact(
             os.replace(tmp_target, target)
         finally:
             tmp_target.unlink(missing_ok=True)
+        _write_stamp(target, pointer)
 
         logger.info("Artifact %s in place at %s", pointer.key, target)
         return pointer
