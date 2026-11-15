@@ -27,7 +27,7 @@
   
     
       
-        <title>Reporting Service and UI - Pyrox</title>
+        <title>Reporting Service - Pyrox</title>
       
     
   
@@ -74,11 +74,11 @@
 
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Pyrox">
-  <meta property="og:title" content="Reporting Service and UI - Pyrox">
+  <meta property="og:title" content="Reporting Service - Pyrox">
   <meta property="og:description" content="HYROX race results for Python and MCP. Load Parquet files into pandas or query the public reporting server without an account or API key.">
   <meta property="og:url" content="https://vmatei2.github.io/pyrox-client/maintainers/reporting-service/">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Reporting Service and UI - Pyrox">
+  <meta name="twitter:title" content="Reporting Service - Pyrox">
   <meta name="twitter:description" content="HYROX race results for Python and MCP. Load Parquet files into pandas or query the public reporting server without an account or API key.">
 
   </head>
@@ -100,7 +100,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#reporting-service-and-ui" class="md-skip">
+        <a href="#reporting-service" class="md-skip">
           Skip to content
         </a>
       
@@ -143,7 +143,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Reporting Service and UI
+              Reporting Service
             
           </span>
         </div>
@@ -1102,28 +1102,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#frontend-local-run" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Frontend: Local Run
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#ios-capacitor" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        iOS (Capacitor)
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#docker-and-flyio-notes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1159,11 +1137,10 @@
   
 
 
-<h1 id="reporting-service-and-ui">Reporting Service and UI<a class="headerlink" href="#reporting-service-and-ui" title="Permanent link">&para;</a></h1>
-<p>This repository includes a FastAPI reporting service and a Vite/React UI for
-project workflows. This stack is separate from the published <code>pyrox-client</code>
-package. The PyPI wheel ships only the <code>pyrox</code> client library (<code>src/pyrox</code>);
-<code>pyrox_api_service/</code> and <code>ui/</code> are not part of it.</p>
+<h1 id="reporting-service">Reporting Service<a class="headerlink" href="#reporting-service" title="Permanent link">&para;</a></h1>
+<p>This repository includes a FastAPI reporting service for project workflows. It
+is separate from the published <code>pyrox-client</code> package. The PyPI wheel ships only
+the <code>pyrox</code> client library (<code>src/pyrox</code>); <code>pyrox_api_service/</code> is not part of it.</p>
 <h2 id="canonical-backend-module">Canonical Backend Module<a class="headerlink" href="#canonical-backend-module" title="Permanent link">&para;</a></h2>
 <p><code>pyrox_api_service.app:app</code> is the pure REST app. To serve the REST API <strong>and</strong>
 the mounted MCP server together (the deployed configuration), use the composed
@@ -1245,19 +1222,6 @@ Fly machine; do not change the producer-owned <code>latest.json</code> from this
 </span></code></pre></div>
 <p>Health check:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>curl<span class="w"> </span>http://localhost:8000/api/health
-</span></code></pre></div>
-<h2 id="frontend-local-run">Frontend: Local Run<a class="headerlink" href="#frontend-local-run" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">cd</span><span class="w"> </span>ui
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>npm<span class="w"> </span>install
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nv">VITE_API_BASE_URL</span><span class="o">=</span>http://localhost:8000<span class="w"> </span>npm<span class="w"> </span>run<span class="w"> </span>dev
-</span></code></pre></div>
-<h2 id="ios-capacitor">iOS (Capacitor)<a class="headerlink" href="#ios-capacitor" title="Permanent link">&para;</a></h2>
-<p>From <code>ui/</code>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>npm<span class="w"> </span>install
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>npm<span class="w"> </span>run<span class="w"> </span>build
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>npx<span class="w"> </span>cap<span class="w"> </span>add<span class="w"> </span>ios<span class="w">    </span><span class="c1"># first time only</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>npm<span class="w"> </span>run<span class="w"> </span>build:cap
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>npx<span class="w"> </span>cap<span class="w"> </span>open<span class="w"> </span>ios
 </span></code></pre></div>
 <h2 id="docker-and-flyio-notes">Docker and Fly.io Notes<a class="headerlink" href="#docker-and-flyio-notes" title="Permanent link">&para;</a></h2>
 <ul>
