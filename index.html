@@ -27,7 +27,7 @@
     
     
   
-    <title>Pyrox - HYROX Race Results Data for Python</title>
+    <title>Pyrox - HYROX Race Results Data: Python API &amp; MCP Server</title>
   
 
     
@@ -85,7 +85,7 @@
           {
             "@type": "SoftwareSourceCode",
             "name": "pyrox-client",
-            "description": "HYROX race results for Python. Load Parquet files into pandas without an account or API key.",
+            "description": "HYROX race results for Python and MCP. Load Parquet files into pandas or query the public reporting server without an account or API key.",
             "codeRepository": "https://github.com/vmatei2/pyrox-client",
             "programmingLanguage": "Python",
             "runtimePlatform": "Python 3.12+",
@@ -95,14 +95,14 @@
               "@type": "Person",
               "name": "Vlad Matei"
             },
-            "keywords": "HYROX, HYROX data, HYROX results, HYROX dataset, race analytics, pandas"
+            "keywords": "HYROX, HYROX data, HYROX results, HYROX API, HYROX dataset, race analytics, pandas, MCP server"
           },
           {
             "@type": "WebSite",
             "name": "Pyrox",
             "alternateName": "pyrox-client",
             "url": "https://vmatei2.github.io/pyrox-client/",
-            "description": "HYROX race results for Python. Load Parquet files into pandas without an account or API key."
+            "description": "HYROX race results for Python and MCP. Load Parquet files into pandas or query the public reporting server without an account or API key."
           }
         ]
       }
@@ -1346,10 +1346,6 @@ pipeline, but they suit different kinds of work.</p>
 <div class="pyrox-split">
 <div>
 <h3 id="ask-through-mcp">Ask through MCP<a class="headerlink" href="#ask-through-mcp" title="Permanent link">&para;</a></h3>
-<div class="admonition note">
-<p class="admonition-title">Offline for now</p>
-<p>The hosted MCP server is offline for now. The Python client works as usual.</p>
-</div>
 <p>Connect Claude, Codex or another MCP client to the read-only endpoint. The
 assistant chooses a typed Pyrox tool; the reporting service runs the query.</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>https://pyrox-api.fly.dev/mcp/
@@ -1426,8 +1422,9 @@ missing programmatic access.</p>
 </details>
 <details class="question">
 <summary>Do I need an API key?</summary>
-<p>No. The Python client downloads public race files without an account. The
-MCP and REST endpoints are offline for now.</p>
+<p>No. The MCP and REST endpoints are public and read-only, and the Python
+client downloads public race files. None of them asks you to create an
+account.</p>
 </details>
 <details class="question">
 <summary>Which seasons, divisions and locations are covered?</summary>

@@ -129,6 +129,12 @@
             "encodingFormat": "application/vnd.apache.parquet",
             "contentUrl": "https://pypi.org/project/pyrox-client/",
             "description": "Race-level Parquet files, downloaded and cached by the pyrox-client Python package."
+          },
+          {
+            "@type": "DataDownload",
+            "encodingFormat": "application/json",
+            "contentUrl": "https://pyrox-api.fly.dev/api/filter-options",
+            "description": "Public read-only REST API returning computed reports, distributions and rankings."
           }
         ],
         "measurementTechnique": "Compiled from publicly published HYROX race results",
@@ -1703,7 +1709,7 @@ aren't doing the same work, so a combined average benchmarks nothing and a
 combined percentile misleads.</p>
 <h2 id="how-often-it-updates">How often it updates<a class="headerlink" href="#how-often-it-updates" title="Permanent link">&para;</a></h2>
 <p>New results aren't being added for now. The published data covers races up to
-17 October 2026. The hosted REST and MCP service is offline.</p>
+17 October 2026. The hosted REST and MCP service serves the same data.</p>
 <p>That's the server side. The Python client also caches locally, on top of
 that: races and the manifest for 2 hours, a full season for 1 hour. If you're
 after this week's publish and it isn't showing up yet, don't wait out the TTL
@@ -1730,12 +1736,12 @@ per call.</p>
 <tr>
 <td><a href="../mcp/">MCP server</a></td>
 <td>Conversational analysis with Claude, Codex or another MCP client</td>
-<td>Offline for now</td>
+<td>Public endpoint, no key</td>
 </tr>
 <tr>
 <td>REST API</td>
 <td>Dashboards and applications</td>
-<td>Offline for now</td>
+<td>Public endpoint, rate-limited</td>
 </tr>
 </tbody>
 </table>
