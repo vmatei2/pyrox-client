@@ -1,8 +1,7 @@
 # pyrox-client architecture
 
-Pyrox makes HYROX race-result data available through three surfaces: a Python
-package, a REST/MCP reporting service, and a React application that can also be
-packaged for iOS. This page is the engineering map for humans and agents. It
+Pyrox makes HYROX race-result data available through two surfaces: a Python
+package and a REST/MCP reporting service. This page is the engineering map for humans and agents. It
 describes durable boundaries and operating contracts; the source remains the
 authority.
 
@@ -55,22 +54,15 @@ flowchart LR
         MCP --> TOOLS
     end
 
-    subgraph ui ["React and Capacitor UI"]
-        MODES["Profile, report, compare,<br/>deep dive, rankings, planner"]
-        APICLIENT["api/client.js<br/>timeouts and REST calls"]
-        MODES --> APICLIENT
-    end
-
     CDN --> CLIENT
     CDN --> FETCH
     CLIENT --> PYUSER["Python users"]
-    REST --> APICLIENT
     MCP --> AGENT["Claude, Codex,<br/>other MCP clients"]
 ```
 
 The important boundary is the reporting engine. REST routes adapt HTTP inputs
 to `ReportingQueries`; MCP tools call those same REST routes in-process instead
-of reimplementing analytics. The UI calls REST over the network. The Python
+of reimplementing analytics. The Python
 client's Parquet path is independent of the hosted service.
 
 ## Deliverables and ownership
@@ -79,7 +71,6 @@ client's Parquet path is independent of the hosted service.
 |---|---|---|
 | `pyrox-client` package | [`src/pyrox/`](../src/pyrox/) | PyPI library for notebooks and Python applications |
 | Reporting API and MCP | [`pyrox_api_service/`](../pyrox_api_service/) | One FastAPI process on Fly.io, backed by DuckDB |
-| Web and mobile UI | [`ui/src/`](../ui/src/) | Vite/React web app; Capacitor produces the iOS shell |
 
 The repository consumes race data but does not scrape or build the production
 DuckDB database. The external `hyrox_analysis` pipeline publishes immutable
@@ -144,22 +135,10 @@ discover their valid values from the generated JSON schema. The supported
 Age groups and locations deliberately remain strings because their valid
 values change with the dataset; agents discover them with `list_filters`.
 
-### UI
-
-[`App.jsx`](../ui/src/App.jsx) owns the six lazy-loaded page modes and the
-small amount of cross-mode navigation. Page components live in
-[`ui/src/pages/`](../ui/src/pages/). Shared charts, primitives, hooks, and
-formatting utilities live beside them. [`api/client.js`](../ui/src/api/client.js)
-is the browser's network boundary and owns request construction, React Query
-defaults, endpoint-specific timeouts, and error parsing.
-
-Capacitor wraps the same built frontend for iOS; it is not a separate data or
-business-logic implementation.
-
 ## Durable contracts and constraints
 
 - `result_id` is the stable hand-off from athlete search to race report and
-  deep-dive requests. Preserve it across REST, MCP, and UI changes.
+  deep-dive requests. Preserve it across REST and MCP changes.
 - Python-client race discovery preserves the `(season, location, year)` grain.
   Do not collapse repeated location names across years; callers may select one
   edition with `year` or combine all matching editions by omitting it.
@@ -195,11 +174,10 @@ business-logic implementation.
 |---|---|---|
 | CDN download, manifest, or cache behavior | [`src/pyrox/core.py`](../src/pyrox/core.py) | Client tests and public client docs |
 | DuckDB metric aliases or low-level reports | [`src/pyrox/reporting.py`](../src/pyrox/reporting.py) | Reporting tests |
-| Cohort/reporting behavior | [`reporting_queries.py`](../pyrox_api_service/reporting_queries.py) | FastAPI adapter tests and relevant UI/MCP consumers |
-| REST endpoint or validation | [`app.py`](../pyrox_api_service/app.py) | [`ui/src/api/client.js`](../ui/src/api/client.js), MCP wrapper, API tests |
+| Cohort/reporting behavior | [`reporting_queries.py`](../pyrox_api_service/reporting_queries.py) | FastAPI adapter tests and MCP tools |
+| REST endpoint or validation | [`app.py`](../pyrox_api_service/app.py) | MCP wrapper, API tests |
 | MCP input schema or tool behavior | [`mcp_tools.py`](../pyrox_api_service/mcp_tools.py) | registration in [`mcp_app.py`](../pyrox_api_service/mcp_app.py), schema tests, [MCP guide](../docs/mcp.md) |
 | New MCP tool | [maintainer guide](../docs/maintainers/adding-mcp-tools.md) | REST route first, then tool, registration, tests, smoke script |
-| UI mode or chart | [`ui/src/pages/`](../ui/src/pages/) or [`ui/src/charts/`](../ui/src/charts/) | API client and Vitest coverage |
 | Service boot or deployment | [`Dockerfile`](../Dockerfile), [`fly.toml`](../fly.toml) | [reporting runbook](../docs/maintainers/reporting-service.md) |
 | Production data promotion | [`refresh-data.yml`](../.github/workflows/refresh-data.yml) | pointer parser, Fly configuration, and reporting runbook |
 
@@ -213,26 +191,14 @@ pytest -q
 ruff check .
 ```
 
-The UI has its own Node workflow:
-
-```bash
-cd ui
-npm test -- --run
-npm run build
-```
-
 Pushes to `main` run Python tests and integration checks. The
 [`Deploy API`](../.github/workflows/deploy.yml) workflow deploys Fly
 automatically only when backend/package code, `Dockerfile`, `fly.toml`,
-`pyproject.toml`, or that workflow changes. Documentation-only and UI-only
-commits do not trigger the API deploy. Tagged `v*` commits build and publish the
+`pyproject.toml`, or that workflow changes. Documentation-only commits do not trigger the API deploy. Tagged `v*` commits build and publish the
 Python package to PyPI. The daily refresh workflow promotes a supported
 candidate pointer after the upstream data publish, refreshes every Fly machine,
 and waits for the live health check. Its manual trigger handles out-of-cycle
 backfills.
-
-There is no UI deployment workflow in this repository; the Vite and Capacitor
-builds are configured here, while hosting/release automation lives elsewhere.
 
 ## Maintaining this map
 

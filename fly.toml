@@ -13,7 +13,6 @@ primary_region = "lhr"
   # Consumer-owned production pointer. The weekly refresh workflow promotes
   # validated candidates from latest.json before machines read them here.
   PYROX_DB_POINTER_URL = "https://d2wl4b7sx66tfb.cloudfront.net/db/deploy-current.json"
-  PYROX_API_ALLOW_ORIGINS = "https://pyrox-analytics.vercel.app,capacitor://localhost,ionic://localhost,http://localhost"
   # MCP DNS-rebinding protection is intentionally left off here. It validates the
   # Host/Origin headers and exists to stop a malicious site pivoting through a
   # victim's browser into a localhost-bound server. This endpoint is public,

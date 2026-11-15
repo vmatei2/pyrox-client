@@ -9,7 +9,6 @@ __pycache__/
 .ruff_cache/
 tests/
 docs/
-ui/
 example_notebooks/
 *.ipynb
 *.png

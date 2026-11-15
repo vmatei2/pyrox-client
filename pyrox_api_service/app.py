@@ -31,7 +31,8 @@ from pyrox_api_service.reporting_queries import (
 )
 
 
-DEFAULT_ORIGINS = "http://localhost:5173,capacitor://localhost,ionic://localhost,http://localhost"
+# No browser front end ships with the service; set PYROX_API_ALLOW_ORIGINS to allow one.
+DEFAULT_ORIGINS = ""
 
 
 def _parse_origins(value: str) -> list[str]:
